@@ -1,0 +1,280 @@
+---
+title: Live examples
+description: Write an example once; the page shows its code and runs it, in the page or in an isolated iframe, optionally editable.
+---
+
+import { Live } from '../../../../components/live';
+
+`<Live>` turns one piece of code into two things: a code block (Expressive Code, with title and copy button)
+and the running result. **The code shown is the code that runs**: the component reads the source back out of the
+rendered code block, so there is no second copy to drift. Every example on this page is a `<Live>`.
+
+The demo modules used below live in `example/apps/live-assets/` and are served at `/apps/live-assets/` by the
+static-apps mirror. Point your own examples at your library the same way (for example `/pixel/src/runtime/pixel-sprite.js`).
+
+## Write an example
+
+Import the component, then put a fenced code block inside it. Leave a blank line after the opening tag and before
+the closing one, so MDX treats the block as Markdown. MDX never touches the inside of a fence, so `<script>`,
+`{braces}` and template literals are safe.
+
+````mdx title="my-page.mdx"
+import { Live } from '../../components/live';
+
+<Live caption="A custom element, defined by a module">
+
+```html title="hello.html"
+<script type="module" src="/apps/live-assets/hello-badge.js"></script>
+<hello-badge name="docs"></hello-badge>
+```
+
+</Live>
+````
+
+<Live caption="A custom element, defined by a module">
+
+```html title="hello.html"
+<script type="module" src="/apps/live-assets/hello-badge.js"></script>
+<hello-badge name="docs"></hello-badge>
+```
+
+</Live>
+
+The import path is relative to your page. The fence's language and meta work as usual (`title="…"`, line markers).
+
+### Modules run once per page
+
+Inline examples share the page, so the browser's module map applies: a module loaded by several examples
+(`<script type="module" src>`, the `modules` prop, or a runner) is evaluated once, and its `customElements.define`
+never runs twice. External classic scripts (`<script src>` without `type="module"`) are de-duplicated the same
+way. The badge counts how often its module was evaluated:
+
+<Live caption="Same module, second example">
+
+```html
+<script type="module" src="/apps/live-assets/hello-badge.js"></script>
+<hello-badge name="again" tone="green"></hello-badge>
+```
+
+</Live>
+
+## Inline mode: part of the page
+
+`mode="inline"` (the default) renders straight into the page. Scripts run (classic and module, inline and
+external), and the example can reach anything else on the page: here a custom element hops along the cards
+inside the example **and** along <strong data-hop>this word</strong> and the
+<strong data-hop>next heading</strong> outside it. This is what a library like Pixel Studio's `<pixel-stage>`,
+where characters walk on page elements, needs.
+
+<Live caption="Reaching outside the example" height={140}>
+
+```html
+<script type="module" src="/apps/live-assets/hop-dot.js"></script>
+<div style="display: flex; gap: 1rem; align-items: flex-end; padding-top: 2rem">
+  <div data-hop style="flex: 1; height: 60px; border: 2px solid; border-radius: 8px"></div>
+  <div data-hop style="flex: 1; height: 90px; border: 2px solid; border-radius: 8px"></div>
+  <div data-hop style="flex: 1; height: 40px; border: 2px solid; border-radius: 8px"></div>
+</div>
+<hop-dot targets="[data-hop]"></hop-dot>
+```
+
+</Live>
+
+The preview opts out of Starlight's Markdown styles (it carries `not-content`), but it is still the page: a
+`<style>` in an inline example applies to the whole page, and ids must be unique on it. When an example needs
+its own document, use an iframe.
+
+## Iframe mode: isolated
+
+`mode="iframe"` renders into a sandboxed iframe that sizes itself to its content. The iframe gets Starlight's
+colour and font tokens (`--sl-color-*`, `--sl-font`) and follows the theme switch, so it still looks like the
+page. Use `head` for styles, import maps or scripts, `modules` for module URLs, and `base` so relative paths
+resolve against your assets.
+
+<Live
+  mode="iframe"
+  caption="Isolated styles, a base URL, and auto-height"
+  base="/apps/live-assets/"
+  head="<style>button { font: inherit; padding: .3rem .8rem } li { color: var(--sl-color-accent-high) }</style>"
+>
+
+```html
+<script type="module" src="hello-badge.js"></script>
+<hello-badge name="iframe"></hello-badge>
+<p><button id="more">Add a line</button> — the frame grows with its content.</p>
+<ul id="list"></ul>
+<script>
+  let n = 0;
+  document.getElementById('more').onclick = () => {
+    const li = document.createElement('li');
+    li.textContent = `line ${++n}`;
+    document.getElementById('list').append(li);
+  };
+</script>
+```
+
+</Live>
+
+Errors inside the iframe (thrown exceptions, rejected promises, a script or stylesheet that fails to load) are
+shown under the preview.
+
+The default sandbox is `allow-scripts allow-same-origin allow-popups allow-forms allow-modals`. Same-origin is
+what lets the frame load modules and fetch assets from your site without CORS headers; it also means the frame
+could reach the page, so it isolates styles and globals, not trust. For code you do not trust, pass
+`sandbox="allow-scripts"` and serve the assets it needs with `Access-Control-Allow-Origin`.
+
+## Editable examples
+
+`editable` turns the code into a text area. Edits re-run the example after a pause (`debounce`, 300 ms by
+default), the copy button copies what you typed, and **Reset** brings back the original. Tab inserts two spaces;
+press Escape and then Tab to move on. Editable HTML examples are best in an iframe, which starts from a clean
+document on every run.
+
+<Live mode="iframe" editable caption="Edit me" base="/apps/live-assets/">
+
+```html
+<script type="module" src="hello-badge.js"></script>
+<hello-badge name="you" tone="orange"></hello-badge>
+<p>Change the name, or try <code>tone="green"</code>.</p>
+```
+
+</Live>
+
+## Custom runners
+
+With `runner="/url/to/module.js"`, the source is not HTML: it is handed to the module's `run` function, which
+renders it. That is how a library shows a spec, a config or a small DSL being interpreted live. The code is
+typically JSON (the default `lang` when a runner is set).
+
+```js title="runner.js"
+/**
+ * @param {string} source       the code, as shown or as edited
+ * @param {HTMLElement} mount   an empty element to render into
+ * @param {import('…/components/live/types').LiveContext} ctx
+ */
+export function run(source, mount, ctx) {
+  const spec = JSON.parse(source); // throw to show an error under the preview
+  // …render into mount…
+  ctx.status('ok: 3 frames', 'ok'); // optional one-line status
+  return () => {}; // optional cleanup, called before the next run
+}
+```
+
+`ctx` carries:
+
+| Field | What it is |
+| --- | --- |
+| `id` | The example's id. |
+| `mode` | `inline` or `iframe`. |
+| `options` | The `options` prop, as given. |
+| `reducedMotion` | `prefers-reduced-motion: reduce`. The example re-runs when it changes. |
+| `theme` | `light` or `dark`. The example re-runs when the page theme changes. |
+| `base` | The `base` prop as an absolute URL, else the page URL. |
+| `signal` | An `AbortSignal`, aborted when this run is replaced or the example is removed. |
+| `status(message, level)` | Shows a line under the preview; `level` is `ok`, `info`, `warn` or `error`. |
+
+Errors thrown by `run` (or by the promise it returns) are shown under the preview; the page carries on. The
+module is loaded once per page (or once per iframe in iframe mode).
+
+The playground below uses a tiny pixel-art engine. It is editable, side by side on wide screens, and starts only
+when scrolled into view (`lazy`). With reduced motion it shows the first frame instead of animating.
+
+<Live
+  runner="/apps/live-assets/pixel-engine.js"
+  editable
+  lazy
+  preview="side"
+  options={{ scale: 12 }}
+  caption="A runner: JSON in, pixels out"
+  id="pixel-playground"
+>
+
+```json title="blink.json"
+{
+  "palette": { "k": "#23212c", "y": "#f6c945", "w": "#ffffff" },
+  "fps": 3,
+  "frames": [
+    [".yyyy.", "yyyyyy", "ywkywk", "yyyyyy", "yykkyy", ".yyyy."],
+    [".yyyy.", "yyyyyy", "ykkykk", "yyyyyy", "yykkyy", ".yyyy."],
+    [".yyyy.", "yyyyyy", "ywkywk", "yyyyyy", "yyyyyy", ".yyyy."]
+  ]
+}
+```
+
+</Live>
+
+An error looks like this (this spec uses a colour that is not in its palette; fix it by adding `"r"` to the
+palette):
+
+<Live runner="/apps/live-assets/pixel-engine.js" editable mode="iframe" options={{ scale: 10 }} caption="A runner error, shown inline">
+
+```json
+{
+  "palette": { "k": "#23212c" },
+  "frames": [["k.k", ".r.", "k.k"]]
+}
+```
+
+</Live>
+
+## Layout
+
+- `preview="above"` (default), `"below"` or `"side"`. Side by side needs about 36rem of width and falls back to
+  stacked on narrow screens.
+- `caption` adds a caption with a `#` link. `id` sets the anchor; without it the id comes from the caption or
+  title (`#live-…`), so links stay stable while the text does.
+- `height` sets the preview's minimum height (a number is pixels), which avoids layout shift for examples that
+  load assets, and is the iframe's height before it measures itself.
+- `lazy` waits until the example is near the viewport. Use it for heavy examples.
+
+<Live preview="below" caption="Preview below the code">
+
+```html
+<p style="margin: 0">The preview can sit under the code, too.</p>
+```
+
+</Live>
+
+## In .astro pages (and code from files)
+
+`.astro` files have no Markdown fences; pass the source as `code` instead (`lang` and `title` go with it). This
+also works in MDX, for example with a file imported raw:
+
+```astro title="src/pages/index.astro"
+---
+import { Live } from '../components/live';
+import demo from '../demos/hello.html?raw';
+---
+<Live code={demo} title="hello.html" caption="Straight from a file" />
+```
+
+<Live
+  code={`<script type="module" src="/apps/live-assets/hello-badge.js"></script>\n<hello-badge name="code prop" tone="purple"></hello-badge>`}
+  title="from-a-prop.html"
+  caption="Source passed as the code prop"
+/>
+
+## All props
+
+| Prop | Default | |
+| --- | --- | --- |
+| `code` | the fenced child | The source. |
+| `lang` | `html` (`json` with a runner) | Highlighting language for `code`. |
+| `title` | | Code frame title for `code` (for fences use `title="…"` in the fence). |
+| `caption` | | Caption with an anchor link. |
+| `id` | from caption/title/source | Stable id and anchor. |
+| `mode` | `inline` | `inline` or `iframe`. |
+| `preview` | `above` | `above`, `below` or `side`. |
+| `editable` | `false` | Editable code that re-runs, with Reset. |
+| `runner` | | Module URL exporting `run(source, mount, ctx)`. |
+| `options` | `{}` | Passed to the runner as `ctx.options`. |
+| `modules` | `[]` | Module URLs to load first. |
+| `head` | | Extra HTML for the iframe's `<head>`. |
+| `base` | page URL | Base URL for relative paths in the iframe; `ctx.base` for runners. |
+| `sandbox` | see above | iframe sandbox tokens. |
+| `height` | | Minimum preview height. |
+| `lazy` | `false` | Start when scrolled into view. |
+| `debounce` | `300` | Milliseconds between the last keystroke and the re-run. |
+
+Styling uses Starlight's tokens (`--sl-color-*`, with fallbacks on pages outside Starlight), so a theme that
+sets them restyles the examples too. All component styles are scoped under `live-example`.
