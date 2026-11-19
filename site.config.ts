@@ -15,8 +15,13 @@ export interface SiteConfig {
   nav: { label: string; href: string }[];
   /** Markdown docs that live outside the site (e.g. the framework's own docs/ folder), mounted under a route. */
   externalDocs?: { dir: string; route: string; label: string }[];
-  /** Static apps (plain HTML/JS folders) copied into the build as they are, e.g. a studio or demo pages. */
-  mirrors?: { from: string; to: string }[];
+  /**
+   * Static apps (plain HTML/JS folders) copied into the build as they are, e.g. a studio or demo pages.
+   * `from` is a folder (may be outside the site, e.g. '../'), `to` the URL prefix. Optional `include` /
+   * `exclude` globs (relative to `from`) pick what is mirrored; a folder pattern covers its contents.
+   * See integrations/mirror.mjs and the "Deploy" template docs.
+   */
+  mirrors?: { from: string; to: string; include?: string[]; exclude?: string[] }[];
   /** Install command shown on the landing page. */
   install?: string;
 }

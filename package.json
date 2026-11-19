@@ -10,7 +10,10 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:preview": "npm run build && node scripts/deploy-preview.mjs",
+    "cf:dev": "astro build && wrangler dev --port 8787"
   },
   "engines": {
     "node": ">=22"
