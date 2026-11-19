@@ -10,7 +10,9 @@
     "dev": "astro dev",
     "build": "astro check && astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "docs:gen": "node scripts/docs-gen.mjs",
+    "docs:check": "node scripts/docs-gen.mjs --check"
   },
   "engines": {
     "node": ">=22"
