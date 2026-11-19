@@ -1,0 +1,49 @@
+---
+// OWNER: landing agent.
+// The gallery: every published item in src/content/gallery/. Without JavaScript all items are shown;
+// with it, kind and tag filters appear (and are reflected in the URL: ?kind=demo&tag=canvas).
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GalleryGrid from '../../components/gallery/GalleryGrid.astro';
+import GalleryFilters from '../../components/gallery/GalleryFilters.astro';
+import { galleryItems, distinct } from '../../lib/gallery';
+
+const items = await galleryItems();
+const kinds = distinct(items, (item) => [item.data.kind]);
+const tags = distinct(items, (item) => item.data.tags).sort();
+const title = 'Gallery';
+const description = 'Demos, examples and tools, running live.';
+---
+
+<BaseLayout title={title} description={description}>
+  <div class="site-container page">
+    <header class="page-header">
+      <h1>{title}</h1>
+      <p class="lead">{description}</p>
+    </header>
+    <GalleryFilters kinds={kinds} tags={tags} target="gallery-items" total={items.length} />
+    {
+      items.length > 0 ? (
+        <GalleryGrid items={items} id="gallery-items" headingLevel={2} />
+      ) : (
+        <p>Nothing here yet. Add a file to <code>src/content/gallery/</code>.</p>
+      )
+    }
+  </div>
+</BaseLayout>
+
+<style>
+  .page {
+    padding-block: calc(var(--site-space) * 3) calc(var(--site-space) * 4);
+  }
+  .page-header {
+    margin-bottom: calc(var(--site-space) * 1.5);
+  }
+  h1 {
+    font-size: clamp(2rem, 1.4rem + 2.5vw, 3rem);
+  }
+  .lead {
+    color: var(--site-muted);
+    font-size: 1.125rem;
+    margin: 0;
+  }
+</style>

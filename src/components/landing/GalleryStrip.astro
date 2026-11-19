@@ -1,0 +1,37 @@
+---
+// The landing page's gallery section: the first few gallery items and a link to the rest.
+import { galleryItems } from '../../lib/gallery';
+import GalleryGrid from '../gallery/GalleryGrid.astro';
+import Section from './Section.astro';
+
+interface Props {
+  title?: string;
+  intro?: string;
+  limit?: number;
+  /** Only items of these kinds. */
+  kinds?: string[];
+}
+const { title = 'Gallery', intro, limit = 3, kinds } = Astro.props;
+const all = await galleryItems();
+const items = all.filter((item) => !kinds || kinds.includes(item.data.kind)).slice(0, limit);
+---
+
+{
+  items.length > 0 && (
+    <Section id="gallery" title={title} intro={intro} tone="surface">
+      <GalleryGrid items={items} />
+      <p class="more">
+        <a href="/gallery/">
+          See the whole gallery <span aria-hidden="true">→</span>
+        </a>
+      </p>
+    </Section>
+  )
+}
+
+<style>
+  .more {
+    margin: calc(var(--site-space) * 1.5) 0 0;
+    font-weight: 600;
+  }
+</style>

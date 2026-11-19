@@ -1,0 +1,93 @@
+---
+// Footer for the landing page and the gallery (docs pages keep Starlight's own page footer).
+import site from '../../../site.config';
+import { projectVersion } from '../../lib/version';
+
+const version = projectVersion();
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="inner">
+    <div class="about">
+      <a class="name" href="/">{site.name}</a>
+      <p>{site.tagline}</p>
+    </div>
+    <nav aria-label="Footer">
+      <ul>
+        {
+          site.nav.map((item) => (
+            <li>
+              <a href={item.href}>{item.label}</a>
+            </li>
+          ))
+        }
+        <li><a href={site.repo}>Source</a></li>
+      </ul>
+    </nav>
+    <p class="meta">
+      © {year} {site.name}{version && <> · v{version}</>}
+      {site.footer?.note && <> · {site.footer.note}</>}
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: auto;
+    border-top: 1px solid var(--site-border);
+    background: var(--site-surface);
+    color: var(--site-muted);
+    font-size: 0.9375rem;
+  }
+  .inner {
+    max-width: var(--site-max-width);
+    margin-inline: auto;
+    padding: calc(var(--site-space) * 2.5) var(--site-space);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--site-space) calc(var(--site-space) * 2);
+    align-items: start;
+  }
+  .name {
+    font-weight: 700;
+    color: var(--site-text);
+    text-decoration: none;
+  }
+  .about p {
+    margin: 0.25rem 0 0;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+  }
+  a {
+    color: inherit;
+  }
+  nav a {
+    text-decoration: none;
+  }
+  nav a:hover {
+    color: var(--site-text);
+    text-decoration: underline;
+  }
+  a:focus-visible {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .meta {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 0.8125rem;
+  }
+  @media (max-width: 40rem) {
+    .inner {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

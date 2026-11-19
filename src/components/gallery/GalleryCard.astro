@@ -1,0 +1,162 @@
+---
+// One gallery item: poster, kind, title (the link), description, tags. The card is a plain <article>;
+// the whole card is clickable through a stretched hit area on the title link.
+import { Image } from 'astro:assets';
+import type { GalleryItem } from '../../lib/gallery';
+import { isExternal } from '../../lib/nav';
+
+interface Props {
+  item: GalleryItem;
+  /** Heading level for the title, to fit the page outline. */
+  headingLevel?: 2 | 3 | 4;
+}
+const { item, headingLevel = 3 } = Astro.props;
+const { title, description, href, kind, poster, posterUrl, posterAlt, pixelated, tags, external } = item.data;
+const Heading = `h${headingLevel}` as const;
+const leaves = external || isExternal(href);
+---
+
+<article class="card" data-kind={kind} data-tags={tags.join(' ')} data-pixelated={pixelated ? '' : undefined}>
+  {
+    (poster || posterUrl) && (
+      <div class="poster">
+        {poster ? (
+          <Image
+            src={poster}
+            alt={posterAlt}
+            width={Math.min(poster.width, 800)}
+            format={pixelated ? 'png' : undefined}
+            loading="lazy"
+          />
+        ) : (
+          <img src={posterUrl} alt={posterAlt} loading="lazy" decoding="async" />
+        )}
+      </div>
+    )
+  }
+  <div class="body">
+    <p class="kind">{kind}</p>
+    <Heading class="title">
+      <a href={href} rel={leaves ? 'noopener' : undefined}>
+        {title}
+        {
+          leaves && (
+            <>
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" class="ext">
+                <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M7 17 17 7M9 7h8v8" />
+              </svg>
+              <span class="site-visually-hidden"> (external site)</span>
+            </>
+          )
+        }
+      </a>
+    </Heading>
+    <p class="description">{description}</p>
+    {
+      tags.length > 0 && (
+        <ul class="tags" aria-label="Tags">
+          {tags.map((tag) => (
+            <li>{tag}</li>
+          ))}
+        </ul>
+      )
+    }
+  </div>
+</article>
+
+<style>
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius);
+    background: var(--site-bg);
+  }
+  .card:hover {
+    border-color: var(--site-accent);
+  }
+  .card:has(.title a:focus-visible) {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+  .poster {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 16 / 9;
+    padding: var(--site-space);
+    border-bottom: 1px solid var(--site-border);
+    border-radius: var(--site-radius) var(--site-radius) 0 0;
+    background: var(--site-surface);
+  }
+  .poster img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: 100%;
+    object-fit: contain;
+  }
+  [data-pixelated] .poster img {
+    image-rendering: pixelated;
+  }
+  .body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: var(--site-space) calc(var(--site-space) * 1.25) calc(var(--site-space) * 1.25);
+    flex: 1;
+  }
+  .kind {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--site-accent-strong);
+  }
+  .title {
+    margin: 0;
+    font-size: 1.125rem;
+  }
+  .title a {
+    color: var(--site-text);
+    text-decoration: none;
+  }
+  .title a:focus-visible {
+    outline: none;
+  }
+  .title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--site-radius);
+  }
+  .ext {
+    vertical-align: -0.1em;
+    margin-inline-start: 0.25rem;
+    color: var(--site-muted);
+  }
+  .description {
+    margin: 0;
+    color: var(--site-muted);
+    font-size: 0.9375rem;
+  }
+  .tags {
+    list-style: none;
+    margin: auto 0 0;
+    padding: 0.5rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  .tags li {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--site-surface);
+    border: 1px solid var(--site-border);
+    font-size: 0.75rem;
+    color: var(--site-muted);
+  }
+</style>
