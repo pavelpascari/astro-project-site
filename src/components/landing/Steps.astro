@@ -1,0 +1,93 @@
+---
+// Numbered "how it works" steps, each with an optional code sample highlighted at build time.
+import { Code } from 'astro:components';
+import type { ComponentProps } from 'astro/types';
+
+type Lang = ComponentProps<typeof Code>['lang'];
+
+interface Step {
+  title: string;
+  body: string;
+  code?: string;
+  /** Shiki language id, e.g. `js`, `ts`, `sh`, `html`. */
+  lang?: string;
+}
+interface Props {
+  items: Step[];
+}
+const { items } = Astro.props;
+---
+
+<ol class="steps">
+  {
+    items.map((step) => (
+      <li class="step">
+        <div class="text">
+          <h3>{step.title}</h3>
+          <p>{step.body}</p>
+        </div>
+        {step.code && (
+          <Code
+            code={step.code}
+            lang={(step.lang ?? 'plaintext') as Lang}
+            themes={{ light: 'github-light', dark: 'github-dark' }}
+            defaultColor={false}
+          />
+        )}
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+    display: grid;
+    gap: var(--site-space);
+  }
+  .step {
+    counter-increment: step;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: var(--site-space) calc(var(--site-space) * 1.5);
+    align-items: center;
+    padding: calc(var(--site-space) * 1.25);
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius);
+    background: var(--site-bg);
+  }
+  .step::before {
+    content: counter(step);
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--site-accent-soft);
+    color: var(--site-accent-strong);
+    font-weight: 700;
+  }
+  .step:not(:has(pre)) .text {
+    grid-column: 2 / -1;
+  }
+  h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+  }
+  p {
+    margin: 0;
+    color: var(--site-muted);
+  }
+  @media (max-width: 45rem) {
+    .step {
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+      align-items: start;
+    }
+    .step :global(pre) {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

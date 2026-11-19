@@ -1,0 +1,85 @@
+---
+// A shell command with a copy button. The button appears only when the Clipboard API is available.
+interface Props {
+  command: string;
+  /** Accessible name for the command, read before it. */
+  label?: string;
+}
+const { command, label = 'Install command' } = Astro.props;
+---
+
+<div class="install" role="group" aria-label={label}>
+  <code><span class="prompt" aria-hidden="true">$</span> <span data-command>{command}</span></code>
+  <button type="button" class="copy" data-copy hidden>
+    <span data-copy-label>Copy</span>
+  </button>
+  <span class="status site-visually-hidden" role="status" aria-live="polite"></span>
+</div>
+
+<script>
+  for (const box of document.querySelectorAll<HTMLElement>('.install')) {
+    const button = box.querySelector<HTMLButtonElement>('[data-copy]');
+    const label = box.querySelector('[data-copy-label]');
+    const status = box.querySelector('[role=status]');
+    const text = box.querySelector('[data-command]')?.textContent ?? '';
+    if (!button || !navigator.clipboard) continue;
+    button.hidden = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    button.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        if (label) label.textContent = 'Copied';
+        if (status) status.textContent = 'Copied to clipboard';
+      } catch {
+        if (label) label.textContent = 'Press Ctrl+C';
+      }
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (label) label.textContent = 'Copy';
+        if (status) status.textContent = '';
+      }, 2000);
+    });
+  }
+</script>
+
+<style>
+  .install {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 100%;
+    padding: 0.4rem 0.4rem 0.4rem 1rem;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius-sm);
+    background: var(--site-code-bg);
+    color: var(--site-code-text);
+  }
+  code {
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    overflow-x: auto;
+    min-width: 0;
+  }
+  .prompt {
+    opacity: 0.55;
+    user-select: none;
+  }
+  .copy {
+    flex: none;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid color-mix(in oklab, var(--site-code-text) 25%, transparent);
+    border-radius: calc(var(--site-radius-sm) - 2px);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+  .copy[hidden] {
+    display: none;
+  }
+  .copy:hover {
+    background: color-mix(in oklab, var(--site-code-text) 12%, transparent);
+  }
+</style>

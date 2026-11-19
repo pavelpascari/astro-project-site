@@ -1,0 +1,56 @@
+---
+// A landing-page section: optional heading and intro, then whatever you put inside.
+// Sections are plain, stable block boxes (no transforms, no overflow clipping) so live content such as
+// characters walking on the page can measure and stand on them.
+interface Props {
+  id?: string;
+  title?: string;
+  intro?: string;
+  /** Tinted background band. */
+  tone?: 'plain' | 'surface';
+  class?: string;
+}
+const { id, title, intro, tone = 'plain', class: className } = Astro.props;
+const headingId = id && title ? `${id}-title` : undefined;
+---
+
+<section
+  id={id}
+  class:list={['landing-section', `tone-${tone}`, className]}
+  aria-labelledby={headingId}
+>
+  <div class="site-container">
+    {
+      (title || intro || Astro.slots.has('header')) && (
+        <header class="section-header">
+          {title && <h2 id={headingId}>{title}</h2>}
+          {intro && <p class="intro">{intro}</p>}
+          <slot name="header" />
+        </header>
+      )
+    }
+    <slot />
+  </div>
+</section>
+
+<style>
+  .landing-section {
+    padding-block: calc(var(--site-space) * 4);
+  }
+  .tone-surface {
+    background: var(--site-surface);
+    border-block: 1px solid var(--site-border);
+  }
+  .section-header {
+    max-width: 40rem;
+    margin-bottom: calc(var(--site-space) * 2);
+  }
+  h2 {
+    font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.125rem);
+  }
+  .intro {
+    color: var(--site-muted);
+    font-size: 1.125rem;
+    margin: 0;
+  }
+</style>

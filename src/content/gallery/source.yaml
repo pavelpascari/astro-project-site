@@ -1,0 +1,7 @@
+title: Source on GitHub
+description: An external link. Set `external` and the card says it leaves the site.
+href: https://github.com/you/example-project
+kind: tool
+tags: [repo]
+external: true
+order: 3

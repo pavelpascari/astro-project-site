@@ -1,0 +1,111 @@
+---
+// Theme switch for pages outside Starlight (landing, gallery). It shares Starlight's storage key and
+// `data-theme` attribute, so a choice made here carries over to the docs and back.
+interface Props {
+  /** Unique id; needed when the select is rendered more than once on a page. */
+  id?: string;
+}
+const { id = 'site-theme' } = Astro.props;
+---
+
+<site-theme-select class="theme-select">
+  <label for={id}>
+    <span class="visually-hidden">Theme</span>
+    <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+      <path fill="currentColor" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 2v14a7 7 0 0 1 0-14Z" />
+    </svg>
+  </label>
+  <select id={id}>
+    <option value="dark">Dark</option>
+    <option value="light">Light</option>
+    <option value="auto" selected>Auto</option>
+  </select>
+</site-theme-select>
+
+{/* Inlined so the select shows the stored choice before first paint. */}
+<script is:inline>
+  (() => {
+    const theme = typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+    if (theme) document.querySelectorAll('site-theme-select select').forEach((s) => (s.value = theme));
+  })();
+</script>
+
+<script>
+  type Theme = 'auto' | 'dark' | 'light';
+  const storageKey = 'starlight-theme';
+  const parse = (v: unknown): Theme => (v === 'light' || v === 'dark' ? v : 'auto');
+  const stored = (): Theme => parse(typeof localStorage !== 'undefined' && localStorage.getItem(storageKey));
+  const system = () => (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+
+  function apply(theme: Theme) {
+    document.querySelectorAll<HTMLSelectElement>('site-theme-select select').forEach((s) => (s.value = theme));
+    document.documentElement.dataset.theme = theme === 'auto' ? system() : theme;
+    if (typeof localStorage !== 'undefined') localStorage.setItem(storageKey, theme === 'auto' ? '' : theme);
+  }
+
+  matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+    if (stored() === 'auto') apply('auto');
+  });
+
+  class SiteThemeSelect extends HTMLElement {
+    connectedCallback() {
+      this.querySelector('select')?.addEventListener('change', (e) =>
+        apply(parse((e.currentTarget as HTMLSelectElement).value)),
+      );
+    }
+  }
+  customElements.define('site-theme-select', SiteThemeSelect);
+</script>
+
+<style>
+  .theme-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    position: relative;
+    color: var(--site-muted);
+  }
+  .theme-select:hover {
+    color: var(--site-text);
+  }
+  label {
+    display: contents;
+  }
+  .icon {
+    position: absolute;
+    inset-inline-start: 0.5rem;
+    top: 50%;
+    margin-top: -8px;
+    pointer-events: none;
+  }
+  select {
+    appearance: none;
+    font: inherit;
+    font-size: 0.875rem;
+    color: inherit;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--site-radius-sm);
+    padding: 0.3rem 0.5rem 0.3rem 1.75rem;
+    cursor: pointer;
+  }
+  select:hover {
+    border-color: var(--site-border);
+  }
+  select:focus-visible {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+  option {
+    color: var(--site-text);
+    background: var(--site-bg);
+  }
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+</style>

@@ -1,0 +1,6 @@
+title: API reference
+description: Markdown docs that live in the project's own repository, mounted under /docs/reference/.
+href: /docs/reference/
+kind: example
+tags: [docs]
+order: 2
