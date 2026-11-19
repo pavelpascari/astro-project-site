@@ -1,0 +1,29 @@
+{
+  "name": "astro-project-site",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A site template for open-source libraries and frameworks: landing page, docs, live examples, gallery, embedded tools, Cloudflare deploys.",
+  "license": "MIT",
+  "author": "Pavel Pascari",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.6",
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.3.8",
+    "starlight-links-validator": "^0.27.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.165.0"
+  }
+}
