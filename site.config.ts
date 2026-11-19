@@ -9,12 +9,22 @@ export interface SiteConfig {
   url: string;
   /** Source repository, for "edit this page" and the header link. */
   repo: string;
+  /** Branch that "edit this page" and links to repo files point at. Default `main`. GitHub URL layout is assumed. */
+  repoBranch?: string;
   /** A package.json whose `version` the site shows (the framework's own). Optional. */
   versionFrom?: string;
   /** Top navigation, shared by the landing page, the docs and the gallery. */
   nav: { label: string; href: string }[];
   /** Markdown docs that live outside the site (e.g. the framework's own docs/ folder), mounted under a route. */
-  externalDocs?: { dir: string; route: string; label: string }[];
+  externalDocs?: {
+    dir: string;
+    route: string;
+    label: string;
+    /** Sidebar order hint: file names relative to `dir` (`.md` optional) listed first, in this order. README.md always leads. */
+    order?: string[];
+    /** Globs relative to `dir` to leave out of the site, e.g. `['plans/**', 'research/**']`. */
+    exclude?: string[];
+  }[];
   /**
    * Static apps (plain HTML/JS folders) copied into the build as they are, e.g. a studio or demo pages.
    * `from` is a folder (may be outside the site, e.g. '../'), `to` the URL prefix. Optional `include` /
@@ -71,7 +81,9 @@ const config: SiteConfig = {
     { label: 'Gallery', href: '/gallery/' },
     { label: 'Playground', href: '/apps/hello/' },
   ],
-  externalDocs: [{ dir: './example/docs', route: 'reference', label: 'Reference' }],
+  externalDocs: [
+    { dir: './example/docs', route: 'reference', label: 'Reference', order: ['getting-started.md', 'api.md'] },
+  ],
   mirrors: [{ from: './example/apps', to: 'apps' }],
   install: 'npm i example-project',
 
