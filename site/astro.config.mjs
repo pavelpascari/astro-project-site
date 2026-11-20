@@ -3,12 +3,14 @@
 // mounts and mirrors are the starter's fixtures (../starters/default/example), so they exist only once.
 import { defineConfig } from 'astro/config';
 import projectSite from 'astro-project-site';
+import docs from './docs.config.mjs';
 
 const example = '../starters/default/example';
 
 export default defineConfig({
   integrations: [
     projectSite({
+      ...docs,
       name: 'Example Project',
       tagline: 'A small library that does one thing well.',
       url: 'https://example-project.workers.dev',
@@ -18,9 +20,6 @@ export default defineConfig({
         { label: 'Docs', href: '/docs/' },
         { label: 'Gallery', href: '/gallery/' },
         { label: 'Playground', href: '/apps/hello/' },
-      ],
-      externalDocs: [
-        { dir: `${example}/docs`, route: 'reference', label: 'Reference', order: ['getting-started.md', 'api.md'] },
       ],
       mirrors: [{ from: `${example}/apps`, to: 'apps' }],
       install: 'npm i example-project',
