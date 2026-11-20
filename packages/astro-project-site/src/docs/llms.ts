@@ -25,7 +25,9 @@ export async function docsSections(): Promise<Section[]> {
     (e) => e.id === 'docs' || e.id.startsWith('docs/'),
   );
   const mounts = (site.externalDocs ?? []).map((m) => ({ ...m, relDir: norm(m.dir) }));
-  const mountOf = (e: Entry) => mounts.find((m) => e.filePath?.startsWith(m.relDir + '/'));
+  // Deepest folder first, so `../docs/x.md` belongs to a `../docs` mount rather than a `..` one.
+  const byDepth = [...mounts].sort((a, b) => b.relDir.length - a.relDir.length);
+  const mountOf = (e: Entry) => byDepth.find((m) => e.filePath?.startsWith(m.relDir + '/'));
 
   const local = all.filter((e) => !mountOf(e));
   const topLevel = local.filter((e) => e.id.split('/').length <= 2);

@@ -13,10 +13,15 @@ The package's only bin is `project-site`. In a project it is on the npm scripts'
 Usage: project-site <command> [options]
 
 Commands:
-  init [dir]          Create a new project site from the starter (default dir: .)
-      --name <name>       Project name shown on the site (default: from the folder name)
-      --package <spec>    Version spec for the astro-project-site dependency (default: ^<this version>)
+  init [dir]          Create a project site in dir (default: .) from the repository it is for: landing page
+                      from the README, its markdown as docs, demo pages in a gallery, a blog with a draft post
+      --from <dir>        Repository to read (default: dir's parent inside a git repo, else the current folder)
+      --yes, -y           Write without asking (needed when not run in a terminal)
+      --dry-run           Print what was found and what would be written; write nothing
       --force             Overwrite files that already exist
+      --blank             Copy the plain starter instead (placeholders and example docs, no detection)
+      --name <name>       Project name shown on the site (default: README title, manifest or folder name)
+      --package <spec>    Version spec for the astro-project-site dependency (default: ^<this version>)
   docs:gen            Fill <!-- gen:... --> blocks in markdown (reads ./docs-gen.config.mjs)
       --check             Change nothing; exit 1 with a diff when a block is stale
       --config <file>     Another config file

@@ -20,6 +20,29 @@
 - Option errors: a union option (`blog: { routee }`) names the unknown key instead of "Invalid input".
 - New dependency `@astrojs/rss` (MIT).
 
+### `init` reads the repository
+
+`project-site init` builds the site from the repository it is for:
+
+- Reads the manifest (`package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `composer.json`, `*.gemspec`), the
+  git `origin` and default branch, the README (title, intro, features, install/usage code), `docs/`, `CHANGELOG.md`,
+  `CONTRIBUTING.md`, `LICENSE` and demo folders with HTML pages. Writes a commented `astro.config.mjs` (landing page,
+  docs mounts, mirrors, blog, footer; placeholders marked `TODO`), one gallery entry per demo page, a draft first
+  blog post from the README, `/docs/` index page, `package.json`, `wrangler.jsonc` named after the project and the
+  pinned CI workflow (`working-directory` set when the site is a subfolder).
+- Prints a "Found" summary and the files it will write, then asks; `--yes` skips the question (required without a
+  terminal, unless `--dry-run`), `--dry-run` writes nothing, `--from <dir>` reads another folder. Never writes
+  outside the target folder, never overwrites without `--force`.
+- Repository text is data, never code: every comment in generated files is one line (line terminators, U+2028/
+  U+2029 become spaces), strings are escaped JS literals or quoted YAML, versions/licences/URLs that do not look
+  like one are dropped, the Worker name is a slug, and only plainly named `*.gemspec` files are read.
+- An empty folder still gets the starter's placeholders and example docs/apps; `--blank` always copies the plain
+  starter (the previous behaviour).
+- `externalDocs[].include`: globs picking the files of a mount, so a repo-root mount
+  (`{ dir: '..', route: 'project', label: 'Project', include: ['README.md', 'CHANGELOG.md'] }`) mounts just those.
+  The site's own folder is never mounted (also without `include`). A file belongs to the deepest mount whose globs
+  accept it, for link rewriting, the content loader and llms.txt.
+
 ### Responsive design and accessibility
 
 Responsive design and accessibility pass, checked in Chromium, Firefox and WebKit from 320px phones to 2560px
