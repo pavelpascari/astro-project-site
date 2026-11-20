@@ -108,14 +108,23 @@ jobs:
           token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }}
           persist-credentials: false
 
+      # actions/setup-node rejects paths containing '.' or '..' segments, so normalise them first.
+      - name: Resolve paths
+        id: paths
+        working-directory: .
+        env:
+          REPO_DIR: ${{ github.event.repository.name }}
+          INSTALL_DIR: ${{ inputs.install-directory || inputs.working-directory }}
+        run: echo "install=$(realpath -m --relative-to=. "$REPO_DIR/$INSTALL_DIR")" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v7
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
-          cache-dependency-path: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}/package-lock.json
+          cache-dependency-path: ${{ steps.paths.outputs.install }}/package-lock.json
 
       - name: Install
-        working-directory: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}
+        working-directory: ${{ steps.paths.outputs.install }}
         run: npm ci
 
       - name: Type-check
@@ -201,17 +210,26 @@ jobs:
           path: ${{ github.event.repository.name }}
           persist-credentials: false
 
+      - name: Resolve paths
+        id: paths
+        if: steps.creds.outputs.ok
+        working-directory: .
+        env:
+          REPO_DIR: ${{ github.event.repository.name }}
+          INSTALL_DIR: ${{ inputs.install-directory || inputs.working-directory }}
+        run: echo "install=$(realpath -m --relative-to=. "$REPO_DIR/$INSTALL_DIR")" >> "$GITHUB_OUTPUT"
+
       - uses: actions/setup-node@v7
         if: steps.creds.outputs.ok
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
-          cache-dependency-path: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}/package-lock.json
+          cache-dependency-path: ${{ steps.paths.outputs.install }}/package-lock.json
 
       # For wrangler and the project-site CLI, at the versions package-lock.json pins.
       - name: Install
         if: steps.creds.outputs.ok
-        working-directory: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}
+        working-directory: ${{ steps.paths.outputs.install }}
         run: npm ci
 
       - name: Check that wrangler is installed
