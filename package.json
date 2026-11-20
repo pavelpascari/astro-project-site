@@ -13,11 +13,12 @@
   "scripts": {
     "dev": "npm run dev -w site",
     "dev:starter": "npm run dev -w project-site-starter",
-    "test": "npm test -w astro-project-site",
+    "test": "npm test -w astro-project-site && node --test scripts/*.test.mjs",
     "check": "npm run check -w astro-project-site && npm run check -w site && npm run check -w project-site-starter",
     "build": "npm run check -w astro-project-site && npm run build -w site && npm run build -w project-site-starter",
     "docs:check": "npm run docs:check -w site && npm run docs:check -w project-site-starter",
-    "preview": "npm run preview -w site"
+    "preview": "npm run preview -w site",
+    "release:prepare": "node scripts/release-prepare.mjs"
   },
   "engines": {
     "node": ">=22"
