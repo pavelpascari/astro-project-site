@@ -1,0 +1,11 @@
+---
+// The landing page: a page of the project's own at /, which wins over the one projectSite() injects. Written as a
+// page rather than a components.Landing override so its styles and demos stay on this page only (an override is
+// bundled with the shared header, so its CSS would reach every docs page too).
+import { BaseLayout } from 'astro-project-site/components';
+import Landing from '../components/landing/Landing.astro';
+---
+
+<BaseLayout>
+  <Landing />
+</BaseLayout>

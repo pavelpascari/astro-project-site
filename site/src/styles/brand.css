@@ -1,0 +1,73 @@
+/*
+ * astro-project-site's own theme ("Signal"), loaded on every page through `customCss`, docs included.
+ * The accent comes from the `theme` option in astro.config.mjs; everything else is here. Keep the values in step with
+ * the `signal` palette in src/components/landing/palettes.ts (the theme playground starts from it).
+ */
+:root {
+  --site-bg: #0f1013;
+  --site-surface: #17181c;
+  --site-text: #eeebe3;
+  --site-muted: #a8a49a;
+  --site-border: #2c2d33;
+  --site-code-bg: #0a0b0d;
+  --site-code-text: #eeebe3;
+
+  --site-font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial,
+    sans-serif;
+  --site-font-heading: var(--site-font-body);
+  --site-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, 'Liberation Mono',
+    monospace;
+  --site-radius: 0.5rem;
+  --site-max-width: 76rem;
+}
+
+:root[data-theme='light'] {
+  --site-bg: #f6f4ee;
+  --site-surface: #ece9e0;
+  --site-text: #17181b;
+  --site-muted: #5b584f;
+  --site-border: #d6d1c4;
+  --site-code-bg: #17181b;
+  --site-code-text: #eeebe3;
+}
+
+/* The mark: two offset squares (a kit of parts), before the name in the shared header on every page. */
+.site-header .brand {
+  letter-spacing: -0.01em;
+}
+.site-header .brand::before {
+  content: '';
+  display: inline-block;
+  vertical-align: -0.1em;
+  margin-inline-end: 0.5rem;
+  width: 1rem;
+  height: 1rem;
+  background:
+    linear-gradient(var(--site-accent) 0 0) 0 0 / 64% 64% no-repeat,
+    linear-gradient(color-mix(in oklab, var(--site-accent) 45%, var(--site-bg)) 0 0) 100% 100% / 64% 64% no-repeat;
+}
+.site-header .version {
+  font-family: var(--site-font-mono);
+}
+
+/* Headings: tighter, heavier, the same on the landing page and in the docs. */
+h1,
+h2 {
+  letter-spacing: -0.025em;
+}
+.sl-markdown-content :is(h2, h3) {
+  letter-spacing: -0.015em;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--site-accent) 35%, transparent);
+}
+
+/*
+ * Workaround for a package issue: a docs page that imports 'astro-project-site/components' also gets base.css, whose
+ * unlayered `a { color }` beats Starlight's layered sidebar styles and made the current page's link invisible
+ * (text colour = its background). Restores that one rule; remove once base.css is layered or scoped upstream.
+ */
+.sidebar-content a[aria-current='page'] {
+  color: var(--sl-color-text-invert);
+}

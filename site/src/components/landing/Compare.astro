@@ -1,0 +1,43 @@
+---
+// Copying a starter vs installing the template. A real table (header cells per row) that reflows into one card per
+// row on narrow screens.
+const rows = [
+  ['First run', 'Clone the template, install, run.', 'npx project-site init, install, run.'],
+  ['What you keep', 'Every file of the site: layouts, docs pipeline, theme, workflow.', 'One config file, your content, and a few small files the starter made.'],
+  ['Upgrading', 'Diff the template against your copy, merge by hand, repeat.', 'Bump the version of astro-project-site and read the changelog.'],
+  ['A fix upstream', 'Notice it, find it, port it.', 'Arrives with the next version.'],
+  ['Making it yours', 'Edit anything, then own the merge conflicts.', 'Tokens, customCss, component overrides, your own pages, Starlight options passed through.'],
+  ['A typo in the config', 'Found when something looks wrong, if at all.', 'Fails before Astro starts, naming the field.'],
+  ['CI', 'Copy a workflow and keep it current.', 'Call the reusable workflow, pinned to a release.'],
+];
+---
+
+<div class="compare">
+  <table role="table">
+    <caption class="site-visually-hidden">Copying a starter compared with installing astro-project-site</caption>
+    <thead role="rowgroup">
+      <tr role="row">
+        <td role="cell"></td>
+        <th scope="col" role="columnheader">Copy a starter</th>
+        <th scope="col" role="columnheader" class="compare-us">Install the template</th>
+      </tr>
+    </thead>
+    <tbody role="rowgroup">
+      {
+        rows.map(([what, copy, install]) => (
+          <tr role="row">
+            <th scope="row" role="rowheader">{what}</th>
+            <td role="cell" data-label="Copy a starter">{copy}</td>
+            <td role="cell" data-label="Install the template" class="compare-us">
+              {install}
+            </td>
+          </tr>
+        ))
+      }
+    </tbody>
+  </table>
+  <p class="compare-note">
+    Copying still wins if you mean to change everything and never take an update. For a site that should keep up with
+    Astro and Starlight while you work on your project, install it.
+  </p>
+</div>

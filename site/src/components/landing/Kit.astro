@@ -1,0 +1,79 @@
+---
+// "What's in the box": one card per part of the site, each labelled with the option or file that drives it.
+const items = [
+  {
+    key: 'landing',
+    title: 'A landing page',
+    body: 'Hero, features, steps, a gallery strip and a call to action, filled from options. Or your own page in its place: this one is src/pages/index.astro.',
+  },
+  {
+    key: 'src/content/docs/',
+    title: 'Starlight docs',
+    body: 'Search, a sitemap, “edit this page” links worked out from your git layout, and a link check that fails the build on a broken link.',
+  },
+  {
+    key: 'externalDocs',
+    title: 'Your docs folder, mounted',
+    body: 'Point it at the markdown already in your repo. Titles come from the first heading, .md links become site links, other files link to GitHub.',
+  },
+  {
+    key: '<Live>',
+    title: 'Live examples',
+    body: 'Code written once, shown and run: in the page or an isolated iframe, editable, with a runner of your own for anything that is not HTML.',
+  },
+  {
+    key: 'src/content/gallery/',
+    title: 'A gallery',
+    body: 'One YAML file per item, posters optimised at build time, filters by kind and tag.',
+  },
+  {
+    key: 'mirrors',
+    title: 'Your static tools',
+    body: 'Playgrounds, demos, reports: served byte for byte under a path of your choosing, from disk in dev and copied at build.',
+  },
+  {
+    key: 'deploy.yml',
+    title: 'A preview per pull request',
+    body: 'A reusable workflow: type check, build, docs check, then a Cloudflare preview per PR with a sticky comment, next for main, production on tags.',
+  },
+  {
+    key: 'customCss',
+    title: 'One theme, everywhere',
+    body: 'A handful of tokens restyle the landing page, the gallery and Starlight together, in light and dark.',
+  },
+  {
+    key: '/llms.txt',
+    title: 'Docs for LLMs',
+    body: '/llms.txt and /llms-full.txt, generated from the same docs, links made absolute.',
+  },
+  {
+    key: 'docs:gen',
+    title: 'Generated blocks',
+    body: 'Fill marked blocks in your markdown from code; docs:check fails CI when one goes stale.',
+  },
+  {
+    key: 'components',
+    title: 'Overrides',
+    body: 'Replace the header, footer, hero, landing page, gallery card or gallery. The originals stay importable, to wrap.',
+  },
+  {
+    key: 'projectSite()',
+    title: 'Checked options',
+    body: 'Validated before Astro starts. A mistake names the field: “unknown option "navv"”.',
+  },
+];
+---
+
+<ul class="kit" role="list">
+  {
+    items.map((item) => (
+      <li class="kit-item">
+        <h3>{item.title}</h3>
+        <p class="kit-key">
+          <code>{item.key}</code>
+        </p>
+        <p class="kit-body">{item.body}</p>
+      </li>
+    ))
+  }
+</ul>

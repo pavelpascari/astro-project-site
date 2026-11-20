@@ -1,8 +1,7 @@
-title: Hello app
-description: A static page mirrored into the site as it is, with its own HTML and scripts.
+title: A mirrored app
+description: A static HTML page with its own scripts, served byte for byte from the repository at /apps/hello/.
 href: /apps/hello/
 kind: demo
-tags: [static, mirror]
-order: 1
-poster: ./hello.png
-pixelated: true
+tags: [mirrors, static]
+order: 4
+poster: ./hello.jpg

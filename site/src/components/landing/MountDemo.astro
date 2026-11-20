@@ -1,0 +1,83 @@
+---
+// The docs-mount demo: the starter's example docs/README.md (a stand-in for a project's own docs folder, mounted on
+// this site under /docs/reference/), editable, next to the page it becomes. The file list, titles and sidebar are
+// read here at build time; the browser side is public/landing-assets/runners/docs-mount.js.
+import { Live } from 'astro-project-site/components';
+import config from 'astro-project-site/config';
+
+const raw = import.meta.glob('../../../../starters/default/example/docs/**/*.md', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>;
+const prefix = '../../../../starters/default/example/docs/';
+const dir = 'starters/default/example/docs';
+const mount = config.externalDocs.find((d) => d.dir.replace(/\/+$/, '').endsWith(dir)) ?? {
+  route: 'reference',
+  label: 'Reference',
+  order: [] as string[],
+};
+
+const slugify = (t: string) => t.trim().toLowerCase().replace(/\s/g, '-').replace(/[^\p{L}\p{N}_-]/gu, '');
+const titleOf = (md: string) => /^ {0,3}#\s+(.+?)\s*$/m.exec(md)?.[1]?.replace(/[`*_]/g, '');
+const files: Record<string, string | null> = {};
+for (const [p, md] of Object.entries(raw)) {
+  const t = titleOf(md);
+  files[p.slice(prefix.length)] = t ? slugify(t) : null;
+}
+const route = mount.route.replace(/^\/+|\/+$/g, '');
+const hrefFor = (rel: string) => {
+  const parts = rel.replace(/\.md$/i, '').split('/');
+  if (/^(readme|index)$/i.test(parts.at(-1) ?? '')) parts.pop();
+  return `/docs/${[route, ...parts.map(slugify)].join('/')}/`;
+};
+// The sidebar group the mount gets (same order rules as the package: README first as "Overview", then `order`,
+// then names; subfolders after, as groups).
+const order = (mount.order ?? []).map((o) => o.replace(/\.md$/i, '').toLowerCase());
+const rank = (rel: string) => {
+  const name = rel.replace(/\.md$/i, '').toLowerCase();
+  if (/(^|\/)(readme|index)$/.test(name)) return -1;
+  const i = order.indexOf(name);
+  return i === -1 ? Infinity : i;
+};
+const top = Object.keys(files).filter((f) => !f.includes('/')).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+const sub = [...new Set(Object.keys(files).filter((f) => f.includes('/')).map((f) => f.split('/')[0]))].sort();
+const label = (rel: string) => (rank(rel) === -1 ? 'Overview' : (titleOf(raw[prefix + rel]) ?? rel));
+const sidebar = [
+  ...top.map((rel) => ({ label: label(rel), href: hrefFor(rel), depth: 0 })),
+  ...sub.flatMap((d) => [
+    { label: d.charAt(0).toUpperCase() + d.slice(1), href: '', depth: 0 },
+    ...Object.keys(files)
+      .filter((f) => f.startsWith(`${d}/`))
+      .sort()
+      .map((rel) => ({ label: label(rel), href: hrefFor(rel), depth: 1 })),
+  ]),
+];
+
+const file = 'README.md';
+const source = raw[prefix + file] ?? '# Reference\n';
+const options = {
+  route,
+  label: mount.label,
+  repo: config.repo,
+  branch: config.repoBranch,
+  dir,
+  file,
+  files,
+  sidebar,
+};
+---
+
+<Live
+  code={source}
+  lang="md"
+  title="docs/README.md"
+  caption="Edit the markdown: rename a link target, delete the title, add a link to ../src/."
+  id="live-docs-mount"
+  runner="/landing-assets/runners/docs-mount.js"
+  options={options}
+  preview="side"
+  editable
+  lazy
+  height={300}
+/>

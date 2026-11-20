@@ -1,0 +1,7 @@
+title: Docs for LLMs
+description: /llms.txt, generated from the same docs as the site, with links made absolute.
+href: /llms.txt
+kind: docs
+tags: [llms]
+order: 6
+poster: ./llms.jpg

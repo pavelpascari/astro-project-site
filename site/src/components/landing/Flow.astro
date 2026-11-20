@@ -1,0 +1,79 @@
+---
+// init → dev → push: the real commands, what they print, and how long they take. The file count is the starter's,
+// counted at build time the way `project-site init` walks it.
+import { existsSync, readdirSync, statSync } from 'node:fs';
+import path from 'node:path';
+
+const SKIP = new Set(['node_modules', 'dist', '.astro', '.wrangler', 'package-lock.json', '.DS_Store']);
+function count(dir: string): number {
+  let n = 0;
+  for (const name of readdirSync(dir)) {
+    if (SKIP.has(name)) continue;
+    const p = path.join(dir, name);
+    n += statSync(p).isDirectory() ? count(p) : 1;
+  }
+  return n;
+}
+const starter = [path.resolve('../starters/default'), path.resolve('starters/default')].find((d) =>
+  existsSync(path.join(d, 'astro.config.mjs')),
+);
+const files = starter ? count(starter) : undefined;
+
+const steps = [
+  {
+    title: 'Create',
+    body: 'Copies the starter, a complete site that builds as it is, and names it after the folder. It never overwrites a file unless you pass --force.',
+    time: 'init + install ≈ 15 s',
+    lines: [
+      { cmd: 'npx project-site init my-site' },
+      { out: `Created "My Site" in ~/code/my-site${files ? ` (${files} files)` : ''}.` },
+      { cmd: 'cd my-site && npm install' },
+    ],
+  },
+  {
+    title: 'Run',
+    body: 'Landing page, docs, gallery, the example docs mount and the mirrored demo app, all at once. Edit astro.config.mjs: point externalDocs at your docs folder and mirrors at your demos.',
+    time: 'first page ≈ 22 s, warm npm cache',
+    lines: [{ cmd: 'npm run dev' }, { out: 'http://localhost:4321' }],
+  },
+  {
+    title: 'Ship',
+    body: 'The starter’s CI calls the reusable workflow, pinned to the release it came from. Add two Cloudflare secrets and every pull request gets its own URL.',
+    time: 'a preview per PR · next on main · production on v* tags',
+    lines: [
+      { cmd: 'git push origin my-branch' },
+      { out: 'pull request → https://pr-12-my-site.<you>.workers.dev' },
+      { cmd: 'git tag v1.0.0 && git push --tags' },
+      { out: 'tag → production' },
+    ],
+  },
+];
+---
+
+<ol class="flow" role="list">
+  {
+    steps.map((s, i) => (
+      <li class="flow-step">
+        <div class="flow-text">
+          <h3>
+            <span class="flow-n" aria-hidden="true">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            {s.title}
+          </h3>
+          <p>{s.body}</p>
+          <p class="flow-time">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+              <circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2" />
+              <path d="M12 9v4l2.5 2M9 2h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            {s.time}
+          </p>
+        </div>
+        <pre class="flow-term" tabindex="0" aria-label={`Terminal: ${s.title}`}><code>{s.lines.map((l) =>
+          'cmd' in l ? <span class="flow-cmd"><span class="flow-prompt" aria-hidden="true">$ </span>{l.cmd}{'\n'}</span> : <span class="flow-out">{l.out}{'\n'}</span>,
+        )}</code></pre>
+      </li>
+    ))
+  }
+</ol>

@@ -1,6 +1,7 @@
-title: API reference
-description: Markdown docs that live in the project's own repository, mounted under /docs/reference/.
+title: A mounted docs folder
+description: Plain markdown from the repository, no frontmatter, mounted under /docs/reference/ with its .md links rewritten.
 href: /docs/reference/
-kind: example
-tags: [docs]
+kind: docs
+tags: [externalDocs, markdown]
 order: 2
+poster: ./reference.jpg
