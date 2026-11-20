@@ -23,7 +23,7 @@ const hasActions = !!markdownHref || !!route.editUrl;
 <header class="page-header">
   {
     crumbs.length > 0 && (
-      <nav class="crumbs" aria-label="Breadcrumbs">
+      <nav class="crumbs print:hidden" aria-label="Breadcrumbs">
         <ol>
           {crumbs.map((c) => (
             <li>{c.href ? <a href={c.href}>{c.label}</a> : <span>{c.label}</span>}</li>

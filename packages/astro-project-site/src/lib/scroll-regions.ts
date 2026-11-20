@@ -23,8 +23,20 @@ const schedule = () => {
   frame = requestAnimationFrame(update);
 };
 
+/** A focused link or button inside a sideways-scrolling box is brought fully into the box's view. */
+function revealFocus(e: FocusEvent) {
+  const el = e.target as HTMLElement | null;
+  const box = el?.closest?.<HTMLElement>(SELECTOR);
+  if (!el || !box || box === el || box.scrollWidth <= box.clientWidth + 1) return;
+  const r = el.getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  if (r.left < b.left) box.scrollLeft -= b.left - r.left + 8;
+  else if (r.right > b.right) box.scrollLeft += Math.min(r.right - b.right + 8, r.left - b.left);
+}
+
 export function enhanceScrollRegions() {
   schedule();
+  addEventListener('focusin', revealFocus);
   addEventListener('resize', schedule);
   // Live examples and fonts change sizes after load.
   document.fonts?.ready.then(schedule);

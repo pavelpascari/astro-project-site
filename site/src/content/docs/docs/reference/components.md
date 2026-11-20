@@ -120,6 +120,7 @@ The top of the landing page: heading, lead paragraph, actions, install command, 
 | `primary` | `LinkAction` |  |  |
 | `secondary` | `LinkAction` |  |  |
 | `install` | `string` |  |  |
+| `headingLevel` | `1 \| 2` | `1` | Level of the title heading: 1 on a landing page (default); 2 when the hero is shown inside another page. |
 
 Slots: `default`, `live`.
 
