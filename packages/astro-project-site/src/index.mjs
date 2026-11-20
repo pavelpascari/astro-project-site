@@ -52,6 +52,12 @@ export default function projectSite(userOptions) {
         }
 
         const starlight = starlightIntegration(options, paths, root);
+        // These are set from `name`, `tagline` and `favicon`; a value under `starlight` wins on docs pages only.
+        const shadowed = { title: 'name', description: 'tagline', favicon: 'favicon' };
+        for (const [key, ours] of Object.entries(shadowed)) {
+          if (key in options.starlight)
+            logger.warn(`starlight.${key} replaces the \`${ours}\` option on docs pages only; set \`${ours}\` instead to change it everywhere.`);
+        }
         updateConfig({
           site: config.site ?? options.url,
           integrations: [starlight.integration, mirror(options.mirrors)],
@@ -99,3 +105,4 @@ function readVersion(/** @type {string | undefined} */ file, /** @type {string |
 }
 
 export { mirror } from './mirror.mjs';
+export { COMPONENT_NAMES, OPTION_NAMES } from './options.mjs';

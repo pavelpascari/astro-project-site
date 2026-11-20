@@ -1,6 +1,6 @@
 import type { AstroIntegration } from 'astro';
 
-export type { LiveContext, LiveMode, LiveProps, LivePreviewPosition, LiveRunner, LiveRunResult, LiveStatusLevel } from './components/live/types';
+export type { LiveContext, LiveExampleElement, LiveMode, LiveProps, LivePreviewPosition, LiveRunner, LiveRunResult, LiveStatusLevel } from './components/live/types';
 
 /** A link with a label: nav items, hero and call-to-action buttons. */
 export interface LinkAction {
@@ -127,6 +127,8 @@ export interface ProjectSiteOptions {
   install?: string;
   /** Favicon path under public/. Default `/favicon.svg`. */
   favicon?: string;
+  /** Tags added to the `<head>` of every page: landing, gallery, your BaseLayout pages and docs. */
+  head?: HeadTag[];
   /** Default social image: a path under public/ (1200×630) or an absolute URL. */
   ogImage?: string;
   /** Module (relative to the project root) whose default export is an `OgImageHook`, for per-page images. */
@@ -172,8 +174,16 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   footer: { note?: string };
   llms: boolean;
   customCss: string[];
+  head: HeadTag[];
   components: ComponentOverrides;
   starlight: Record<string, unknown>;
+}
+
+/** A `<head>` tag, same shape as Starlight's `head` entries. */
+export interface HeadTag {
+  tag: 'title' | 'base' | 'link' | 'style' | 'meta' | 'script' | 'noscript' | 'template';
+  attrs?: Record<string, string | boolean | undefined>;
+  content?: string;
 }
 
 export interface ResolvedLanding extends Omit<LandingContent, 'features' | 'steps'> {
@@ -186,6 +196,10 @@ export interface SiteConfig
   extends Omit<ResolvedOptions, 'components' | 'starlight' | 'customCss' | 'ogImageFor' | 'mirrors'> {
   /** `version` read from `versionFrom` at startup. */
   version?: string;
+  /** Language of the non-docs pages: Starlight's root (or default) locale, else `en`. */
+  lang: string;
+  /** Text direction of that locale. */
+  dir: 'ltr' | 'rtl';
 }
 
 export interface OgImageRequest {
@@ -236,3 +250,7 @@ export default function projectSite(options: ProjectSiteOptions): AstroIntegrati
 
 /** The static-apps mirror on its own (projectSite() already includes it). */
 export function mirror(entries?: Mirror[]): AstroIntegration;
+/** Every top-level option name `projectSite()` accepts (`name`, `tagline`, … `starlight`). */
+export const OPTION_NAMES: readonly (keyof ProjectSiteOptions)[];
+/** The component slots `components` can replace. */
+export const COMPONENT_NAMES: readonly (keyof ComponentOverrides)[];

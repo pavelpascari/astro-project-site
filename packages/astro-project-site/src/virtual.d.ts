@@ -29,3 +29,37 @@ declare module 'virtual:astro-project-site/starlight' {
   export const ThemeSelect: Component;
   export const showSearch: boolean;
 }
+
+declare module 'virtual:astro-project-site/code' {
+  export const Code: typeof import('@astrojs/starlight/components').Code;
+}
+
+declare module 'virtual:astro-project-site/components/Header' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/Footer' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/Hero' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/Landing' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/GalleryCard' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/Gallery' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}

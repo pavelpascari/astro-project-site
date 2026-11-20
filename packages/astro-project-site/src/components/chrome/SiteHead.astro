@@ -54,4 +54,10 @@ const themeCss = themeOverrideCss();
   })();
 </script>
 {themeCss && <style is:inline set:html={themeCss} />}
+{
+  /* The `head` option: the same tags Starlight adds to docs pages. */
+  site.head.map(({ tag: Tag, attrs, content }) =>
+    content ? <Tag {...attrs} set:html={content} /> : <Tag {...attrs} />,
+  )
+}
 <slot />

@@ -2,7 +2,7 @@
 // Injected at /gallery/ unless `gallery: false` or the project has its own src/pages/gallery.astro.
 import site from 'virtual:astro-project-site/config';
 import BaseLayout from '../components/layouts/BaseLayout.astro';
-import { Gallery } from 'virtual:astro-project-site/components';
+import Gallery from 'virtual:astro-project-site/components/Gallery';
 import { galleryItems } from '../lib/gallery';
 
 const items = await galleryItems();

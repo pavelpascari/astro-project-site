@@ -2,10 +2,30 @@
 //
 //   virtual:astro-project-site/config      the validated options as JSON, plus the resolved version
 //   virtual:astro-project-site/components  the replaceable components (option `components`, else the built-ins)
+//   virtual:astro-project-site/components/<Slot>  one of them alone (default export). The package imports these,
+//                                          so an override and its CSS are bundled only into pages that render it.
 //   virtual:astro-project-site/og          the social-image hook (option `ogImageFor`, else `ogImage` for every page)
 //   virtual:astro-project-site/user-css    imports of the `customCss` files (site-wide CSS)
 //   virtual:astro-project-site/starlight   the Search and ThemeSelect the docs use, and whether search is on
+//   virtual:astro-project-site/code        Expressive Code's <Code> (for <Live>), without Starlight's component barrel
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { own } from './own.mjs';
+
+/**
+ * Where `<Code>` comes from. Starlight re-exports it from `@astrojs/starlight/components`, but importing that barrel
+ * pulls Starlight's whole base stylesheet (~64 KB) into every page that renders a `<Live>`, the landing page and the
+ * gallery included. Import Expressive Code's component directly, resolved from Starlight's own dependency so it
+ * works without hoisting; fall back to the barrel if that ever fails.
+ */
+export function codeComponentModule() {
+  try {
+    const starlight = fileURLToPath(import.meta.resolve('@astrojs/starlight'));
+    return createRequire(starlight).resolve('astro-expressive-code/components');
+  } catch {
+    return '@astrojs/starlight/components';
+  }
+}
 
 const PREFIX = 'virtual:astro-project-site/';
 
@@ -25,7 +45,21 @@ export function publicConfig(
   /** @type {string | undefined} */ version,
 ) {
   const { components, starlight, customCss, ogImageFor, mirrors, ...rest } = options;
-  return { ...rest, version };
+  return { ...rest, ...siteLocale(starlight), version };
+}
+
+/**
+ * Language and direction for pages outside the docs, from Starlight's locales: the root locale, else the
+ * `defaultLocale`, else English.
+ */
+export function siteLocale(/** @type {Record<string, any> | undefined} */ starlight) {
+  const locales = starlight?.locales;
+  if (locales && typeof locales === 'object') {
+    const key = 'root' in locales ? 'root' : starlight?.defaultLocale in locales ? starlight?.defaultLocale : undefined;
+    const locale = key ? locales[key] : undefined;
+    if (locale) return { lang: String(locale.lang ?? (key === 'root' ? 'en' : key)), dir: locale.dir === 'rtl' ? 'rtl' : 'ltr' };
+  }
+  return { lang: 'en', dir: 'ltr' };
 }
 
 /**
@@ -44,6 +78,12 @@ export function vitePluginProjectSite({ options, paths, version, search }) {
     components: Object.entries(DEFAULT_COMPONENTS)
       .map(([name, file]) => `export { default as ${name} } from ${json(paths.components[name] ?? own(file))};`)
       .join('\n'),
+    ...Object.fromEntries(
+      Object.entries(DEFAULT_COMPONENTS).map(([name, file]) => [
+        `components/${name}`,
+        `export { default } from ${json(paths.components[name] ?? own(file))};`,
+      ]),
+    ),
     og: paths.ogImageFor
       ? `export { default } from ${json(paths.ogImageFor)};`
       : `const image = ${json(options.ogImage)};\nexport default function ogImageFor() { return image; }`,
@@ -53,6 +93,7 @@ export function vitePluginProjectSite({ options, paths, version, search }) {
       `export { default as ThemeSelect } from ${json(search.ThemeSelect)};`,
       `export const showSearch = ${json(search.show)};`,
     ].join('\n'),
+    code: `export { Code } from ${json(codeComponentModule())};`,
   };
 
   return {

@@ -14,6 +14,7 @@
 //   };
 // Marker lines must stand on their own line. Markers inside fenced code blocks are ignored.
 // Unknown generator names, unclosed or nested blocks and throwing generators are errors (exit 1).
+import { globToRegExp } from './glob.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -156,13 +157,13 @@ function parseArgs(/** @type {string} */ s) {
   return args;
 }
 
-/** Config `files` entries → absolute file list: folders recurse for .md/.mdx, globs support `**`, `*`, `?`. */
+/** Config `files` entries → absolute file list: folders recurse for .md/.mdx, globs as in glob.mjs (`**`, `*`, `?`, `{a,b}`, `[…]`). */
 function resolveFiles(/** @type {string[]} */ entries, /** @type {string} */ root, /** @type {(p: string, from?: string) => string} */ rel) {
   const out = new Set();
   for (const entry of entries) {
-    if (/[*?]/.test(entry)) {
+    if (/[*?{[]/.test(entry)) {
       const segments = entry.replace(/^\.\//, '').split('/');
-      const base = segments.slice(0, segments.findIndex((seg) => /[*?]/.test(seg))).join('/');
+      const base = segments.slice(0, segments.findIndex((seg) => /[*?{[]/.test(seg))).join('/');
       const re = globToRegExp(segments.join('/'));
       for (const f of walk(path.resolve(root, base))) if (re.test(rel(f, root))) out.add(f);
     } else {
@@ -188,19 +189,6 @@ function walk(/** @type {string} */ dir) {
   return out;
 }
 
-function globToRegExp(/** @type {string} */ glob) {
-  let re = '';
-  for (let i = 0; i < glob.length; i++) {
-    const c = glob[i];
-    if (c === '*' && glob[i + 1] === '*') {
-      i++;
-      if (glob[i + 1] === '/') { i++; re += '(?:.*/)?'; } else re += '.*';
-    } else if (c === '*') re += '[^/]*';
-    else if (c === '?') re += '[^/]';
-    else re += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  }
-  return new RegExp(`^${re}$`);
-}
 
 /** Line diff (LCS) of a block: `-` current, `+` expected, two lines of context. */
 export function diff(/** @type {string} */ a, /** @type {string} */ b) {
