@@ -1,0 +1,142 @@
+---
+// One post in a list: the blog index, tag pages and the landing page's "Latest posts". Replace it with
+// `components.BlogCard` (props: `post`, `headingLevel`, `variant`).
+import '../../styles/components.css';
+import { Image } from 'astro:assets';
+import type { BlogEntry } from '../../index';
+import { postInfo } from '../../blog/data';
+import PostMeta from './PostMeta.astro';
+import TagList from './TagList.astro';
+
+interface Props {
+  post: BlogEntry;
+  /** Heading level for the title, to fit the page outline. */
+  headingLevel?: 2 | 3 | 4;
+  /** `row`: a full-width entry with the image beside the text (the post list). `tile`: a card for grids. */
+  variant?: 'row' | 'tile';
+}
+const { post, headingLevel = 2, variant = 'row' } = Astro.props;
+const info = postInfo(post);
+const { title, description, image, imageAlt, tags } = post.data;
+const Heading = `h${headingLevel}` as const;
+---
+
+<article class:list={['blog-card', `blog-card--${variant}`]} data-draft={post.data.draft ? '' : undefined}>
+  <div class="text">
+    <Heading class="title"><a href={info.href}>{title}</a></Heading>
+    <PostMeta post={post} readingTime={info.readingTime} class="meta" />
+    <p class="description">{description}</p>
+    {variant === 'row' && <TagList tags={tags} class="tags" />}
+  </div>
+  {
+    image && (
+      <div class="image">
+        <Image src={image} alt={imageAlt ?? ''} width={Math.min(image.width, 720)} loading="lazy" />
+      </div>
+    )
+  }
+</article>
+
+<style>
+  .blog-card {
+    display: grid;
+    gap: 1rem 2rem;
+  }
+  .text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .title {
+    order: 1;
+    margin: 0;
+    font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .title a {
+    color: var(--site-text);
+    text-decoration: none;
+  }
+  .title a:hover {
+    color: var(--site-link);
+    text-decoration: underline;
+    text-decoration-thickness: 0.06em;
+    text-underline-offset: 0.18em;
+  }
+  /* Date first visually; title first in the reading order. */
+  .text :global(.meta) {
+    order: 0;
+    font-size: 0.875rem;
+  }
+  .description {
+    order: 2;
+    margin: 0;
+    color: var(--site-muted);
+    font-size: 1rem;
+    line-height: 1.55;
+    max-width: 36em;
+  }
+  .text :global(.tags) {
+    order: 3;
+    margin-top: 0.35rem;
+  }
+  .image {
+    order: -1;
+  }
+  .image img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius-sm);
+  }
+  @media (min-width: 46rem) {
+    .blog-card--row:has(.image) {
+      grid-template-columns: minmax(0, 1fr) 15rem;
+      align-items: start;
+    }
+    .blog-card--row .image {
+      order: 0;
+    }
+  }
+
+  /* Tile: a bordered card, the whole card clickable. */
+  .blog-card--tile {
+    position: relative;
+    align-content: start;
+    height: 100%;
+    padding: 1.25rem;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius);
+    background: var(--site-bg);
+  }
+  .blog-card--tile:hover {
+    border-color: var(--site-accent);
+  }
+  .blog-card--tile:has(.title a:focus-visible) {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+  .blog-card--tile .title {
+    font-size: 1.125rem;
+  }
+  .blog-card--tile .title a:focus-visible {
+    outline: none;
+  }
+  .blog-card--tile .title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--site-radius);
+  }
+  .blog-card--tile .description {
+    font-size: 0.9375rem;
+  }
+  .blog-card--tile .image img {
+    border: 0;
+  }
+</style>

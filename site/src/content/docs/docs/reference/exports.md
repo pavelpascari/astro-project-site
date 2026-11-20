@@ -58,6 +58,9 @@ declare module 'virtual:astro-project-site/components' {
   export const Landing: Component;
   export const GalleryCard: Component;
   export const Gallery: Component;
+  export const BlogIndex: Component;
+  export const BlogPost: Component;
+  export const BlogCard: Component;
 }
 
 declare module 'virtual:astro-project-site/og' {
@@ -104,6 +107,21 @@ declare module 'virtual:astro-project-site/components/GalleryCard' {
 }
 
 declare module 'virtual:astro-project-site/components/Gallery' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/BlogIndex' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/BlogPost' {
+  const component: import('astro/runtime/server/index.js').AstroComponentFactory;
+  export default component;
+}
+
+declare module 'virtual:astro-project-site/components/BlogCard' {
   const component: import('astro/runtime/server/index.js').AstroComponentFactory;
   export default component;
 }

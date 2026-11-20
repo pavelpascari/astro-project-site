@@ -1,0 +1,249 @@
+/*
+ * Long-form reading: the body of a blog post (`.blog-prose`). Built on the theme tokens, so it follows the brand,
+ * light/dark and `prefers-contrast`. Only `.blog-prose`-scoped rules, so it can be used for any article-like
+ * content: <div class="blog-prose">…</div>.
+ *
+ * Tokens (override them in a `customCss` file):
+ *   --blog-font        body text of posts (default: --site-font-body)
+ *   --blog-font-size   default clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem)
+ *   --blog-measure     line length of the text column (default 32em: about 70 characters)
+ *   --blog-leading     line height (default 1.7)
+ */
+
+:root {
+  --blog-font: var(--site-font-body);
+  --blog-font-size: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --blog-measure: 32em;
+  --blog-leading: 1.7;
+}
+
+.blog-prose {
+  font-family: var(--blog-font);
+  font-size: var(--blog-font-size);
+  line-height: var(--blog-leading);
+  color: color-mix(in oklab, var(--site-text) 92%, var(--site-bg));
+  font-kerning: normal;
+  font-variant-numeric: oldstyle-nums proportional-nums;
+  hanging-punctuation: first;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  counter-reset: margin-note;
+}
+
+.blog-prose > :first-child {
+  margin-top: 0;
+}
+
+.blog-prose :is(p, ul, ol, dl, blockquote, figure, table, details, hr) {
+  margin-block: 0 1.25em;
+}
+
+/* Headings: a clear step down from the post title, with room above to mark a new section. */
+.blog-prose :is(h2, h3, h4) {
+  color: var(--site-text);
+  font-family: var(--site-font-heading);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  font-variant-numeric: lining-nums;
+}
+.blog-prose h2 {
+  font-size: 1.5em;
+  margin: 2.25em 0 0.6em;
+}
+.blog-prose h3 {
+  font-size: 1.2em;
+  margin: 1.9em 0 0.5em;
+}
+.blog-prose h4 {
+  font-size: 1em;
+  margin: 1.6em 0 0.4em;
+}
+
+.blog-prose a {
+  color: var(--site-link);
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
+}
+.blog-prose a:hover {
+  text-decoration-thickness: 0.12em;
+}
+
+.blog-prose strong {
+  color: var(--site-text);
+  font-weight: 650;
+}
+
+.blog-prose :is(ul, ol) {
+  padding-inline-start: 1.4em;
+}
+.blog-prose li {
+  margin-block: 0.35em;
+  padding-inline-start: 0.2em;
+}
+.blog-prose li::marker {
+  color: var(--site-muted);
+}
+.blog-prose li > :is(ul, ol) {
+  margin-block: 0.35em 0;
+}
+
+.blog-prose blockquote {
+  margin-inline: 0;
+  padding: 0.1em 0 0.1em 1.25em;
+  border-inline-start: 3px solid var(--site-accent);
+  color: var(--site-muted);
+  font-style: italic;
+}
+.blog-prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.blog-prose hr {
+  border: 0;
+  height: 1px;
+  margin-block: 2.5em;
+  background: var(--site-border);
+}
+
+/* Inline code; blocks are Expressive Code's, as in the docs. */
+.blog-prose :not(pre) > code {
+  padding: 0.12em 0.35em;
+  border-radius: 0.3em;
+  background: var(--site-surface);
+  border: 1px solid var(--site-border);
+  font-family: var(--site-font-mono);
+  font-size: 0.86em;
+  overflow-wrap: anywhere;
+}
+.blog-prose .expressive-code,
+.blog-prose live-example {
+  margin-block: 1.75em;
+}
+.blog-prose pre:not(.expressive-code pre) {
+  padding: 1em 1.125em;
+  overflow-x: auto;
+  border-radius: var(--site-radius-sm);
+  background: var(--site-code-bg);
+  color: var(--site-code-text);
+  font-size: 0.875em;
+  line-height: 1.6;
+}
+
+.blog-prose :is(img, video) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  border-radius: var(--site-radius-sm);
+}
+.blog-prose p > img:only-child {
+  margin-block: 2em;
+}
+.blog-prose figure {
+  margin-inline: 0;
+}
+.blog-prose figcaption {
+  margin-top: 0.6em;
+  color: var(--site-muted);
+  font-size: 0.875em;
+  text-align: center;
+}
+
+/* Tables scroll sideways in their own box on small screens (lib/scroll-regions.ts gives them a tab stop). */
+.blog-prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1.5;
+}
+.blog-prose :is(th, td) {
+  padding: 0.55em 0.9em;
+  border-bottom: 1px solid var(--site-border);
+  text-align: start;
+  vertical-align: top;
+}
+.blog-prose th {
+  color: var(--site-text);
+  border-bottom-width: 2px;
+  font-weight: 600;
+}
+
+.blog-prose kbd {
+  padding: 0.1em 0.4em;
+  border: 1px solid var(--site-border);
+  border-bottom-width: 2px;
+  border-radius: 0.3em;
+  font-size: 0.85em;
+}
+
+/* GFM footnotes: a quiet list after a rule, with small references. */
+.blog-prose sup:has(> a[data-footnote-ref]) {
+  line-height: 0;
+}
+.blog-prose a[data-footnote-ref] {
+  padding-inline: 0.1em;
+  text-decoration: none;
+  font-variant-numeric: lining-nums;
+  font-weight: 600;
+}
+.blog-prose a[data-footnote-ref]::before {
+  content: '[';
+}
+.blog-prose a[data-footnote-ref]::after {
+  content: ']';
+}
+.blog-prose .footnotes {
+  margin-top: 3em;
+  padding-top: 1em;
+  border-top: 1px solid var(--site-border);
+  color: var(--site-muted);
+  font-size: 0.875em;
+}
+.blog-prose .footnotes ol {
+  padding-inline-start: 1.2em;
+}
+.blog-prose .footnotes p {
+  margin: 0;
+}
+/* Footnote headings are visually hidden (but read) by default; ours is too. */
+.blog-prose .footnotes > h2.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  margin: 0;
+}
+
+/* Heading anchors: room under the sticky header. */
+.blog-prose :is(h2, h3, h4)[id] {
+  scroll-margin-top: calc(var(--site-header-height) + 1.5rem);
+}
+
+@media print {
+  .blog-prose {
+    font-size: 11pt;
+    line-height: 1.55;
+    color: #000;
+  }
+  .blog-prose a {
+    color: inherit;
+  }
+  /* Show where external links go. */
+  .blog-prose a[href^='http']:not([data-footnote-ref])::after {
+    content: ' (' attr(href) ')';
+    font-size: 0.85em;
+    overflow-wrap: anywhere;
+  }
+  .blog-prose :is(h2, h3, h4) {
+    break-after: avoid;
+  }
+  .blog-prose :is(pre, figure, table, blockquote, img) {
+    break-inside: avoid;
+  }
+}

@@ -1,0 +1,190 @@
+---
+// A side note anchored to a spot in the text.
+//
+//   import { MarginNote } from 'astro-project-site/components';
+//
+//   The mount reads the folder at build time.<MarginNote kind="field" numbered>Measured on a 300-page folder: 40 ms.</MarginNote>
+//
+// Where it goes:
+//   - In a blog post on a wide screen: in the margin beside the line it is anchored to (Tufte-style).
+//   - In a docs page on a wide screen: beside the paragraph, inside the text column, with the text flowing around it.
+//   - On narrow screens, and anywhere else: an inline aside right after the anchor, clearly marked.
+// The note is always in the reading order where it is written (never hidden, never moved in the DOM), so screen
+// readers and copy-paste meet it right after the text it belongs to.
+//
+// Write it inline (on the same line as the text, no blank lines inside) to anchor it to a phrase; on its own line
+// between paragraphs to anchor it to the next paragraph. A layout of your own can host margin notes: give the
+// element around the text `container: margin-notes / inline-size` and at least 18rem of free space on its
+// inline-end side once it is 58rem wide (the blog post layout does this).
+interface Props {
+  /** `note` (default), `field` (a field note: an observation from practice), or `warning`. */
+  kind?: 'note' | 'field' | 'warning';
+  /** Label above the note. Default: "Note", "Field note" or "Warning"; `''` for none. */
+  label?: string;
+  /** Number the note and put the number in the text at the anchor (numbers count up through the page). */
+  numbered?: boolean;
+  id?: string;
+}
+
+const LABELS = { note: 'Note', field: 'Field note', warning: 'Warning' } as const;
+const { kind = 'note', numbered = false, id } = Astro.props;
+const label = Astro.props.label ?? LABELS[kind] ?? LABELS.note;
+---
+
+<span class="margin-note" data-kind={kind} data-numbered={numbered ? '' : undefined}>{numbered && <sup class="mn-ref" aria-hidden="true"></sup>}<span class="mn-body" role="note" id={id}>{label && <span class="mn-label">{label}<span class="mn-sr">: </span></span>}<span class="mn-text"><slot /></span></span></span>
+
+<style>
+  .margin-note {
+    --mn-accent: var(--site-accent-strong);
+    --mn-width: 15rem;
+    --mn-gap: 2.5rem;
+  }
+  .margin-note[data-kind='warning'] {
+    --mn-accent: var(--sl-color-orange-high, #b45309);
+  }
+  /* Numbers count up through the page (a post's body restarts them, see prose.css). */
+  :global(body) {
+    counter-reset: margin-note;
+  }
+  .margin-note[data-numbered] {
+    counter-increment: margin-note;
+  }
+
+  /* The anchor: a small raised number in the text. */
+  .mn-ref {
+    margin-inline-start: 0.08em;
+    padding-inline: 0.12em;
+    border-radius: 0.2em;
+    color: var(--mn-accent);
+    font-size: 0.68em;
+    font-weight: 650;
+    font-variant-numeric: lining-nums tabular-nums;
+    line-height: 0;
+    vertical-align: super;
+  }
+  .mn-ref::after {
+    content: counter(margin-note);
+  }
+  .margin-note:has(.mn-body:hover) .mn-ref {
+    background: var(--site-accent-soft);
+  }
+
+  /* Default (narrow screens, other pages): an aside in the flow, right after the anchor. */
+  .mn-body {
+    display: block;
+    margin-block: 0.9em 1.1em;
+    padding: 0.7em 0.95em 0.75em;
+    border-inline-start: 2px solid var(--mn-accent);
+    border-radius: 0 var(--site-radius-sm) var(--site-radius-sm) 0;
+    background: var(--site-surface);
+    color: color-mix(in oklab, var(--site-text) 82%, var(--site-bg));
+    font-size: 0.84em;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1.55;
+    text-align: start;
+    text-indent: 0;
+    letter-spacing: normal;
+    font-variant-numeric: lining-nums;
+  }
+  .mn-label {
+    display: block;
+    margin-bottom: 0.2em;
+    color: var(--mn-accent);
+    font-size: 0.78em;
+    font-weight: 650;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+  [data-numbered] .mn-label::before,
+  [data-numbered] .mn-body:not(:has(.mn-label))::before {
+    content: counter(margin-note) '\2002';
+    font-variant-numeric: tabular-nums;
+  }
+  [data-numbered] .mn-body:not(:has(.mn-label))::before {
+    color: var(--mn-accent);
+    font-weight: 650;
+  }
+  .mn-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  [data-kind='field'] .mn-text {
+    font-style: italic;
+  }
+  .mn-text :global(p) {
+    margin: 0 0 0.5em;
+  }
+  .mn-text :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .mn-text :global(code) {
+    font-size: 0.9em;
+  }
+
+  /* Docs pages, wide screens: beside the paragraph, inside the column; the text flows around it. */
+  @media (min-width: 50rem) {
+    :global(.sl-markdown-content) .mn-body {
+      float: inline-end;
+      clear: inline-end;
+      width: min(40%, 16rem);
+      margin: 0.35em 0 0.75em 1.5em;
+    }
+  }
+
+  /* Blog posts (or any `margin-notes` container), wide: hung in the margin, aligned with the anchor's line. The
+     negative inline-end margin takes the float out of the text column entirely, so neighbouring code blocks and
+     tables keep their full width. Consecutive notes stack instead of overlapping (clear). */
+  @container margin-notes (min-width: 58rem) {
+    .mn-body {
+      float: inline-end;
+      clear: inline-end;
+      position: relative;
+      width: var(--mn-width);
+      margin-block: 0.3em 1em;
+      margin-inline: 0 calc(-1 * (var(--mn-width) + var(--mn-gap)));
+      padding: 0 0 0 0.85em;
+      border-inline-start: 1px solid color-mix(in oklab, var(--mn-accent) 55%, var(--site-bg));
+      border-radius: 0;
+      background: none;
+      color: var(--site-muted);
+      font-size: 0.8em;
+      line-height: 1.5;
+    }
+    [data-kind='warning'] .mn-body {
+      border-inline-start-width: 2px;
+    }
+    /* The number hangs outside the note, like a footnote marker in a book margin. */
+    [data-numbered] .mn-label::before,
+    [data-numbered] .mn-body:not(:has(.mn-label))::before {
+      position: absolute;
+      inset-inline-end: calc(100% + 0.5em);
+      content: counter(margin-note);
+      color: var(--mn-accent);
+    }
+  }
+
+  @media (forced-colors: active) {
+    .mn-body {
+      border-inline-start-color: CanvasText;
+    }
+  }
+
+  @media print {
+    .mn-body,
+    :global(.sl-markdown-content) .mn-body {
+      float: none;
+      width: auto;
+      margin: 0.75em 0;
+      padding: 0.25em 0 0.25em 0.75em;
+      background: none;
+      color: #333;
+      break-inside: avoid;
+    }
+  }
+</style>

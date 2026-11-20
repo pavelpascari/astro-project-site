@@ -3,6 +3,7 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { z } from 'astro/zod';
+import { blogOptionSchema, resolveBlog } from './blog/options.mjs';
 
 const link = z.strictObject({ label: z.string().min(1), href: z.string().min(1) });
 
@@ -56,7 +57,17 @@ const landing = z.strictObject({
 });
 
 /** Component slots a project can replace. Values are paths relative to the project root, or package specifiers. */
-export const COMPONENT_NAMES = /** @type {const} */ (['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery']);
+export const COMPONENT_NAMES = /** @type {const} */ ([
+  'Header',
+  'Footer',
+  'Hero',
+  'Landing',
+  'GalleryCard',
+  'Gallery',
+  'BlogIndex',
+  'BlogPost',
+  'BlogCard',
+]);
 
 export const optionsSchema = z.strictObject({
   name: z.string().min(1),
@@ -104,6 +115,8 @@ export const optionsSchema = z.strictObject({
   gallery: z
     .union([z.literal(false), z.strictObject({ title: z.string().optional(), description: z.string().optional() })])
     .default({}),
+  // Posts in src/content/blog/, at /<route>/ (see blog/options.mjs). Off unless set; `true` uses the defaults.
+  blog: blogOptionSchema.default(false),
   footer: z.strictObject({ note: z.string().optional() }).default({}),
   llms: z.boolean().default(true),
   linksValidator: z.union([z.literal(false), z.record(z.string(), z.unknown())]).optional(),
@@ -149,8 +162,11 @@ function describeIssue(/** @type {any} */ issue) {
     // Report the branch that got furthest (deepest issue path) instead of "invalid input".
     const depth = (/** @type {any[]} */ branch) => Math.max(...branch.map((i) => i.path?.length ?? 0));
     const best = [...issue.errors].sort((/** @type {any[]} */ a, /** @type {any[]} */ b) => depth(b) - depth(a) || a.length - b.length)[0];
-    if (best?.length && depth(best) > 0) {
-      return best.map((/** @type {any} */ i) => describeIssue({ ...i, path: [...(issue.path ?? []), ...(i.path ?? [])] })).join('; ');
+    // Nothing deeper: a branch that failed on something other than its type (e.g. an unknown key in the object
+    // form of `true | { ... }`) says more than "expected boolean".
+    const telling = best && depth(best) > 0 ? best : issue.errors.find((/** @type {any[]} */ b) => b.some((i) => !/^invalid_(type|value)$/.test(i.code)));
+    if (telling?.length) {
+      return telling.map((/** @type {any} */ i) => describeIssue({ ...i, path: [...(issue.path ?? []), ...(i.path ?? [])] })).join('; ');
     }
   }
   return `${where || '(options)'}: ${issue.message}`;
@@ -168,7 +184,12 @@ export function parseOptions(input) {
   const result = optionsSchema.safeParse(input);
   if (!result.success) throw new ProjectSiteOptionsError(result.error.issues.map(describeIssue));
   const options = /** @type {any} */ (result.data);
-  options.nav ??= [{ label: 'Docs', href: '/docs/' }, ...(options.gallery === false ? [] : [{ label: 'Gallery', href: '/gallery/' }])];
+  options.blog = resolveBlog(options.blog, options.tagline);
+  options.nav ??= [
+    { label: 'Docs', href: '/docs/' },
+    ...(options.gallery === false ? [] : [{ label: 'Gallery', href: '/gallery/' }]),
+    ...(options.blog ? [{ label: options.blog.title, href: `/${options.blog.route}/` }] : []),
+  ];
   return options;
 }
 

@@ -61,7 +61,8 @@ plus `package.json`, `tsconfig.json` (`astro/tsconfigs/strict`), `wrangler.jsonc
   and `MobileMenuFooter` (the site nav inside Starlight's mobile menu, so small screens have one menu button);
 - adds a Starlight route middleware that gives docs pages the same `og:image` as every other page;
 - loads `theme.css` everywhere, then your `customCss`;
-- injects pages: `/` (landing), `/gallery/`, `/llms.txt`, `/llms-full.txt`. A page of your own at the same path
+- injects pages: `/` (landing), `/gallery/`, `/llms.txt`, `/llms-full.txt`, and with `blog` on, `/blog/…` and
+  `/blog/rss.xml`. A page of your own at the same path
   (e.g. `src/pages/index.astro`) always wins, and each can be switched off (`landing: false`, `gallery: false`,
   `llms: false`);
 - sets Astro's `site` from `url` unless you set it.
@@ -97,6 +98,7 @@ All paths are relative to the project root (the folder of `astro.config.mjs`) an
 | `theme` | `{ accent?, accentDark? }` | | Accent colours. For more, override tokens in `customCss`. |
 | `landing` | `LandingContent \| false` | `{}` | Content of the built-in landing page (below), or no landing page. |
 | `gallery` | `{ title?, description? } \| false` | `{}` | The `/gallery/` page, or none. |
+| `blog` | `boolean \| BlogOptions` | `false` | Posts from `src/content/blog/` at `/blog/` (below). `true` = defaults. |
 | `footer` | `{ note? }` | | Extra footer line, e.g. a licence. |
 | `llms` | `boolean` | `true` | `/llms.txt` and `/llms-full.txt`. |
 | `customCss` | `string[]` | `[]` | Stylesheets loaded on every page after `theme.css`. |
@@ -131,9 +133,80 @@ Paths to `.astro` components that replace the built-ins wherever the integration
 | `Landing` | the whole landing page body (inside `BaseLayout`) | none; read options from `astro-project-site/config` |
 | `GalleryCard` | one gallery card (landing strip and `/gallery/`) | `item: GalleryEntry, headingLevel` |
 | `Gallery` | the whole `/gallery/` body (inside `BaseLayout`) | `items, title, description` |
+| `BlogIndex` | the post list body: `/blog/`, `/blog/2/`, each `/blog/tags/<tag>/` | `BlogIndexProps`: `posts, title, description, tag?, tags, page` |
+| `BlogPost` | one post's body (inside `BaseLayout`) | `BlogPostProps`: `post, readingTime, authors, editUrl?, newer?, older?`; the rendered post is the default slot |
+| `BlogCard` | one post in a list (index, tag pages, landing "Latest posts") | `post: BlogEntry, headingLevel, variant: 'row' \| 'tile'` |
 
 An override can wrap the built-in: `import { SiteHeader } from 'astro-project-site/components'` is always the
 original.
+
+### `blog`
+
+```ts
+blog: true | {
+  route?: string;          // 'blog' → /blog/
+  title?: string;          // 'Blog' (heading, nav label, feed title)
+  description?: string;    // default: tagline
+  authors?: Record<string, { name: string; url?: string; avatar?: string }>;
+  postsPerPage?: number;   // 10; more pages at /blog/2/, /blog/3/
+  rss?: boolean;           // true → /blog/rss.xml, plus <link rel="alternate"> on every page, docs included
+  landing?: false | { title?: string; limit?: number };  // "Latest posts" on the built-in landing; { 'Latest posts', 3 }
+}
+```
+
+Posts are `src/content/blog/**/*.{md,mdx}`; the `blog` collection is registered by `projectSiteCollections()`
+(no warning when the folder does not exist). A post's id and URL is its path without the extension, lowercased with
+spaces as dashes: `src/content/blog/2026/introducing-my-lib.md` → `/blog/2026/introducing-my-lib/`; a folder's
+`index.md(x)` takes the folder's id, so a post can keep its images beside it. Ids that would collide with a built-in
+page (`2`, `tags/…`, `rss.xml`) fail the build with the file's name.
+
+```yaml
+---
+title: Introducing my-lib          # required
+description: One or two sentences. # required: lists, feed, meta description
+date: 2026-11-20                   # required
+updated: 2026-11-21
+authors: [pavel, A Guest]          # keys of blog.authors, or plain names
+tags: [release, astro]
+draft: true                        # built in dev only, with a Draft badge
+image: ./cover.png                 # optimised; shown on the post and in lists; the post's og:image
+imageAlt: ''
+canonical: https://elsewhere.dev/post  # when first published elsewhere
+---
+```
+
+A missing required field stops the build with `Blog post src/content/blog/x.md: invalid frontmatter.` and the
+field. Pages: `/blog/` (paginated), each post (title, dates, reading time computed at build, authors, tags,
+newer/older, "Edit this post" to the file in the repo, `og:type article`), `/blog/tags/`, `/blog/tags/<tag>/`,
+`/blog/rss.xml`. Posts are listed in `/llms.txt` (a section before `## Optional`), appended in full to
+`/llms-full.txt`, and in the sitemap. The single route `/blog/[...path]` builds the list, posts and tag pages; a
+`src/pages/blog/[...path].astro` (or `rss.xml.ts`) of your own replaces it.
+
+The feed is a **summary** feed: each item is the title, absolute link, date, description, tags (`<category>`) and
+authors (`<dc:creator>`). Full content is left out on purpose: MDX posts hold live examples and components that a
+feed reader cannot run, and a half-rendered post is worse than a link to the real one.
+
+Posts render in a reading column (`.blog-prose`, from `components/blog/prose.css`): ~68ch, Expressive Code blocks as
+in the docs, tables that scroll in their own box, footnotes, print styles. Tokens: `--blog-font`, `--blog-font-size`,
+`--blog-measure`, `--blog-leading`. `<Live>` works in posts (`import Live from 'astro-project-site/live'`).
+`LatestPosts` (`{ title?, intro?, limit?, tone? }`) is exported for custom landing pages.
+
+### Margin notes
+
+```mdx
+import { MarginNote } from 'astro-project-site/components'; // or: import MarginNote from 'astro-project-site/margin-note'
+
+The loader reads the folder at build time.<MarginNote kind="field" numbered>Measured on 300 pages: 40 ms.</MarginNote>
+```
+
+A side note anchored where it is written. In a blog post on a wide screen it hangs in the margin beside its line
+(numbered notes put a small number at the anchor and beside the note); in a docs page it floats beside the paragraph
+inside the column; on narrow screens it is an inline aside right after the anchor, with its label. It stays in the
+reading order (`role="note"`, never hidden), so screen readers and copy-paste meet it right after its text. Props:
+`kind` (`note` | `field` | `warning`), `label` (default "Note", "Field note", "Warning"; `''` for none),
+`numbered`, `id`. Write it inline (no blank lines inside) to anchor it to a phrase, or on its own line between
+paragraphs. Your own layout can host margin notes: `container: margin-notes / inline-size` on the element around the
+text, with ~18rem free on its inline-end side once it is 58rem wide.
 
 ### `starlight`
 
@@ -149,9 +222,10 @@ plugin). Everything else
 | import | what |
 |---|---|
 | `astro-project-site` | `default projectSite(options)`, `mirror(entries)`, `OPTION_NAMES` (every top-level option name), `COMPONENT_NAMES` (the `components` slots); types `ProjectSiteOptions`, `LandingContent`, `ComponentOverrides`, `SiteConfig`, `GalleryEntry`, `GalleryData`, `OgImageHook`, `LiveRunner`, `LiveContext`, `LiveProps`, … |
-| `astro-project-site/components` | `Live`, `BaseLayout`, `SiteHead`, `SiteHeader`, `SiteFooter`, `ThemeSelect`, `Landing`, `Hero`, `Section`, `Features`, `Steps`, `GalleryStrip`, `CallToAction`, `InstallCommand`, `GalleryPage`, `GalleryGrid`, `GalleryCard`, `GalleryFilters`; helpers `galleryItems()`, `distinct()`, `isActive()`, `isExternal()` |
+| `astro-project-site/components` | `Live`, `BaseLayout`, `SiteHead`, `SiteHeader`, `SiteFooter`, `ThemeSelect`, `Landing`, `Hero`, `Section`, `Features`, `Steps`, `GalleryStrip`, `CallToAction`, `InstallCommand`, `GalleryPage`, `GalleryGrid`, `GalleryCard`, `GalleryFilters`, `BlogIndex`, `BlogPost`, `BlogCard`, `BlogTags`, `PostMeta`, `TagList`, `LatestPosts`, `MarginNote`; helpers `galleryItems()`, `distinct()`, `isActive()`, `isExternal()`, `blogPosts()`, `postInfo()`, `readingTime()`, `tagSlug()`, `formatDate()` |
+| `astro-project-site/margin-note` | the `<MarginNote>` component alone |
 | `astro-project-site/live` | the `<Live>` component alone (`import Live from 'astro-project-site/live'`): lighter than the barrel, which also brings the layout and landing components |
-| `astro-project-site/content` | `projectSiteCollections({ docsExtend?, galleryBase? })` → `{ docs, gallery, i18n }`; `gallerySchema`, `projectDocsLoader` |
+| `astro-project-site/content` | `projectSiteCollections({ docsExtend?, galleryBase?, blogBase? })` → `{ docs, gallery, i18n, blog }`; `gallerySchema`, `blogSchema`, `blogLoader`, `projectDocsLoader` |
 | `astro-project-site/config` | the validated options plus `version` (`SiteConfig`), for your own pages; also `OPTION_NAMES`, `COMPONENT_NAMES` |
 | `astro-project-site/theme.css` | the design tokens (loaded automatically; import it only in pages that use neither BaseLayout nor Starlight) |
 
@@ -307,6 +381,6 @@ they are the project's own files.
 
 ## Licences
 
-MIT. Dependencies: `starlight-links-validator` (MIT); peers `astro` and `@astrojs/starlight` (MIT). Build-time
+MIT. Dependencies: `starlight-links-validator` (MIT), `@astrojs/rss` (MIT); peers `astro` and `@astrojs/starlight` (MIT). Build-time
 tools pulled in by Astro and Vite include Lightning CSS (MPL-2.0) and libvips via sharp (LGPL-3.0); neither ends
 up in the built site.

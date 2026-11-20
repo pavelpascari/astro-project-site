@@ -59,6 +59,8 @@ Page frame for everything outside the docs: head metadata, the shared header and
 | `description` | `string` |  |  |
 | `image` | `string` |  | Social image for this page (defaults to the `ogImage` option / `ogImageFor` hook). |
 | `noindex` | `boolean` |  |  |
+| `type` | `'website' \| 'article'` |  | Open Graph type (blog posts are `article`). |
+| `canonical` | `string` |  | Canonical URL when it is not this page's own (e.g. a post first published elsewhere). |
 
 Slots: `head`, `default`.
 
@@ -73,6 +75,7 @@ Slots: `head`, `default`.
 | `image` | `string` | (computed) | Social image for this page: overrides the hook. |
 | `type` | `'website' \| 'article'` | `'website'` | Open Graph type. |
 | `noindex` | `boolean` | `false` | Ask search engines not to index this page (e.g. 404). |
+| `canonical` | `string` |  | Canonical URL when it is not this page's own (e.g. a blog post first published elsewhere). |
 
 Slots: `default`.
 
@@ -228,10 +231,117 @@ Kind and tag filters for a GalleryGrid. Hidden until its script runs, so without
 | `target` (required) | `string` |  | id of the GalleryGrid to filter. |
 | `total` (required) | `number` |  |  |
 
+### Blog
+#### BlogIndex
+
+The post list body: /blog/, /blog/2/, ... and each tag page /blog/tags/&lt;tag>/. Renders inside BaseLayout. Replace it with `components.BlogIndex` (props: BlogIndexProps).
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `posts` (required) | `BlogEntry[]` |  | The posts on this page, newest first. |
+| `title` (required) | `string` |  |  |
+| `description` (required) | `string` |  |  |
+| `tag` | `object` |  | Set on tag pages. |
+| `tag.tag` (required) | `string` |  |  |
+| `tag.slug` (required) | `string` |  |  |
+| `tag.count` (required) | `number` |  |  |
+| `tags` (required) | `{ tag: string; slug: string; count: number }[]` |  | Every tag, most used first. |
+| `page` (required) | `object` |  | Pagination (1-based). Tag pages are a single page. |
+| `page.current` (required) | `number` |  |  |
+| `page.last` (required) | `number` |  |  |
+| `page.total` (required) | `number` |  |  |
+| `page.prev` | `string` |  |  |
+| `page.next` | `string` |  |  |
+
+#### BlogPost
+
+One post's page body (inside BaseLayout): title, dates, authors, reading time, the post itself in a reading column with room for margin notes, tags, an "Edit this post" link and the newer/older posts. Replace it with `components.BlogPost` (props: BlogPostProps; the rendered post is the default slot).
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `post` (required) | `BlogEntry` |  |  |
+| `readingTime` (required) | `number` |  |  |
+| `authors` (required) | `BlogAuthor[]` |  |  |
+| `editUrl` | `string` |  | "Edit this post" link, when the repository layout is known. |
+| `newer` | `BlogEntry` |  |  |
+| `older` | `BlogEntry` |  |  |
+
+Slots: `default`.
+
+#### BlogCard
+
+One post in a list: the blog index, tag pages and the landing page's "Latest posts". Replace it with `components.BlogCard` (props: `post`, `headingLevel`, `variant`).
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `post` (required) | `BlogEntry` |  |  |
+| `headingLevel` | `2 \| 3 \| 4` | `2` | Heading level for the title, to fit the page outline. |
+| `variant` | `'row' \| 'tile'` | `'row'` | `row`: a full-width entry with the image beside the text (the post list). `tile`: a card for grids. |
+
+#### BlogTags
+
+The tag index body (/blog/tags/): every tag with its post count. Renders inside BaseLayout.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `tags` (required) | `{ tag: string; slug: string; count: number }[]` |  |  |
+| `title` (required) | `string` |  |  |
+
+#### PostMeta
+
+The line under a post's title (and in lists): date, "updated" date, reading time, authors, and a Draft badge in dev.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `post` (required) | `BlogEntry` |  |  |
+| `readingTime` (required) | `number` |  |  |
+| `authors` | `BlogAuthor[]` | `[]` | Shown when given (the post page passes them; lists leave them out). |
+| `class` | `string` |  |  |
+
+#### TagList
+
+A post's tags, each a link to its tag page.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `tags` (required) | `string[]` |  |  |
+| `label` | `string` |  | Visible label before the list ("Tagged"); the list is labelled "Tags" either way. |
+| `class` | `string` |  |  |
+
+#### LatestPosts
+
+"Latest posts": the newest few posts and a link to the rest. The built-in landing page shows it when the blog is on (option `blog.landing`); a custom landing can use it too: import { LatestPosts } from 'astro-project-site/components'; &lt;LatestPosts limit={3} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `title` | `string` | `'Latest posts'` |  |
+| `intro` | `string` |  |  |
+| `limit` | `number` | `3` | How many posts. Default 3. |
+| `tone` | `'plain' \| 'surface'` | `'plain'` | Section background. |
+
+### Writing: side notes for posts and docs pages
+#### MarginNote
+
+A side note anchored to a spot in the text.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `kind` | `'note' \| 'field' \| 'warning'` | `'note'` | `note` (default), `field` (a field note: an observation from practice), or `warning`. |
+| `label` | `string` |  | Label above the note. Default: "Note", "Field note" or "Warning"; `''` for none. |
+| `numbered` | `boolean` | `false` | Number the note and put the number in the text at the anchor (numbers count up through the page). |
+| `id` | `string` |  |  |
+
+Slots: `default`.
+
 ### Helpers
 
 - `galleryItems`
 - `distinct`
+- `blogPosts`
+- `postInfo`
+- `readingTime`
+- `tagSlug`
+- `formatDate`
 - `isActive`
 - `isExternal`
 <!-- /gen -->

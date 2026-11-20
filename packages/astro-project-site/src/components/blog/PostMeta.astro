@@ -1,0 +1,96 @@
+---
+// The line under a post's title (and in lists): date, "updated" date, reading time, authors, and a Draft badge in dev.
+import site from 'virtual:astro-project-site/config';
+import type { BlogAuthor, BlogEntry } from '../../index';
+import { formatDate } from '../../blog/posts.mjs';
+
+interface Props {
+  post: BlogEntry;
+  readingTime: number;
+  /** Shown when given (the post page passes them; lists leave them out). */
+  authors?: BlogAuthor[];
+  class?: string;
+}
+const { post, readingTime, authors = [], class: className } = Astro.props;
+const { date, updated, draft } = post.data;
+const showUpdated = updated && updated.valueOf() > date.valueOf();
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<p class:list={['post-meta', className]}>
+  {draft && <span class="draft">Draft</span>}
+  <time datetime={iso(date)}>{formatDate(date, site.lang)}</time>
+  {
+    showUpdated && (
+      <span class="item">
+        Updated <time datetime={iso(updated)}>{formatDate(updated, site.lang)}</time>
+      </span>
+    )
+  }
+  <span class="item">{readingTime} min read</span>
+  {
+    authors.length > 0 && (
+      <span class="item authors">
+        {authors.map((a, i) => (
+          <>
+            {i > 0 && (i === authors.length - 1 ? ' and ' : ', ')}
+            <span class="author">
+              {a.avatar && <img src={a.avatar} alt="" width="22" height="22" loading="lazy" decoding="async" />}
+              {a.url ? <a href={a.url}>{a.name}</a> : a.name}
+            </span>
+          </>
+        ))}
+      </span>
+    )
+  }
+</p>
+
+<style>
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0;
+    margin: 0;
+    color: var(--site-muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    font-variant-numeric: lining-nums;
+  }
+  .item::before {
+    content: '·';
+    margin-inline: 0.55em;
+    color: color-mix(in oklab, var(--site-muted) 60%, var(--site-bg));
+  }
+  .author {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    color: var(--site-text);
+  }
+  .author img {
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .authors a {
+    color: inherit;
+  }
+  @media (pointer: coarse) {
+    .authors a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+  }
+  .draft {
+    margin-inline-end: 0.75em;
+    padding: 0.1em 0.55em;
+    border: 1px dashed var(--sl-color-orange-high, #b45309);
+    border-radius: 999px;
+    color: var(--sl-color-orange-high, #b45309);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+</style>

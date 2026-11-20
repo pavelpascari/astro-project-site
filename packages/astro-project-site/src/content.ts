@@ -6,6 +6,7 @@
 // - docs:    Starlight's docs (src/content/docs/) plus the `externalDocs` folders, with a default 404 page
 // - gallery: one file per item in src/content/gallery/ (YAML, JSON or Markdown frontmatter)
 // - i18n:    Starlight's UI translations (src/content/i18n/), optional
+// - blog:    posts in src/content/blog/**/*.{md,mdx}, used when the `blog` option is on (no warning without the folder)
 import { existsSync } from 'node:fs';
 import { defineCollection, type SchemaContext } from 'astro:content';
 import { glob } from 'astro/loaders';
@@ -14,8 +15,9 @@ import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
 import { i18nLoader } from '@astrojs/starlight/loaders';
 import type { Loader } from 'astro/loaders';
 import { projectDocsLoader } from './docs/loader';
+import { blogLoader, blogSchema } from './blog/collection';
 
-export { projectDocsLoader };
+export { projectDocsLoader, blogLoader, blogSchema };
 
 /** Schema of a gallery item. Pass `extend` to projectSiteCollections() to add fields. */
 export const gallerySchema = ({ image }: SchemaContext) =>
@@ -63,9 +65,11 @@ export interface ProjectSiteCollectionsOptions {
   docsExtend?: Parameters<typeof docsSchema>[0] extends infer O ? (O extends { extend?: infer E } ? E : never) : never;
   /** Folder of gallery items, relative to the project root. Default `./src/content/gallery`. */
   galleryBase?: string;
+  /** Folder of blog posts, relative to the project root. Default `./src/content/blog`. */
+  blogBase?: string;
 }
 
-/** The `docs`, `gallery` and `i18n` collections, ready for `export const collections = ...`. */
+/** The `docs`, `gallery`, `i18n` and `blog` collections, ready for `export const collections = ...`. */
 export function projectSiteCollections(options: ProjectSiteCollectionsOptions = {}) {
   return {
     docs: defineCollection({
@@ -77,5 +81,6 @@ export function projectSiteCollections(options: ProjectSiteCollectionsOptions = 
       schema: gallerySchema,
     }),
     i18n: defineCollection({ loader: i18nCollectionLoader(), schema: i18nSchema() }),
+    blog: defineCollection({ loader: blogLoader({ base: options.blogBase }), schema: blogSchema }),
   };
 }

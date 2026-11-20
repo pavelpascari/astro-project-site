@@ -18,6 +18,10 @@ interface Props {
   /** Social image for this page (defaults to the `ogImage` option / `ogImageFor` hook). */
   image?: string;
   noindex?: boolean;
+  /** Open Graph type (blog posts are `article`). */
+  type?: 'website' | 'article';
+  /** Canonical URL when it is not this page's own (e.g. a post first published elsewhere). */
+  canonical?: string;
 }
 const props = Astro.props;
 ---

@@ -1,0 +1,235 @@
+---
+// One post's page body (inside BaseLayout): title, dates, authors, reading time, the post itself in a reading
+// column with room for margin notes, tags, an "Edit this post" link and the newer/older posts.
+// Replace it with `components.BlogPost` (props: BlogPostProps; the rendered post is the default slot).
+import '../../styles/components.css';
+import './prose.css';
+import { Image } from 'astro:assets';
+import site from 'virtual:astro-project-site/config';
+import type { BlogPostProps } from '../../index';
+import { listUrl, postUrl } from '../../blog/posts.mjs';
+import PostMeta from './PostMeta.astro';
+import TagList from './TagList.astro';
+
+type Props = BlogPostProps;
+const { post, readingTime, authors, editUrl, newer, older } = Astro.props;
+const { title, description, image, imageAlt, tags, draft } = post.data;
+const blog = site.blog || { route: 'blog', title: 'Blog' };
+---
+
+<article class="post" data-draft={draft ? '' : undefined}>
+  <div class="post-frame">
+    <div class="post-col">
+      <header class="post-header">
+        <p class="crumb"><a href={listUrl(blog.route)}>{blog.title}</a></p>
+        <h1>{title}</h1>
+        <p class="lede">{description}</p>
+        <PostMeta post={post} readingTime={readingTime} authors={authors} />
+        {
+          image && (
+            <Image
+              class="cover"
+              src={image}
+              alt={imageAlt ?? ''}
+              width={Math.min(image.width, 1400)}
+              loading="eager"
+              fetchpriority="high"
+            />
+          )
+        }
+      </header>
+
+      <div class="blog-prose">
+        <slot />
+      </div>
+
+      <footer class="post-footer">
+        <TagList tags={tags} label="Tagged" />
+        {
+          editUrl && (
+            <p class="edit">
+              <a href={editUrl}>
+                <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+                  <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4" />
+                </svg>
+                Edit this post
+              </a>
+            </p>
+          )
+        }
+        {
+          (newer || older) && (
+            <nav class="adjacent" aria-label="More posts">
+              {newer ? (
+                <a class="newer" href={postUrl(blog.route, newer.id)} rel="prev">
+                  <span class="dir">
+                    <span aria-hidden="true">←</span> Newer
+                  </span>
+                  <span class="name">{newer.data.title}</span>
+                </a>
+              ) : (
+                <span />
+              )}
+              {older ? (
+                <a class="older" href={postUrl(blog.route, older.id)} rel="next">
+                  <span class="dir">
+                    Older <span aria-hidden="true">→</span>
+                  </span>
+                  <span class="name">{older.data.title}</span>
+                </a>
+              ) : (
+                <span />
+              )}
+            </nav>
+          )
+        }
+      </footer>
+    </div>
+  </div>
+</article>
+
+<style>
+  .post {
+    padding: calc(var(--site-space) * 2.5) var(--site-space) calc(var(--site-space) * 4);
+  }
+  /* The frame is the margin-notes container: wide enough, the text column moves aside so that the column and
+     the margin beside it are centred together, and <MarginNote> hangs in that margin. */
+  .post-frame {
+    container: margin-notes / inline-size;
+    max-width: 90rem;
+    margin-inline: auto;
+  }
+  .post-col {
+    --margin: 17.5rem; /* MarginNote width + gap */
+    font-size: var(--blog-font-size);
+    max-width: var(--blog-measure);
+    margin-inline: auto;
+  }
+  @container margin-notes (min-width: 58rem) {
+    .post-col {
+      margin-inline: max(0px, calc((100cqi - var(--blog-measure) - var(--margin)) / 2)) auto;
+    }
+  }
+
+  .post-header {
+    margin-bottom: 2.5rem;
+  }
+  .crumb {
+    margin: 0 0 1rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .crumb a {
+    text-decoration: none;
+  }
+  .crumb a:hover {
+    text-decoration: underline;
+  }
+  h1 {
+    margin: 0 0 0.6rem;
+    font-size: clamp(2rem, 1.3rem + 3vw, 3.25rem);
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+  }
+  .lede {
+    margin: 0 0 1.25rem;
+    color: var(--site-muted);
+    font-size: 1.2em;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+  .post-header :global(.cover) {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: 2rem;
+    border-radius: var(--site-radius);
+    border: 1px solid var(--site-border);
+  }
+
+  .post-footer {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--site-border);
+    font-size: 1rem;
+    clear: both;
+  }
+  .edit {
+    margin: 0;
+    font-size: 0.9375rem;
+  }
+  .edit a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .adjacent {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .adjacent a {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1.1rem;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius-sm);
+    text-decoration: none;
+    color: var(--site-text);
+  }
+  .adjacent a:hover {
+    border-color: var(--site-accent);
+  }
+  .adjacent .older {
+    grid-column: 2;
+    text-align: end;
+  }
+  .dir {
+    color: var(--site-muted);
+    font-size: 0.8125rem;
+  }
+  .name {
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--site-link);
+  }
+  @media (max-width: 34rem) {
+    .adjacent {
+      grid-template-columns: 1fr;
+    }
+    .adjacent .older {
+      grid-column: 1;
+    }
+  }
+  @media (pointer: coarse) {
+    .crumb a,
+    .edit a {
+      display: inline-flex;
+      align-items: center;
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+    }
+  }
+
+  @media print {
+    .post {
+      padding: 0;
+    }
+    .post-col {
+      max-width: none;
+      margin: 0;
+    }
+    .crumb,
+    .edit,
+    .adjacent {
+      display: none;
+    }
+    .post-footer {
+      border: 0;
+    }
+  }
+</style>

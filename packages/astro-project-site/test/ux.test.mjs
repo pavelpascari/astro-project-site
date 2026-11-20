@@ -59,7 +59,7 @@ test('OPTION_NAMES lists every top-level option', async () => {
   const { OPTION_NAMES, COMPONENT_NAMES } = await import('../src/index.mjs');
   for (const name of ['name', 'tagline', 'url', 'repo', 'landing', 'components', 'starlight']) assert.ok(OPTION_NAMES.includes(name), name);
   assert.ok(Object.isFrozen(OPTION_NAMES));
-  assert.deepEqual([...COMPONENT_NAMES], ['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery']);
+  assert.deepEqual([...COMPONENT_NAMES], ['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery', 'BlogIndex', 'BlogPost', 'BlogCard']);
 });
 
 test('base.css element rules only apply to BaseLayout pages, at element specificity', () => {

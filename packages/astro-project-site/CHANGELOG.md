@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Blog
+
+- New option `blog` (`true` or `{ route, title, description, authors, postsPerPage, rss, landing }`), off unless set.
+  Posts are `src/content/blog/**/*.{md,mdx}` (new `blog` collection in `projectSiteCollections()`, silent when the
+  folder is missing); frontmatter `title`, `description`, `date` (required), `updated`, `authors`, `tags`, `draft`,
+  `image`, `imageAlt`, `canonical`. A missing field fails the build naming the file.
+- Pages: `/blog/` (paginated `/blog/2/`), `/blog/<path>/`, `/blog/tags/`, `/blog/tags/<tag>/`, `/blog/rss.xml` (summary
+  feed, `<link rel="alternate">` on every page, docs included). Posts go into `/llms.txt`, `/llms-full.txt` and the
+  sitemap; drafts are built in dev only, with a badge. A "Blog" nav item is added to the default `nav`.
+- New component slots `BlogIndex`, `BlogPost`, `BlogCard`; new components `LatestPosts` (also on the built-in landing,
+  `blog.landing`), `BlogTags`, `PostMeta`, `TagList`; long-form styles `components/blog/prose.css` (`--blog-*` tokens).
+- New `MarginNote` component (`astro-project-site/components` or `astro-project-site/margin-note`): side notes in the
+  margin of posts, beside the paragraph in docs, inline asides on narrow screens; `kind` note / field / warning,
+  optional numbering.
+- `BaseLayout`/`SiteHead`: new `type` (`website` | `article`) and `canonical` props.
+- Option errors: a union option (`blog: { routee }`) names the unknown key instead of "Invalid input".
+- New dependency `@astrojs/rss` (MIT).
+
+### Responsive design and accessibility
+
 Responsive design and accessibility pass, checked in Chromium, Firefox and WebKit from 320px phones to 2560px
 screens, at 200%/400% zoom and with a large default font.
 

@@ -25,6 +25,7 @@
     },
     "./components": "./src/components/index.ts",
     "./live": "./src/components/live/Live.astro",
+    "./margin-note": "./src/components/blog/MarginNote.astro",
     "./content": "./src/content.ts",
     "./config": "./src/config.ts",
     "./theme.css": "./src/styles/theme.css",
@@ -58,6 +59,7 @@
     "astro": "^7.3.0"
   },
   "dependencies": {
+    "@astrojs/rss": "^4.0.19",
     "starlight-links-validator": "^0.27.0"
   },
   "devDependencies": {

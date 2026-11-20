@@ -4,6 +4,7 @@
 // options (sidebar, plugins, customCss, routeMiddleware, processedDirs) appended to ours rather than replacing them.
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
+import { blogKnownLinks } from './blog/options.mjs';
 import { buildSidebar, editBaseUrl, resolveProject } from './docs/mount.mjs';
 import { resolveModulePath } from './options.mjs';
 import { own } from './own.mjs';
@@ -20,7 +21,7 @@ function repoSocial(/** @type {string} */ repo) {
 
 /**
  * starlight-links-validator, told about the pages it cannot see (it only knows docs pages): the landing page,
- * the gallery, llms.txt and everything under a mirror prefix. The `linksValidator` option adds to this.
+ * the gallery, llms.txt, the blog and everything under a mirror prefix. The `linksValidator` option adds to this.
  * @param {import('./index').ResolvedOptions} options
  */
 export function linksValidator(options) {
@@ -31,6 +32,7 @@ export function linksValidator(options) {
     ...(options.landing === false ? [] : ['/']),
     ...(options.gallery === false ? [] : ['/gallery', '/gallery/', '/gallery/#*']),
     ...(options.llms ? ['/llms.txt', '/llms-full.txt'] : []),
+    ...blogKnownLinks(options.blog),
     ...options.mirrors.flatMap((m) => {
       const to = m.to.replace(/^\/+|\/+$/g, '');
       return [`/${to}`, `/${to}/**`];

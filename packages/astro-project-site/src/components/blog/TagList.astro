@@ -1,0 +1,73 @@
+---
+// A post's tags, each a link to its tag page.
+import site from 'virtual:astro-project-site/config';
+import { tagUrl } from '../../blog/posts.mjs';
+
+interface Props {
+  tags: string[];
+  /** Visible label before the list ("Tagged"); the list is labelled "Tags" either way. */
+  label?: string;
+  class?: string;
+}
+const { tags, label, class: className } = Astro.props;
+const route = site.blog ? site.blog.route : 'blog';
+---
+
+{
+  tags.length > 0 && (
+    <div class:list={['tag-list', className]}>
+      {label && <span class="label">{label}</span>}
+      <ul aria-label="Tags">
+        {tags.map((tag) => (
+          <li>
+            <a href={tagUrl(route, tag)}>{tag}</a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+<style>
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .label {
+    color: var(--site-muted);
+    font-size: 0.875rem;
+  }
+  ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0;
+    padding: 0;
+  }
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.75rem;
+    padding: 0.1rem 0.65rem;
+    border: 1px solid var(--site-border);
+    border-radius: 999px;
+    background: var(--site-surface);
+    color: var(--site-muted);
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    text-decoration: none;
+  }
+  a:hover {
+    border-color: var(--site-accent);
+    color: var(--site-text);
+  }
+  @media (pointer: coarse) {
+    a {
+      min-height: 2.75rem;
+      padding-inline: 0.85rem;
+    }
+  }
+</style>
