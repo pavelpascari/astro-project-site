@@ -1,10 +1,6 @@
-# Checks and builds the site on every PR and push, then hands the built dist/ to deploy.yml:
-#   pull request  → preview at https://pr-<number>-<worker>.<subdomain>.workers.dev (sticky PR comment)
-#   push to main  → preview at https://next-<worker>.<subdomain>.workers.dev
-#   tag v*        → production (wrangler deploy)
-#   manual run    → production if "production" is ticked, otherwise a preview aliased to the branch name
-# Deploys are skipped (not failed) for fork PRs and when the Cloudflare secrets are not set.
-# Docs: src/content/docs/docs/template/deploy.mdx
+# This repository's CI: package tests and type checks, then the template's own site (site/) and the starter
+# (starters/default/) built against the package. The site is deployed through the same reusable workflow
+# (deploy.yml) that projects created with `project-site init` call.
 name: CI
 
 on:
@@ -15,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       production:
-        description: Deploy the selected ref to production
+        description: Deploy site/ to production
         type: boolean
         default: false
 
@@ -26,96 +22,42 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  # Folder holding the site's package.json, relative to the repository root ('.' or e.g. 'website').
-  SITE_DIR: .
-  # A second repository the mirrors read from (owner/name), e.g. when the site lives in its own repo and
-  # mirrors '../framework/src'. It is checked out next to this one, under its own name, so the same relative
-  # `from` paths work locally (two sibling clones) and in CI. Leave empty when everything is in this repo.
-  SOURCE_REPO: ''
-  # Branch, tag or SHA of SOURCE_REPO to build against.
-  SOURCE_REF: main
-
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      site-dir: ${{ github.event.repository.name }}/${{ env.SITE_DIR }}
-    defaults:
-      run:
-        # This repository is checked out into a folder named after it, so SOURCE_REPO can sit beside it.
-        working-directory: ${{ github.event.repository.name }}/${{ env.SITE_DIR }}
     steps:
       - uses: actions/checkout@v7
         with:
-          path: ${{ github.event.repository.name }}
           persist-credentials: false
-
-      - name: Locate ${{ env.SOURCE_REPO }}
-        id: source
-        if: env.SOURCE_REPO != ''
-        working-directory: .
-        run: echo "path=${SOURCE_REPO#*/}" >> "$GITHUB_OUTPUT"
-
-      - name: Check out ${{ env.SOURCE_REPO }}
-        if: env.SOURCE_REPO != ''
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ env.SOURCE_REPO }}
-          ref: ${{ env.SOURCE_REF }}
-          # Same folder name as the repository, beside this one.
-          path: ${{ steps.source.outputs.path }}
-          # A private SOURCE_REPO needs a read-only token in the SOURCE_REPO_TOKEN secret.
-          token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }}
-          persist-credentials: false
-
       - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: ${{ github.event.repository.name }}/${{ env.SITE_DIR }}/package-lock.json
-
       - run: npm ci
-
-      - name: Type-check
-        run: npx astro check
-
-      - name: Build
-        run: npx astro build
-
-      - name: Check docs
+      - name: Unit tests
+        run: npm test
+      # Package type check, then astro check + build + docs:check for site/ and starters/default/.
+      - name: Build everything
+        run: npm run build
+      - name: init → install → build, from the packed package
         run: |
-          if node -e "process.exit(require('./package.json').scripts?.['docs:check'] ? 0 : 1)"; then
-            npm run docs:check
-          else
-            echo "No docs:check script; skipping."
-          fi
+          npm pack -w astro-project-site --pack-destination "$RUNNER_TEMP"
+          tarball=$(ls "$RUNNER_TEMP"/astro-project-site-*.tgz)
+          cd "$RUNNER_TEMP"
+          node "$GITHUB_WORKSPACE/packages/astro-project-site/bin/project-site.mjs" init fresh-site --package "file:$tarball"
+          cd fresh-site
+          npm install --no-audit --no-fund
+          npm run build
 
-      - uses: actions/upload-artifact@v7
-        with:
-          name: dist
-          path: ${{ github.event.repository.name }}/${{ env.SITE_DIR }}/dist
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
-
-  deploy:
-    needs: build
-    # Fork PRs get no secrets; don't even try.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+  site:
+    needs: test
     permissions:
       contents: read
-      pull-requests: write # the sticky preview comment
+      pull-requests: write
     uses: ./.github/workflows/deploy.yml
     with:
-      site-dir: ${{ needs.build.outputs.site-dir }}
-      target: >-
-        ${{ (startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.production)) && 'production' || 'preview' }}
-      alias: >-
-        ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number)
-          || github.ref == 'refs/heads/main' && 'next'
-          || github.ref_name }}
-    secrets:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      working-directory: site
+      install-directory: .
+      production: ${{ github.event_name == 'workflow_dispatch' && inputs.production }}
+    secrets: inherit

@@ -1,52 +1,181 @@
-# Uploads the dist/ artifact built by ci.yml to Cloudflare Workers. Called by ci.yml; not triggered on its own.
-#   target: preview    → `wrangler versions upload --preview-alias <alias>`; production is untouched.
-#                        URL: https://<alias>-<worker-name>.<subdomain>.workers.dev
-#   target: production → `wrangler deploy`.
-# Without CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID (fork, Dependabot, not configured yet) it logs a notice and
-# succeeds. Docs: src/content/docs/docs/template/deploy.mdx
-name: Deploy
+# Reusable workflow: checks, builds and deploys an astro-project-site site to Cloudflare Workers.
+#
+# A project calls it from its own workflow (this is the whole file the starter ships):
+#
+#   on: [pull_request, push, workflow_dispatch]
+#   jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@main,
+#                   permissions: { contents: read, pull-requests: write }, secrets: inherit } }
+#
+#   pull request   → preview at https://pr-<number>-<worker>.<subdomain>.workers.dev (sticky PR comment)
+#   push to main   → preview at https://next-<worker>.<subdomain>.workers.dev
+#   tag v*         → production (wrangler deploy)
+#   manual run     → production if `production` is true, otherwise a preview aliased to the branch name
+#   other pushes   → checks and build only
+# Deploys are skipped (not failed) for fork PRs and when CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set.
+name: Site
 
 on:
   workflow_call:
     inputs:
-      site-dir:
-        description: Folder holding package.json and wrangler.jsonc, relative to the workspace
+      working-directory:
+        description: Folder holding the site's package.json, astro.config.mjs and wrangler.jsonc, relative to the repo root
         type: string
-        required: true
-      target:
-        description: preview or production
-        type: string
-        required: true
-      alias:
-        description: Preview alias (pr-12, next, a branch name); ignored for production
+        default: .
+      install-directory:
+        description: Folder to run `npm ci` in (the one with package-lock.json). Defaults to working-directory; set it to '.' for a workspace member
         type: string
         default: ''
+      worker-name:
+        description: Cloudflare Worker name; overrides `name` in wrangler.jsonc
+        type: string
+        default: ''
+      source-repo:
+        description: A second repository the mirrors or externalDocs read from (owner/name), checked out next to this one under its own name
+        type: string
+        default: ''
+      source-ref:
+        description: Branch, tag or SHA of source-repo
+        type: string
+        default: main
+      node-version:
+        type: string
+        default: '22'
+      production:
+        description: Deploy to production (manual runs)
+        type: boolean
+        default: false
+      deploy:
+        description: Set to false to only check and build
+        type: boolean
+        default: true
     secrets:
       CLOUDFLARE_API_TOKEN:
         required: false
       CLOUDFLARE_ACCOUNT_ID:
         required: false
+      SOURCE_REPO_TOKEN:
+        description: Read-only token for a private source-repo
+        required: false
+    outputs:
+      url:
+        description: The preview or production URL, when deployed
+        value: ${{ jobs.deploy.outputs.url }}
 
 permissions:
   contents: read
 
+concurrency:
+  group: site-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      target: ${{ steps.target.outputs.target }}
+      alias: ${{ steps.target.outputs.alias }}
+    defaults:
+      run:
+        # The repository is checked out into a folder named after it, so source-repo can sit beside it.
+        working-directory: ${{ github.event.repository.name }}/${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: ${{ github.event.repository.name }}
+          persist-credentials: false
+
+      - name: Locate ${{ inputs.source-repo }}
+        id: source
+        if: inputs.source-repo != ''
+        working-directory: .
+        env:
+          SOURCE_REPO: ${{ inputs.source-repo }}
+        run: echo "path=${SOURCE_REPO#*/}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out ${{ inputs.source-repo }}
+        if: inputs.source-repo != ''
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ inputs.source-repo }}
+          ref: ${{ inputs.source-ref }}
+          path: ${{ steps.source.outputs.path }}
+          token: ${{ secrets.SOURCE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+          cache-dependency-path: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}/package-lock.json
+
+      - name: Install
+        working-directory: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}
+        run: npm ci
+
+      - name: Type-check
+        run: npx astro check
+
+      - name: Build
+        run: npx astro build
+
+      - name: Check generated docs
+        run: |
+          if [ -f docs-gen.config.mjs ]; then npx project-site docs:check; else echo "No docs-gen.config.mjs; skipping."; fi
+
+      - name: Decide the target
+        id: target
+        working-directory: .
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          PR: ${{ github.event.pull_request.number }}
+          PRODUCTION: ${{ inputs.production }}
+        run: |
+          if [[ "$REF" == refs/tags/v* ]] || [[ "$EVENT" == workflow_dispatch && "$PRODUCTION" == true ]]; then
+            echo "target=production" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT" == pull_request ]]; then
+            echo "target=preview" >> "$GITHUB_OUTPUT"; echo "alias=pr-$PR" >> "$GITHUB_OUTPUT"
+          elif [[ "$REF" == refs/heads/main ]]; then
+            echo "target=preview" >> "$GITHUB_OUTPUT"; echo "alias=next" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT" == workflow_dispatch ]]; then
+            echo "target=preview" >> "$GITHUB_OUTPUT"; echo "alias=$REF_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: ${{ github.event.repository.name }}/${{ inputs.working-directory }}/dist
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+
   deploy:
+    needs: build
+    # Fork PRs get no secrets; don't even try.
+    if: >-
+      inputs.deploy && needs.build.outputs.target != 'none' &&
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # One upload per alias at a time; a newer push to the same PR replaces a queued one. Production never cancels.
     concurrency:
-      group: deploy-${{ github.repository }}-${{ inputs.target == 'production' && 'production' || inputs.alias }}
-      cancel-in-progress: ${{ inputs.target != 'production' }}
+      group: deploy-${{ github.repository }}-${{ needs.build.outputs.target == 'production' && 'production' || needs.build.outputs.alias }}
+      cancel-in-progress: ${{ needs.build.outputs.target != 'production' }}
     environment:
-      name: ${{ inputs.target == 'production' && 'production' || 'preview' }}
+      name: ${{ needs.build.outputs.target }}
       url: ${{ steps.preview.outputs.url || steps.production.outputs.url }}
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # the sticky preview comment
+    outputs:
+      url: ${{ steps.preview.outputs.url || steps.production.outputs.url }}
     defaults:
       run:
-        working-directory: ${{ inputs.site-dir }}
+        working-directory: ${{ github.event.repository.name }}/${{ inputs.working-directory }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -70,35 +199,43 @@ jobs:
       - uses: actions/setup-node@v7
         if: steps.creds.outputs.ok
         with:
-          node-version: 22
+          node-version: ${{ inputs.node-version }}
           cache: npm
-          cache-dependency-path: ${{ inputs.site-dir }}/package-lock.json
+          cache-dependency-path: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}/package-lock.json
 
-      # Only for wrangler, at the version package-lock.json pins.
-      - if: steps.creds.outputs.ok
+      # For wrangler and the project-site CLI, at the versions package-lock.json pins.
+      - name: Install
+        if: steps.creds.outputs.ok
+        working-directory: ${{ github.event.repository.name }}/${{ inputs.install-directory || inputs.working-directory }}
         run: npm ci
 
       - uses: actions/download-artifact@v8
         if: steps.creds.outputs.ok
         with:
           name: dist
-          path: ${{ inputs.site-dir }}/dist
+          path: ${{ github.event.repository.name }}/${{ inputs.working-directory }}/dist
+
+      - name: Worker name
+        if: steps.creds.outputs.ok && inputs.worker-name != ''
+        env:
+          NAME: ${{ inputs.worker-name }}
+        run: sed -i -E "0,/\"name\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/s//\"name\": \"$NAME\"/" wrangler.jsonc
 
       - name: Upload preview version
         id: preview
-        if: steps.creds.outputs.ok && inputs.target == 'preview'
+        if: steps.creds.outputs.ok && needs.build.outputs.target == 'preview'
         env:
-          ALIAS: ${{ inputs.alias }}
+          ALIAS: ${{ needs.build.outputs.alias }}
           MESSAGE: "${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} @ ${{ github.sha }}"
-        run: node scripts/deploy-preview.mjs --alias "$ALIAS" --message "$MESSAGE"
+        run: npx project-site deploy:preview --alias "$ALIAS" --message "$MESSAGE"
 
       - name: Deploy to production
         id: production
-        if: steps.creds.outputs.ok && inputs.target == 'production'
+        if: steps.creds.outputs.ok && needs.build.outputs.target == 'production'
         env:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-deploy.ndjson
         run: |
-          npx wrangler deploy --message "${GITHUB_REF_NAME} @ ${GITHUB_SHA}"
+          npx --yes wrangler@4 deploy --message "${GITHUB_REF_NAME} @ ${GITHUB_SHA}"
           # First route wrangler reports (workers.dev or custom domain), for the environment link.
           url=$(node -e '
             const lines = require("fs").readFileSync(process.env.WRANGLER_OUTPUT_FILE_PATH, "utf8").split("\n").filter(Boolean);
