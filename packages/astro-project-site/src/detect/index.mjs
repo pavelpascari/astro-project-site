@@ -78,6 +78,7 @@ function sanitizeReadme(/** @type {import('./readme.mjs').ReadmeFacts} */ r) {
  *   url: Fact<string>, install?: Fact<string>, version?: Fact<string>, versionFrom?: string,
  *   authors: { key: string, name: string, url?: string, from: string }[],
  *   empty: boolean,
+ *   usesMermaid: boolean,
  * }} Detected
  */
 
@@ -165,9 +166,21 @@ export function detectProject({ root, site, name: nameOverride, gitUser }) {
     .map((p) => ({ key: slugify(/** @type {string} */ (p.name)), name: /** @type {string} */ (p.name), url: p.url, from: p.from }));
 
   const empty = !manifest && !readme && !docs && !demos.dirs.length && !project.changelog && !project.contributing;
+  // Mermaid is an optional dependency of the template: add it only when the markdown being mounted has diagrams.
+  const markdownFiles = [
+    ...[project.readme, project.changelog, project.contributing].filter((f) => f !== undefined).map((f) => path.join(root, f)),
+    ...(docs ? docs.pages.map((p) => path.join(root, docs.dir, p)) : []),
+  ];
+  const usesMermaid = markdownFiles.some((file) => {
+    try {
+      return /^\s{0,3}(`{3,}|~{3,})\s*mermaid\b/m.test(fs.readFileSync(file, 'utf8'));
+    } catch {
+      return false;
+    }
+  });
 
   return {
     root, site, toRoot, sameFolder, git, manifest, errors, readmeFile, readme, docs, project, license, demos,
-    name, slug, tagline, lead, repo, branch, url, install, version, versionFrom, authors, empty,
+    name, slug, tagline, lead, repo, branch, url, install, version, versionFrom, authors, empty, usesMermaid,
   };
 }

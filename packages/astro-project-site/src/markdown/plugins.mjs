@@ -25,7 +25,8 @@ import Slugger from 'github-slugger';
  *   key: string, value: unknown): void, prependChild(node: any, child: any): void, parent(node: any): any, indexOf(node: any): number | undefined,
  *   fileURL?: URL, sourceFormat?: string }} Ctx
  * @typedef {{ alerts: boolean, emoji: boolean, math: boolean, mermaid: boolean, headingLinks: boolean }} Features
- * @typedef {{ features: Features, katexCss: string, isStarlightFile: (url: URL | undefined) => boolean }} PluginOptions
+ * @typedef {{ features: Features, katexCss: string, isStarlightFile: (url: URL | undefined) => boolean,
+ *   mermaidInstalled?: boolean, onMissingMermaid?: (file: URL | undefined) => void }} PluginOptions
  */
 
 // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────
@@ -184,6 +185,23 @@ export function mermaidFigure(/** @type {string} */ source) {
 }
 
 /**
+ * A diagram when the optional `mermaid` package is not installed: the source, with a note saying how to get the
+ * drawing. No `data-mermaid`, so no script touches it.
+ */
+export function mermaidSourceOnly(/** @type {string} */ source) {
+  return el('figure', { className: ['md-mermaid', 'md-mermaid--source-only'] }, [
+    el('pre', { className: ['md-mermaid__source'] }, [text(source)]),
+    el('figcaption', { className: ['md-mermaid__note'] }, [
+      text('Mermaid diagram (source). Install '),
+      el('code', {}, [text('mermaid')]),
+      text(' in this site to draw it: '),
+      el('code', {}, [text('npm i mermaid')]),
+      text('.'),
+    ]),
+  ]);
+}
+
+/**
  * Code-like blocks that are not code: ```mermaid, ```math, $$…$$ and $…$. Runs before Expressive Code (it is put
  * first in the plugin list), which would otherwise highlight them as code.
  */
@@ -207,7 +225,13 @@ export function blocksPlugin(/** @type {PluginOptions} */ opts) {
             const info = codeOf(node);
             if (!info) return;
             const source = ctx.textContent(info.code).replace(/\r?\n$/, '');
-            if (mermaid && info.lang === 'mermaid') return mermaidFigure(source);
+            if (mermaid && info.lang === 'mermaid') {
+              if (opts.mermaidInstalled === false) {
+                opts.onMissingMermaid?.(ctx.fileURL);
+                return mermaidSourceOnly(source);
+              }
+              return mermaidFigure(source);
+            }
             if (math && info.lang === 'math') return mathNode(source, true, ctx);
           },
         },

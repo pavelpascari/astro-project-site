@@ -231,6 +231,11 @@
     line-height: 1.6;
     white-space: pre;
   }
+  :where(.md-mermaid__note) {
+    margin-top: 0.4rem;
+    color: var(--site-muted);
+    font-size: 0.875rem;
+  }
   :where(.md-mermaid__details) {
     margin-top: 0.25rem;
     font-size: var(--sl-text-sm, 0.875rem);

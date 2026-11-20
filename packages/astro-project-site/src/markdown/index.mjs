@@ -19,6 +19,16 @@ export { expressiveCodeConfig } from './expressive-code.mjs';
 
 const require = createRequire(import.meta.url);
 
+/** Whether `name` resolves from the project (its own node_modules or a parent's). */
+export function hasPackage(/** @type {string} */ name, /** @type {string} */ root) {
+  try {
+    createRequire(path.join(root, 'package.json')).resolve(`${name}/package.json`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Folder of KaTeX's dist/ (stylesheet and fonts) and its version. */
 export function katexAssets() {
   const dist = path.dirname(require.resolve('katex'));
@@ -66,6 +76,8 @@ export function markdownIntegration(options) {
           return dirs.some((d) => file.startsWith(d));
         };
 
+        // Mermaid is an optional peer dependency (it is large): diagrams are drawn only when the project installs it.
+        const mermaidInstalled = features.mermaid && hasPackage('mermaid', root);
         const processor = /** @type {any} */ (config.markdown)?.processor;
         if (processor?.name === 'satteri' && Array.isArray(processor.options?.hastPlugins)) {
           const f = (processor.options.features ??= {});
@@ -75,7 +87,22 @@ export function markdownIntegration(options) {
           if (f.smartPunctuation === undefined && /** @type {any} */ (config.markdown).smartypants === undefined) {
             f.smartPunctuation = { quotes: true, dashes: false, ellipses: true };
           }
-          const { first, rest } = markdownPlugins({ features, katexCss: `${base}${katex.path}/katex.min.css`, isStarlightFile });
+          let warned = false;
+          const { first, rest } = markdownPlugins({
+            features,
+            katexCss: `${base}${katex.path}/katex.min.css`,
+            isStarlightFile,
+            mermaidInstalled,
+            onMissingMermaid: (file) => {
+              if (warned) return;
+              warned = true;
+              const where = file?.protocol === 'file:' ? path.relative(root, fileURLToPath(file)) : 'a page';
+              logger.warn(
+                `${where} has a \`\`\`mermaid diagram, but the optional \`mermaid\` package is not installed, so diagrams show ` +
+                  'their source. To draw them: npm i mermaid (or set markdown.mermaid: false to silence this).',
+              );
+            },
+          });
           // First: math and mermaid blocks must be replaced before Expressive Code sees them as code.
           processor.options.hastPlugins.unshift(...first);
           processor.options.hastPlugins.push(...rest);
@@ -87,7 +114,7 @@ export function markdownIntegration(options) {
         }
 
         injectScript('page-ssr', `import ${JSON.stringify(own('styles/markdown.css'))};`);
-        if (features.mermaid) {
+        if (mermaidInstalled) {
           injectScript('page', `import ${JSON.stringify(own('markdown/client/mermaid-loader.ts'))};`);
           // Mermaid's lazily loaded chunks (layout engines, diagram types) are large by nature; they are fetched only
           // by pages with diagrams. Keep Vite's chunk-size warning for the project's own code at a level they pass.

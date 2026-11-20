@@ -12,6 +12,9 @@ import { comment, lit, note, str } from './js.mjs';
  * @typedef {{ packageSpec: string, version: string, today: string, starter: string }} GenerateOptions
  */
 
+/** The mermaid version range a generated site installs when its markdown has diagrams (the template's peer range). */
+const MERMAID_RANGE = '^12.3.0';
+
 /** Folders of working notes inside docs/ that are left out of the site unless the user removes the exclude. */
 const INTERNAL_DOCS = ['plans', 'research', 'internal', 'drafts', 'notes', 'wip', 'private', 'scratch'];
 
@@ -299,10 +302,12 @@ export function galleryEntry(/** @type {ReturnType<typeof siteModel>['gallery'][
 }
 
 /** The site's package.json, from the starter's (scripts, dependency versions). */
-export function packageJson(/** @type {string} */ starterText, /** @type {string} */ name, /** @type {string} */ packageSpec) {
+export function packageJson(/** @type {string} */ starterText, /** @type {string} */ name, /** @type {string} */ packageSpec, withMermaid = false) {
   const json = JSON.parse(starterText);
   json.name = name;
   json.dependencies = { ...json.dependencies, 'astro-project-site': packageSpec };
+  // Optional peer of the template, needed only to draw ```mermaid diagrams (the markdown has some).
+  if (withMermaid) json.dependencies.mermaid = MERMAID_RANGE;
   return `${JSON.stringify(json, null, 2)}\n`;
 }
 
@@ -363,7 +368,7 @@ export function planFiles(/** @type {Detected} */ d, /** @type {GenerateOptions}
   /** @type {PlannedFile[]} */
   const files = [
     { to: 'astro.config.mjs', content: astroConfig(d, m) },
-    { to: 'package.json', content: packageJson(read('package.json'), siteName, o.packageSpec) },
+    { to: 'package.json', content: packageJson(read('package.json'), siteName, o.packageSpec, !!d.usesMermaid) },
     { to: 'README.md', content: siteReadme(d, m) },
     { to: 'wrangler.jsonc', content: wrangler(read('wrangler.jsonc'), d.slug) },
     { to: '.github/workflows/site.yml', content: workflow(read('.github/workflows/site.yml'), o.version, workingDirectory) },

@@ -19,7 +19,8 @@
   "dependencies": {
     "@astrojs/starlight": "^0.43.1",
     "astro": "^7.3.8",
-    "astro-project-site": "^0.1.0"
+    "astro-project-site": "^0.1.0",
+    "mermaid": "^12.3.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",

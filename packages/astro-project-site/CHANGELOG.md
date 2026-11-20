@@ -53,6 +53,9 @@
 
 ### Markdown: GitHub parity
 
+- `mermaid` is an optional peer dependency (about 127 MB installed): `npm i mermaid` in the site to draw
+  ```` ```mermaid ```` diagrams. Without it they show their source with a note, and the build warns once with the
+  first file. `project-site init` adds it when the repository's markdown has a diagram.
 Markdown renders at least as well as on GitHub everywhere it appears (docs, `externalDocs` folders, blog posts,
 a project's own `.md` pages): the plugins are registered on Astro's global markdown processor (Sätteri).
 

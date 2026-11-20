@@ -234,6 +234,7 @@ function foundLines(d, m, /** @type {string} */ root, /** @type {string} */ cwd)
     rows.push(['demos', `${d.demos.dirs.map((x) => `${x.dir}/ (${x.pages.length})`).join(', ')} → /${APPS_ROUTE}/, ${m.gallery.length} gallery entries`]);
     if (d.demos.needs.length) rows.push(['', `also mirrored, the pages load from them: ${d.demos.needs.map((n) => `${n}/`).join(', ')}`]);
   }
+  if (d.usesMermaid) rows.push(['diagrams', '```mermaid blocks in the markdown → mermaid added to package.json']);
   for (const e of d.errors) rows.push(['skipped', e]);
   const missing = [
     !d.manifest && 'manifest',

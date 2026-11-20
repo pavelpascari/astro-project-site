@@ -345,7 +345,8 @@ Markdown renders as on GitHub on every page that has it (docs, `externalDocs` fo
 pages); the plugins sit on Astro's global markdown processor. GFM (tables with alignment, task lists, strikethrough,
 autolinks, footnotes, raw HTML), GitHub-compatible heading ids, alerts (`> [!NOTE]` …), emoji shortcodes, math
 (`$…$`, `$$…$$`, ```` ```math ````, KaTeX at build time, its CSS linked only where used) and ```` ```mermaid ````
-diagrams (Mermaid loaded only on pages with diagrams, themed from the tokens). Code blocks are Expressive Code with
+diagrams (Mermaid loaded only on pages with diagrams, themed from the tokens; `mermaid` is an optional peer
+dependency: `npm i mermaid` to draw them, otherwise they show their source with a note). Code blocks are Expressive Code with
 line numbers, collapsible sections, terminal prompts that are not copied and a wrap toggle; set more through
 `starlight.expressiveCode`. Each extra can be switched off with `markdown: { math: false, … }`. Raw HTML is not
 sanitised (the markdown is the project's own). The full list, with source and result side by side, is the site's
@@ -453,8 +454,8 @@ they are the project's own files.
 
 ## Licences
 
-MIT. Dependencies: `starlight-links-validator`, `@astrojs/rss`, `mermaid`, `katex`, `gemoji`, `hast-util-from-html`,
+MIT. Dependencies: `starlight-links-validator`, `@astrojs/rss`, `katex`, `gemoji`, `hast-util-from-html`,
 `@expressive-code/core`, `@expressive-code/plugin-line-numbers`, `@expressive-code/plugin-collapsible-sections`
-(MIT), `github-slugger` (ISC); peers `astro` and `@astrojs/starlight` (MIT). Build-time
+(MIT), `github-slugger` (ISC); peers `astro` and `@astrojs/starlight` (MIT), and optionally `mermaid` (MIT). Build-time
 tools pulled in by Astro and Vite include Lightning CSS (MPL-2.0) and libvips via sharp (LGPL-3.0); neither ends
 up in the built site.

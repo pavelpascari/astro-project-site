@@ -432,6 +432,17 @@ near, and draws in the site's colours (switch the theme to see it redraw). Wide 
 scroll sideways. The source stays under each diagram, and is what shows if a diagram cannot be drawn (or before
 JavaScript runs).
 
+Mermaid is an optional dependency, because it is large (about 127 MB in `node_modules`). Install it in your site to
+draw diagrams:
+
+```bash
+npm i mermaid
+```
+
+`project-site init` adds it for you when your repository's markdown already has a `mermaid` block. Without it,
+diagrams show their source with a note saying how to draw them, and the build prints one warning naming the first
+file that has one; set `markdown: { mermaid: false }` to silence that.
+
 ````md
 ```mermaid
 flowchart LR
