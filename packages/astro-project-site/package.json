@@ -83,7 +83,7 @@
   "devDependencies": {
     "@astrojs/starlight": "^0.43.1",
     "astro": "^7.4.13",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "peerDependenciesMeta": {
     "mermaid": {
