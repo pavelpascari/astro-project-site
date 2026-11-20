@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
+# Collapsed in GitHub diffs but still reviewable (lockfile changes matter for supply-chain review).
+package-lock.json linguist-generated=true

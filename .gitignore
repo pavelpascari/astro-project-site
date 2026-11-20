@@ -4,9 +4,16 @@ dist/
 node_modules/
 .env
 .env.*
+.dev.vars*
 .DS_Store
 *.log
+*.tgz
 .idea/
 .vscode/
+# Local agent and tool state
+.claude/
+.playwright-mcp/
+# Output of packages/astro-project-site/test/ux/ux-check.mjs
+ux-report/
 # `npm pack` copies starters/default here (prepack) and removes it again (postpack).
 packages/astro-project-site/starter/
