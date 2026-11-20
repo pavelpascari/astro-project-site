@@ -22,7 +22,11 @@
 
 ### `init` reads the repository
 
-- A README code block with no sentence before it is titled from its code ("Run `npx tool a`, `b` and `c`", "Add it
+- Working-note folders inside `docs/` (`plans/`, `research/`, `internal/`, `drafts/`, `notes/`, `wip/`, `private/`,
+  `scratch/`) are left out of the generated mount with `exclude`; delete the line to publish them.
+- A mount root is titled by its `label` ("Reference", "Project") on overview and landing cards, not by its README's
+  heading.
+- A README code block with no sentence before it is titled from its code ("Run npx tool a, b and c", "Add it
   to your page") instead of "Step N".
 - The blog's empty page says when drafts are waiting (they are left out of production builds) instead of "No posts
   yet".

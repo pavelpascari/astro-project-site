@@ -12,6 +12,9 @@ import { comment, lit, note, str } from './js.mjs';
  * @typedef {{ packageSpec: string, version: string, today: string, starter: string }} GenerateOptions
  */
 
+/** Folders of working notes inside docs/ that are left out of the site unless the user removes the exclude. */
+const INTERNAL_DOCS = ['plans', 'research', 'internal', 'drafts', 'notes', 'wip', 'private', 'scratch'];
+
 /** The `externalDocs` route for the docs folder and for the project files. */
 export const DOCS_ROUTE = 'reference';
 export const PROJECT_ROUTE = 'project';
@@ -22,18 +25,24 @@ export const APPS_ROUTE = 'apps';
 export function siteModel(/** @type {Detected} */ d) {
   const example = d.empty;
   const r = d.toRoot;
-  /** @type {{ dir: string, route: string, label: string, order?: string[], include?: string[], pages: number, index?: string }[]} */
+  /** @type {{ dir: string, route: string, label: string, order?: string[], include?: string[], exclude?: string[], pages: number, index?: string }[]} */
   const mounts = [];
   if (example) {
     mounts.push({ dir: './example/docs', route: DOCS_ROUTE, label: 'Reference', order: ['getting-started.md'], pages: 4, index: `/docs/${DOCS_ROUTE}/` });
   } else if (d.docs) {
+    const docs = d.docs;
+    // Working notes kept next to the docs (plans/, research/, ...) stay out of the site by default.
+    const internal = INTERNAL_DOCS.filter((dir) => docs.pages.some((p) => p.split('/')[0].toLowerCase() === dir));
+    const exclude = internal.length ? internal.map((dir) => `${dir}/**`) : undefined;
+    const published = docs.pages.filter((p) => !internal.includes(p.split('/')[0].toLowerCase()));
     const first = d.docs.hasIndex ? undefined : (d.docs.order[0] ?? d.docs.pages.find((p) => !p.includes('/')) ?? d.docs.pages[0]);
     mounts.push({
       dir: `${r}/${d.docs.dir}`,
       route: DOCS_ROUTE,
       label: 'Reference',
       order: d.docs.order.length ? d.docs.order : undefined,
-      pages: d.docs.pages.length,
+      exclude,
+      pages: published.length,
       index: `/${idForFile(/** @type {any} */ ({ routeId: `docs/${DOCS_ROUTE}` }), first ?? 'README.md')}/`,
     });
   }
@@ -143,7 +152,7 @@ export function astroConfig(d, m) {
     nav: m.nav,
     externalDocs: m.mounts.length
       ? note(
-          m.mounts.map((x) => ({ dir: x.dir, route: x.route, label: x.label, order: x.order, include: x.include })),
+          m.mounts.map((x) => ({ dir: x.dir, route: x.route, label: x.label, order: x.order, include: x.include, exclude: x.exclude })),
           {
             comment: [
               m.example

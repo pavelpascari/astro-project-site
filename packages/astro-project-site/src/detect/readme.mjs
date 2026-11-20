@@ -159,7 +159,7 @@ export function codeLang(/** @type {string} */ lang) {
 
 /**
  * A step title for a code block with no sentence before it, from the code itself: shell commands become
- * "Run `npx tool a`, `b` and `c`"; other languages get a short phrase. `undefined` when nothing fits.
+ * "Run npx tool a, b and c"; other languages get a short phrase. `undefined` when nothing fits.
  */
 export function titleFromCode(/** @type {string} */ code, /** @type {string} */ lang) {
   const l = codeLang(lang);
@@ -170,7 +170,8 @@ export function titleFromCode(/** @type {string} */ code, /** @type {string} */ 
       .filter((line) => line && !line.startsWith('#'))
       .map((line) => line.split(/\s+/).filter((w) => !w.startsWith('-')).slice(0, 3));
     if (!cmds.length) return undefined;
-    const tick = (/** @type {string} */ s) => `\`${s}\``;
+    // Plain text: step titles are rendered as text, so markdown backticks would show literally.
+    const tick = (/** @type {string} */ s) => s;
     const join = (/** @type {string[]} */ xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs[0]);
     const prefix = cmds[0].slice(0, 2).join(' ');
     if (cmds.length > 1 && cmds.every((c) => c.length === 3 && c.slice(0, 2).join(' ') === prefix)) {

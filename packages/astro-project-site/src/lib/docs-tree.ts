@@ -71,12 +71,14 @@ function load(): Promise<Tree> {
   return cached!;
 }
 
-/** Title for a folder: its index page's title, the `externalDocs` label for a mount root, else its name. */
+/** Title for a folder: the `externalDocs` label for a mount root, else its index page's title, else its name. */
 export function folderTitle(folder: string, tree?: Tree) {
-  const page = tree?.pages.get(folder);
-  if (page) return page.data.title;
+  // A mount root is named by its configured label ("Reference"), not by its README's heading, which is usually the
+  // project name and would make every mount card read the same.
   const mount = site.externalDocs?.find((m) => `docs/${m.route.replace(/^\/+|\/+$/g, '')}` === folder);
   if (mount) return mount.label;
+  const page = tree?.pages.get(folder);
+  if (page) return page.data.title;
   return titleCase(folder.split('/').at(-1) ?? folder);
 }
 
