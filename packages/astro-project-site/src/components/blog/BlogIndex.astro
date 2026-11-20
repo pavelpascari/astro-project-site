@@ -7,11 +7,14 @@ import BlogCard from 'virtual:astro-project-site/components/BlogCard';
 import type { BlogIndexProps } from '../../index';
 import { rssPath } from '../../blog/options.mjs';
 import { listUrl, tagsUrl } from '../../blog/posts.mjs';
+import { blogPosts } from '../../blog/data';
 
 type Props = BlogIndexProps;
 const { posts, title, description, tag, tags, page } = Astro.props;
 const blog = site.blog || { route: 'blog', rss: false, title: 'Blog' };
 const feed = blog.rss ? rssPath(blog) : undefined;
+// Drafts are left out of production builds; when they are all there is, say so instead of "No posts yet".
+const drafts = posts.length === 0 && !tag ? (await blogPosts({ drafts: true })).filter((p) => p.data.draft) : [];
 ---
 
 <div class="site-container blog-index">
@@ -56,9 +59,17 @@ const feed = blog.rss ? rssPath(blog) : undefined;
         ))}
       </ol>
     ) : (
-      <p class="empty">
-        No posts yet. Add a Markdown or MDX file to <code>src/content/blog/</code>.
-      </p>
+      drafts.length > 0 ? (
+        <p class="empty">
+          {drafts.length === 1 ? '1 draft is' : `${drafts.length} drafts are`} waiting: drafts only show in
+          development. Run <code>npm run dev</code> to read {drafts.length === 1 ? 'it' : 'them'}, then set{' '}
+          <code>draft: false</code> to publish.
+        </p>
+      ) : (
+        <p class="empty">
+          No posts yet. Add a Markdown or MDX file to <code>src/content/blog/</code>.
+        </p>
+      )
     )
   }
 

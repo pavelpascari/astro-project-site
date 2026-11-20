@@ -2,7 +2,7 @@
 // The body of astro-project-site's own landing page (src/pages/index.astro renders it inside the package's BaseLayout). It uses the package's public components (Live, Section, InstallCommand,
 // GalleryStrip, CallToAction) plus a few site-local ones in this folder. Every demo on it is a <Live> example.
 import config from 'astro-project-site/config';
-import { CallToAction, GalleryStrip, InstallCommand, Live, Section } from 'astro-project-site/components';
+import { CallToAction, GalleryStrip, InstallCommand, LatestPosts, Live, Section } from 'astro-project-site/components';
 import configSource from '../../../astro.config.mjs?raw';
 import docsConfig from '../../../docs.config.mjs';
 import Kit from './Kit.astro';
@@ -160,6 +160,8 @@ const num = (id: string) => String(sections.findIndex(([s]) => s === id) + 1).pa
     intro="Each one is running on this site right now."
     limit={6}
   />
+
+  <LatestPosts title="From the blog" intro="Notes on how the template works and why." limit={3} />
 
   <Section
     id="upgrade"

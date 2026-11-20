@@ -22,6 +22,10 @@
 
 ### `init` reads the repository
 
+- A README code block with no sentence before it is titled from its code ("Run `npx tool a`, `b` and `c`", "Add it
+  to your page") instead of "Step N".
+- The blog's empty page says when drafts are waiting (they are left out of production builds) instead of "No posts
+  yet".
 `project-site init` builds the site from the repository it is for:
 
 - Reads the manifest (`package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `composer.json`, `*.gemspec`), the

@@ -133,7 +133,7 @@ test('README edge cases', () => {
   // No Install/Usage heading: the section holding the first install command.
   const odd = parseReadme('# X\n\n## Five minutes to a demo\n\n```sh\nnpm i x   # tiny\n```\n\n```js\nx();\n```\n');
   assert.equal(odd.install, 'npm i x');
-  assert.deepEqual(odd.steps.map((s) => s.title), ['Install', 'Step 2']);
+  assert.deepEqual(odd.steps.map((s) => s.title), ['Install', 'Use it in code']);
   assert.equal(parseReadme('```\n# not a title\n```\n').title, undefined);
   assert.deepEqual(splitFeature('🚀 **Fast.** Really fast'), { title: 'Fast', body: 'Really fast' });
   assert.deepEqual(splitFeature('Zero config – just works'), { title: 'Zero config', body: 'Just works' });

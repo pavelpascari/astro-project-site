@@ -157,6 +157,36 @@ export function codeLang(/** @type {string} */ lang) {
   return known.includes(l) ? l : 'txt';
 }
 
+/**
+ * A step title for a code block with no sentence before it, from the code itself: shell commands become
+ * "Run `npx tool a`, `b` and `c`"; other languages get a short phrase. `undefined` when nothing fits.
+ */
+export function titleFromCode(/** @type {string} */ code, /** @type {string} */ lang) {
+  const l = codeLang(lang);
+  if (l === 'sh') {
+    const cmds = code
+      .split('\n')
+      .map((line) => line.replace(/^\s*(?:\$|%|>|❯)\s+/, '').replace(/\s+#.*$/, '').trim())
+      .filter((line) => line && !line.startsWith('#'))
+      .map((line) => line.split(/\s+/).filter((w) => !w.startsWith('-')).slice(0, 3));
+    if (!cmds.length) return undefined;
+    const tick = (/** @type {string} */ s) => `\`${s}\``;
+    const join = (/** @type {string[]} */ xs) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}` : xs[0]);
+    const prefix = cmds[0].slice(0, 2).join(' ');
+    if (cmds.length > 1 && cmds.every((c) => c.length === 3 && c.slice(0, 2).join(' ') === prefix)) {
+      const subs = [...new Set(cmds.map((c) => c[2]))];
+      return `Run ${join([tick(`${prefix} ${subs[0]}`), ...subs.slice(1).map(tick)])}`;
+    }
+    return `Run ${tick(cmds[0].join(' '))}`;
+  }
+  const byLang = /** @type {Record<string, string>} */ ({
+    html: 'Add it to your page', astro: 'Add it to your page', vue: 'Add it to your page', svelte: 'Add it to your page',
+    css: 'Style it', scss: 'Style it',
+    json: 'Configure it', jsonc: 'Configure it', json5: 'Configure it', yaml: 'Configure it', yml: 'Configure it', toml: 'Configure it', ini: 'Configure it',
+  });
+  return byLang[l] ?? (['js', 'javascript', 'mjs', 'cjs', 'ts', 'typescript', 'jsx', 'tsx', 'py', 'python', 'rust', 'rs', 'go', 'ruby', 'rb', 'php'].includes(l) ? 'Use it in code' : undefined);
+}
+
 /** The first package-install command in a shell code block, without prompt or trailing comment. */
 export function findInstall(/** @type {Block[]} */ list) {
   for (const b of list) {
@@ -239,7 +269,7 @@ export function parseReadme(/** @type {string} */ md) {
         const lead = lastPara.replace(/:\s*$/, '');
         steps.push(first
           ? { title: !lead && install && b.code.includes(install) && !/^install/i.test(heading) ? 'Install' : heading, body: lead ? firstSentence(lead, 200) : '', code: b.code, lang: codeLang(b.lang) }
-          : { title: lead ? firstSentence(lead, 80) : `Step ${steps.length + 1}`, body: '', code: b.code, lang: codeLang(b.lang) });
+          : { title: lead ? firstSentence(lead, 80) : (titleFromCode(b.code, b.lang) ?? `Step ${steps.length + 1}`), body: '', code: b.code, lang: codeLang(b.lang) });
         first = false;
         lastPara = '';
       }
