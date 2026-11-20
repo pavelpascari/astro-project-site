@@ -1,0 +1,55 @@
+---
+title: Getting started
+description: What is where in this site, and how to write a page with live examples.
+---
+
+import { Live } from 'astro-project-site/components';
+
+This site is one Astro integration, `projectSite()`, configured in `astro.config.mjs`. Edit it to set the name,
+the links and the landing page; add pages here, in `src/content/docs/docs/`.
+
+- Your project's own markdown folder is mounted under [Reference](/docs/reference/) (`externalDocs`).
+- Static apps are served as they are, like the [hello app](/apps/hello/) (`mirrors`).
+- One file per item in `src/content/gallery/` fills the [gallery](/gallery/).
+
+## Live examples
+
+`<Live>` shows a code block and runs it. The code shown is the code that runs.
+
+<Live caption="A custom element, defined by a module">
+
+```html title="hello.html"
+<script type="module" src="/apps/live-assets/hello-badge.js"></script>
+<hello-badge name="docs"></hello-badge>
+```
+
+</Live>
+
+In an isolated iframe, and editable:
+
+<Live mode="iframe" editable caption="Edit me" base="/apps/live-assets/">
+
+```html
+<script type="module" src="hello-badge.js"></script>
+<hello-badge name="you" tone="orange"></hello-badge>
+<p>Change the name, or try <code>tone="green"</code>.</p>
+```
+
+</Live>
+
+With a custom runner, the source is handed to a module's `run(source, mount, ctx)`:
+
+<Live runner="/apps/live-assets/pixel-engine.js" editable preview="side" options={{ scale: 12 }} caption="JSON in, pixels out">
+
+```json title="blink.json"
+{
+  "palette": { "k": "#23212c", "y": "#f6c945", "w": "#ffffff" },
+  "fps": 3,
+  "frames": [
+    [".yyyy.", "yyyyyy", "ywkywk", "yyyyyy", "yykkyy", ".yyyy."],
+    [".yyyy.", "yyyyyy", "ykkykk", "yyyyyy", "yykkyy", ".yyyy."]
+  ]
+}
+```
+
+</Live>

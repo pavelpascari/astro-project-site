@@ -1,0 +1,9 @@
+# One file per gallery item (YAML, JSON or Markdown frontmatter). Fields: title, description, href (required),
+# kind, tags, order, poster (next to this file) or posterUrl, posterAlt, pixelated, external, draft.
+title: Hello app
+description: A static page mirrored into the site as it is, with its own HTML and scripts.
+href: /apps/hello/
+kind: demo
+tags: [static, mirror]
+poster: ./hello.png
+pixelated: true
