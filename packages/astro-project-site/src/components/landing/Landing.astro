@@ -1,0 +1,63 @@
+---
+// The built-in landing page body, composed from the section components and the `landing` option. To change the
+// layout, set `components.Landing` to your own component (it renders inside BaseLayout), or set `landing: false`
+// and write src/pages/index.astro. The section components are exported from 'astro-project-site/components'.
+import site from 'virtual:astro-project-site/config';
+import { Hero } from 'virtual:astro-project-site/components';
+import Live from '../live/Live.astro';
+import Section from './Section.astro';
+import Features from './Features.astro';
+import Steps from './Steps.astro';
+import GalleryStrip from './GalleryStrip.astro';
+import CallToAction from './CallToAction.astro';
+
+const landing = site.landing || {};
+const hero = landing.hero ?? {};
+const demo = hero.demo;
+const showGallery = site.gallery !== false && landing.gallery?.limit !== 0;
+---
+
+<Hero
+  title={hero.title ?? site.name}
+  lead={hero.lead ?? site.tagline}
+  primary={hero.primary}
+  secondary={hero.secondary}
+  install={site.install}
+>
+  {
+    demo && (
+      <div slot="live" class="demo site-container">
+        <Live {...demo} />
+      </div>
+    )
+  }
+</Hero>
+
+{
+  landing.features && landing.features.items.length > 0 && (
+    <Section id="features" title={landing.features.title} intro={landing.features.intro}>
+      <Features items={landing.features.items} />
+    </Section>
+  )
+}
+
+{showGallery && <GalleryStrip title={landing.gallery?.title} intro={landing.gallery?.intro} limit={landing.gallery?.limit} />}
+
+{
+  landing.steps && landing.steps.items.length > 0 && (
+    <Section id="how-it-works" title={landing.steps.title} intro={landing.steps.intro}>
+      <Steps items={landing.steps.items} />
+    </Section>
+  )
+}
+
+{landing.cta && <CallToAction {...landing.cta} />}
+
+<style>
+  .demo {
+    max-width: 44rem;
+  }
+  .demo :global(live-example.live-ex) {
+    margin: 0;
+  }
+</style>

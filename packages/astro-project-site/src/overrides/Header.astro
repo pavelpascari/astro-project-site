@@ -1,0 +1,16 @@
+---
+// Starlight's Header override: the shared site header (or the project's `components.Header`), with Starlight's
+// search and theme select slotted in so both keep working. The mobile sidebar toggle is rendered by Starlight's
+// PageFrame next to the header and is untouched; the site nav joins that menu (MobileMenuFooter.astro).
+import { Header } from 'virtual:astro-project-site/components';
+import { Search, ThemeSelect, showSearch } from 'virtual:astro-project-site/starlight';
+import { themeOverrideCss } from '../lib/theme';
+
+const themeCss = themeOverrideCss();
+---
+
+{themeCss && <style is:inline set:html={themeCss} />}
+<Header>
+  {showSearch && <Search slot="search" />}
+  <ThemeSelect slot="theme" />
+</Header>

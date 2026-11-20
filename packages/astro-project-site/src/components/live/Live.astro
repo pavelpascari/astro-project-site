@@ -1,0 +1,339 @@
+---
+// A live example: the code is written once, shown with Expressive Code and executed.
+// Docs: the "Live examples" page of the astro-project-site docs.
+import { Code } from '@astrojs/starlight/components';
+import type { LiveProps } from './types';
+
+type Props = LiveProps;
+
+const {
+  code,
+  title,
+  caption,
+  mode = 'inline',
+  preview = 'above',
+  editable = false,
+  runner,
+  options,
+  modules,
+  head,
+  base,
+  sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms allow-modals',
+  height,
+  lazy = false,
+  debounce = 300,
+  class: className,
+} = Astro.props;
+const lang = Astro.props.lang ?? (runner ? 'json' : 'html');
+
+// The code block: either rendered from the `code` prop, or the fenced block written as the child (already
+// rendered by Expressive Code). The client script reads the source back from that block, so what runs is
+// exactly what is shown.
+let slotHtml = '';
+if (code === undefined) {
+  slotHtml = (await Astro.slots.render('default')) ?? '';
+  if (!/class="[^"]*\bexpressive-code\b/.test(slotHtml)) {
+    throw new Error(
+      `<Live> needs its code: pass a \`code\` prop, or write a fenced code block as its only child (in MDX, with blank lines around it).`,
+    );
+  }
+}
+
+const slug = (s: string) =>
+  s.toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_]+/g, '-').replace(/-+/g, '-').slice(0, 60);
+function hash(s: string) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
+  return (h >>> 0).toString(36);
+}
+const named = caption || title;
+const id = Astro.props.id ?? (named && slug(named) ? `live-${slug(named)}` : `live-${hash(code ?? slotHtml)}`);
+
+const minHeight = height === undefined ? undefined : typeof height === 'number' ? `${height}px` : height;
+const config = {
+  mode,
+  editable,
+  runner,
+  options: options ?? {},
+  modules: modules ?? [],
+  head: head ?? '',
+  base,
+  sandbox,
+  lazy,
+  debounce,
+};
+---
+
+<live-example
+  id={id}
+  class:list={['live-ex', `live-ex--${preview}`, className]}
+  data-mode={mode}
+  data-config={JSON.stringify(config)}
+>
+  <figure class="live-ex__figure">
+    <div
+      class="live-ex__preview not-content"
+      style={minHeight ? `--live-ex-min-h: ${minHeight}` : undefined}
+      role="region"
+      aria-label={`Live example${named ? `: ${named}` : ''}`}
+    >
+      <div class="live-ex__mount"></div>
+      <noscript><p class="live-ex__noscript">This example runs in the browser and needs JavaScript.</p></noscript>
+    </div>
+    <div class="live-ex__bar not-content" hidden>
+      <p class="live-ex__status" role="status" aria-live="polite"></p>
+      {editable && <button type="button" class="live-ex__reset" disabled>Reset</button>}
+    </div>
+    <div class="live-ex__code">
+      {code !== undefined ? <Code code={code} lang={lang} title={title} /> : <Fragment set:html={slotHtml} />}
+    </div>
+    {
+      caption && (
+        <figcaption class="live-ex__caption">
+          {caption} <a class="live-ex__anchor" href={`#${id}`} aria-label={`Link to this example: ${caption}`}>#</a>
+        </figcaption>
+      )
+    }
+  </figure>
+</live-example>
+
+<script>
+  import { defineLiveExample } from './client';
+  defineLiveExample();
+</script>
+
+<style is:global>
+  /* Everything is scoped under live-example; colours come from Starlight tokens (with fallbacks for plain pages). */
+  live-example.live-ex {
+    display: block;
+    margin-block: 1.5rem;
+  }
+  .live-ex__figure {
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'preview' 'bar' 'code' 'caption';
+    gap: 0;
+  }
+  .live-ex--below .live-ex__figure {
+    grid-template-areas: 'code' 'preview' 'bar' 'caption';
+  }
+  .live-ex__preview { grid-area: preview; }
+  .live-ex__bar { grid-area: bar; }
+  .live-ex__code { grid-area: code; min-width: 0; }
+  .live-ex__caption { grid-area: caption; }
+
+  /* Side by side when there is room, stacked otherwise. */
+  live-example.live-ex--side {
+    container-type: inline-size;
+  }
+  @container (min-width: 36rem) {
+    .live-ex--side .live-ex__figure {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto 1fr auto;
+      grid-template-areas: 'code preview' 'code bar' 'caption caption';
+      column-gap: 0.75rem;
+    }
+    .live-ex--side .live-ex__preview {
+      border-radius: 0.5rem 0.5rem 0 0;
+    }
+    .live-ex--side .live-ex__bar:not([hidden]) {
+      align-self: start;
+    }
+    .live-ex--side .live-ex__code .expressive-code,
+    .live-ex--side .live-ex__code .expressive-code .frame {
+      height: 100%;
+    }
+  }
+
+  .live-ex__preview {
+    position: relative;
+    min-height: var(--live-ex-min-h, 3rem);
+    padding: 1rem;
+    border: 1px solid var(--sl-color-hairline, color-mix(in srgb, currentColor 20%, transparent));
+    border-bottom: 0;
+    border-radius: 0.5rem 0.5rem 0 0;
+    background: var(--sl-color-bg, Canvas);
+    color: var(--sl-color-text, CanvasText);
+    overflow: auto;
+  }
+  .live-ex--below .live-ex__preview {
+    border-bottom: 1px solid var(--sl-color-hairline, color-mix(in srgb, currentColor 20%, transparent));
+    border-top: 0;
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+  .live-ex--side .live-ex__preview {
+    border-bottom: 1px solid var(--sl-color-hairline, color-mix(in srgb, currentColor 20%, transparent));
+  }
+  .live-ex[data-mode='iframe'] .live-ex__preview {
+    padding: 0;
+  }
+  .live-ex[data-state='idle'] .live-ex__preview {
+    background: repeating-linear-gradient(
+      -45deg,
+      transparent 0 8px,
+      color-mix(in srgb, var(--sl-color-hairline, #8884) 40%, transparent) 8px 9px
+    );
+  }
+  .live-ex__mount {
+    display: flow-root;
+  }
+  .live-ex__frame {
+    display: block;
+    width: 100%;
+    height: var(--live-ex-min-h, 3rem);
+    border: 0;
+    background: transparent;
+    color-scheme: normal;
+  }
+  .live-ex__noscript {
+    margin: 0;
+    color: var(--sl-color-gray-3, GrayText);
+    font-size: var(--sl-text-sm, 0.875rem);
+  }
+
+  /* The code sits flush under the preview, like one card. */
+  .live-ex__code .expressive-code {
+    margin: 0;
+  }
+  .live-ex--above .live-ex__code .expressive-code .frame,
+  .live-ex--above .live-ex__code .expressive-code .frame pre {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .live-ex--below .live-ex__code .expressive-code .frame,
+  .live-ex--below .live-ex__code .expressive-code .frame pre {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .live-ex__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.25rem;
+    padding: 0.25rem 0.5rem 0.25rem 1rem;
+    border: 1px solid var(--sl-color-hairline, color-mix(in srgb, currentColor 20%, transparent));
+    border-bottom: 0;
+    background: var(--sl-color-bg-nav, var(--sl-color-gray-6, Canvas));
+    font-size: var(--sl-text-sm, 0.875rem);
+  }
+  .live-ex--below .live-ex__bar {
+    border-top: 0;
+    border-bottom: 1px solid var(--sl-color-hairline, color-mix(in srgb, currentColor 20%, transparent));
+    border-radius: 0 0 0.5rem 0.5rem;
+  }
+  .live-ex--below .live-ex__bar:not([hidden]) {
+    margin-top: -1px;
+  }
+  .live-ex--below:has(.live-ex__bar:not([hidden])) .live-ex__preview {
+    border-radius: 0;
+  }
+  .live-ex__bar[hidden] {
+    display: none;
+  }
+  .live-ex__status {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    color: var(--sl-color-gray-2, GrayText);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--__sl-font-mono, var(--sl-font-mono, ui-monospace, monospace));
+    font-size: var(--sl-text-xs, 0.8125rem);
+    line-height: 1.5;
+  }
+  .live-ex__status[data-level='ok'] {
+    color: var(--sl-color-green-high, var(--sl-color-gray-2, GrayText));
+  }
+  .live-ex__status[data-level='warn'] {
+    color: var(--sl-color-orange-high, #b45309);
+  }
+  .live-ex__status[data-level='error'] {
+    color: var(--sl-color-red-high, #b91c1c);
+  }
+  .live-ex[data-state='error'] .live-ex__bar {
+    background: var(--sl-color-red-low, color-mix(in srgb, #dc2626 12%, Canvas));
+    border-color: var(--sl-color-red, #dc2626);
+  }
+  .live-ex__reset {
+    margin-left: auto;
+    flex: none;
+    padding: 0.125rem 0.75rem;
+    border: 1px solid var(--sl-color-gray-4, GrayText);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--sl-color-white, CanvasText);
+    font: inherit;
+    cursor: pointer;
+  }
+  .live-ex__reset:hover:not(:disabled) {
+    border-color: var(--sl-color-accent, Highlight);
+    color: var(--sl-color-accent-high, Highlight);
+  }
+  .live-ex__reset:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .live-ex__reset:focus-visible,
+  .live-ex__editor:focus-visible {
+    outline: 2px solid var(--sl-color-accent, Highlight);
+    outline-offset: -2px;
+  }
+
+  /* The editable code: a plain textarea dressed in Expressive Code's own variables. */
+  .live-ex__editor {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 4rem;
+    margin: 0;
+    padding: var(--ec-codePadBlk, 0.85rem) var(--ec-codePadInl, 1.35rem);
+    border: 0;
+    border-radius: 0;
+    resize: vertical;
+    overflow: auto;
+    background: var(--ec-codeBg, var(--sl-color-black, Canvas));
+    color: var(--ec-codeFg, var(--sl-color-white, CanvasText));
+    font-family: var(--ec-codeFontFml, var(--__sl-font-mono, ui-monospace, monospace));
+    font-size: var(--ec-codeFontSize, 0.875rem);
+    font-weight: var(--ec-codeFontWg, normal);
+    line-height: var(--ec-codeLineHt, 1.65);
+    tab-size: 2;
+    white-space: pre;
+    overflow-wrap: normal;
+    caret-color: var(--sl-color-accent-high, currentColor);
+  }
+  .live-ex__code .frame:has(.live-ex__editor) pre {
+    display: none;
+  }
+
+  .live-ex__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .live-ex__caption {
+    margin-top: 0.5rem;
+    color: var(--sl-color-gray-2, GrayText);
+    font-size: var(--sl-text-sm, 0.875rem);
+  }
+  .live-ex__anchor {
+    color: var(--sl-color-gray-3, GrayText);
+    text-decoration: none;
+    opacity: 0;
+  }
+  .live-ex__caption:hover .live-ex__anchor,
+  .live-ex__anchor:focus-visible,
+  live-example:target .live-ex__anchor {
+    opacity: 1;
+  }
+  live-example:target .live-ex__preview {
+    outline: 2px solid var(--sl-color-accent, Highlight);
+    outline-offset: 2px;
+  }
+</style>

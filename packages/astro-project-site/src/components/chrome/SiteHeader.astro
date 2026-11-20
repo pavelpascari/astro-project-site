@@ -1,0 +1,329 @@
+---
+// The one site header: landing page, gallery, and (through overrides/Header.astro) every docs page.
+// It renders the contents of the header bar; the bar itself (height, background, stickiness) belongs to
+// the page frame: BaseLayout for site pages, Starlight's PageFrame for docs.
+//
+// On small screens the nav moves into a menu. On docs pages with a sidebar there is no separate menu: the
+// nav is part of Starlight's own mobile menu (overrides/MobileMenuFooter.astro), so the page has one menu button.
+//
+// Slots:
+//   search      — shown between the nav and the actions (docs: Starlight's search).
+//   theme       — the theme switch in the bar (desktop).
+//   theme-menu  — the theme switch inside the small-screen menu.
+import site from 'virtual:astro-project-site/config';
+import { isActive, repoInfo } from '../../lib/nav';
+
+interface Props {
+  /** Current path, for the active nav state. Defaults to the request URL. */
+  pathname?: string;
+}
+
+const pathname = Astro.props.pathname ?? Astro.url.pathname;
+const version = site.version;
+const repo = repoInfo(site.repo);
+const repoHost = repo.host;
+const repoLabel = repo.label;
+const releasesHref = repo.releases;
+const links = site.nav.map((item) => ({ ...item, active: isActive(item.href, pathname) }));
+const hasSearch = Astro.slots.has('search');
+---
+
+<div class="site-header" data-has-search={hasSearch ? '' : undefined}>
+  <div class="brand-group">
+    <a class="brand" href="/">{site.name}</a>
+    {
+      version && (
+        <a class="version" href={releasesHref} title="Release notes">
+          <span class="visually-hidden">Version </span>v{version}
+        </a>
+      )
+    }
+  </div>
+
+  <nav class="nav" aria-label="Main">
+    <ul>
+      {
+        links.map((link) => (
+          <li>
+            <a href={link.href} aria-current={link.active ? 'page' : undefined}>
+              {link.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <div class="search"><slot name="search" /></div>
+
+  <div class="actions">
+    <a class="repo" href={site.repo}>
+      <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+        {
+          repoHost === 'github.com' ? (
+            <path
+              fill="currentColor"
+              d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"
+            />
+          ) : (
+            <path
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m8 6-6 6 6 6M16 6l6 6-6 6"
+            />
+          )
+        }
+      </svg>
+      <span class="visually-hidden">{repoLabel}</span>
+    </a>
+    <div class="theme"><slot name="theme" /></div>
+  </div>
+
+  <details class="menu">
+    <summary>
+      <svg class="open" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16" />
+      </svg>
+      <svg class="close" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+        <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
+      </svg>
+      <span class="visually-hidden">Site menu</span>
+    </summary>
+    <div class="menu-panel">
+      <nav aria-label="Main (menu)">
+        <ul>
+          {
+            links.map((link) => (
+              <li>
+                <a href={link.href} aria-current={link.active ? 'page' : undefined}>
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+          <li>
+            <a href={site.repo}>{repoLabel}</a>
+          </li>
+        </ul>
+      </nav>
+      {
+        Astro.slots.has('theme-menu') && (
+          <div class="menu-theme">
+            <slot name="theme-menu" />
+          </div>
+        )
+      }
+    </div>
+  </details>
+</div>
+
+<script>
+  // Progressive enhancement for the small-screen menu (it works as a plain <details> without this):
+  // close on Escape, on a click outside, and after following a link.
+  for (const menu of document.querySelectorAll<HTMLDetailsElement>('.site-header details.menu')) {
+    const summary = menu.querySelector('summary');
+    summary?.setAttribute('aria-expanded', String(menu.open));
+    menu.addEventListener('toggle', () => summary?.setAttribute('aria-expanded', String(menu.open)));
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.open) {
+        menu.open = false;
+        summary?.focus();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
+    });
+    menu.addEventListener('click', (e) => {
+      if ((e.target as Element).closest('a')) menu.open = false;
+    });
+  }
+</script>
+
+<style>
+  .site-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    height: 100%;
+    font-family: var(--site-font-body);
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .brand {
+    font-family: var(--site-font-heading);
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--site-text);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .version {
+    font-family: var(--site-font-mono);
+    font-size: 0.75rem;
+    line-height: 1;
+    padding: 0.25rem 0.45rem;
+    border: 1px solid var(--site-border);
+    border-radius: 999px;
+    color: var(--site-muted);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .version:hover {
+    color: var(--site-text);
+    border-color: var(--site-muted);
+  }
+
+  .nav ul,
+  .menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .nav ul {
+    display: flex;
+    gap: 0.25rem;
+  }
+  .nav a,
+  .menu-panel a {
+    display: block;
+    padding: 0.35rem 0.65rem;
+    border-radius: var(--site-radius-sm);
+    color: var(--site-muted);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .nav a:hover,
+  .menu-panel a:hover {
+    color: var(--site-text);
+    background: var(--site-surface);
+  }
+  .nav a[aria-current],
+  .menu-panel a[aria-current] {
+    color: var(--site-text);
+    background: var(--site-accent-soft);
+  }
+
+  .search {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  [data-has-search] .search {
+    justify-content: flex-start;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .repo {
+    display: inline-flex;
+    padding: 0.35rem;
+    border-radius: var(--site-radius-sm);
+    color: var(--site-muted);
+  }
+  .repo:hover {
+    color: var(--site-text);
+  }
+
+  .site-header a:focus-visible,
+  .menu summary:focus-visible {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+
+  /* Small-screen menu. */
+  .menu {
+    display: none;
+  }
+  .menu summary {
+    display: inline-flex;
+    padding: 0.4rem;
+    border-radius: var(--site-radius-sm);
+    color: var(--site-text);
+    cursor: pointer;
+    list-style: none;
+  }
+  .menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .menu[open] summary {
+    background: var(--site-surface);
+  }
+  .menu .close,
+  .menu[open] .open {
+    display: none;
+  }
+  .menu[open] .close {
+    display: block;
+  }
+  .menu-panel {
+    position: absolute;
+    inset-inline-end: 0;
+    top: calc(100% + 0.5rem);
+    z-index: 30;
+    min-width: 14rem;
+    padding: 0.5rem;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius);
+    background: var(--site-bg);
+    box-shadow: var(--site-shadow);
+  }
+  .menu-panel a {
+    padding: 0.6rem 0.75rem;
+  }
+  .menu-theme {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.25rem 0.25rem;
+    border-top: 1px solid var(--site-border);
+  }
+
+  @media (max-width: 49.99rem) {
+    .site-header {
+      gap: 0.5rem;
+    }
+    .nav,
+    .actions {
+      display: none;
+    }
+    .menu {
+      display: block;
+    }
+    /* Docs pages with a sidebar: the nav lives in Starlight's mobile menu instead. */
+    :global(:root[data-has-sidebar]) .menu {
+      display: none;
+    }
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  @media print {
+    .search,
+    .actions,
+    .menu {
+      display: none;
+    }
+  }
+</style>

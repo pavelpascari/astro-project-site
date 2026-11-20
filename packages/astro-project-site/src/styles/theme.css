@@ -1,0 +1,166 @@
+/*
+ * astro-project-site/theme.css: design tokens shared by the landing page, the gallery and the docs (Starlight).
+ *
+ * A project restyles the whole site by overriding the "Brand" tokens below in a stylesheet listed in the
+ * `customCss` option (or the accent alone with `theme.accent`). Everything else, including Starlight's
+ * `--sl-*` palette, is derived from them. Light and dark follow Starlight's theme switch:
+ * `<html data-theme="light|dark">`.
+ */
+
+/*
+ * ── Starlight defaults outside Starlight ───────────────────────────────────────────────────────
+ * Pages that are not docs pages (landing, gallery, a project's own BaseLayout pages) have no Starlight CSS, but
+ * <Live> and Expressive Code read `--sl-*` sizes, fonts and colours. These are Starlight's own defaults, in a
+ * cascade layer declared before Starlight's: on docs pages Starlight's values win; elsewhere these apply.
+ * The colours Starlight takes from the brand are mapped further down, unlayered, and win everywhere.
+ */
+@layer project-site.fallback {
+  :root {
+    --sl-hue-orange: 41;
+    --sl-color-orange-low: hsl(var(--sl-hue-orange), 39%, 22%);
+    --sl-color-orange: hsl(var(--sl-hue-orange), 82%, 63%);
+    --sl-color-orange-high: hsl(var(--sl-hue-orange), 82%, 87%);
+    --sl-hue-green: 101;
+    --sl-color-green-low: hsl(var(--sl-hue-green), 39%, 22%);
+    --sl-color-green: hsl(var(--sl-hue-green), 82%, 63%);
+    --sl-color-green-high: hsl(var(--sl-hue-green), 82%, 80%);
+    --sl-hue-blue: 234;
+    --sl-color-blue-low: hsl(var(--sl-hue-blue), 54%, 20%);
+    --sl-color-blue: hsl(var(--sl-hue-blue), 100%, 60%);
+    --sl-color-blue-high: hsl(var(--sl-hue-blue), 100%, 87%);
+    --sl-hue-purple: 281;
+    --sl-color-purple-low: hsl(var(--sl-hue-purple), 39%, 22%);
+    --sl-color-purple: hsl(var(--sl-hue-purple), 82%, 63%);
+    --sl-color-purple-high: hsl(var(--sl-hue-purple), 82%, 89%);
+    --sl-hue-red: 339;
+    --sl-color-red-low: hsl(var(--sl-hue-red), 39%, 22%);
+    --sl-color-red: hsl(var(--sl-hue-red), 82%, 63%);
+    --sl-color-red-high: hsl(var(--sl-hue-red), 82%, 87%);
+
+    --sl-color-text-invert: var(--sl-color-accent-low);
+    --sl-color-bg: var(--sl-color-black);
+    --sl-color-bg-inline-code: var(--sl-color-gray-5);
+    --sl-color-bg-accent: var(--sl-color-accent-high);
+    --sl-color-hairline-light: var(--sl-color-gray-5);
+    --sl-color-hairline: var(--sl-color-gray-6);
+
+    --sl-text-2xs: 0.75rem;
+    --sl-text-xs: 0.8125rem;
+    --sl-text-sm: 0.875rem;
+    --sl-text-base: 1rem;
+    --sl-text-lg: 1.125rem;
+    --sl-text-xl: 1.25rem;
+    --sl-text-code: var(--sl-text-sm);
+    --sl-text-code-sm: var(--sl-text-xs);
+    --sl-line-height: 1.75;
+
+    --sl-font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial,
+      sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --sl-font-system-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    --__sl-font: var(--sl-font, var(--sl-font-system)), var(--sl-font-system);
+    --__sl-font-mono: var(--sl-font-mono, var(--sl-font-system-mono)), var(--sl-font-system-mono);
+  }
+
+  :root[data-theme='light'] {
+    --sl-color-orange-high: hsl(var(--sl-hue-orange), 80%, 25%);
+    --sl-color-orange: hsl(var(--sl-hue-orange), 90%, 60%);
+    --sl-color-orange-low: hsl(var(--sl-hue-orange), 90%, 88%);
+    --sl-color-green-high: hsl(var(--sl-hue-green), 80%, 22%);
+    --sl-color-green: hsl(var(--sl-hue-green), 90%, 46%);
+    --sl-color-green-low: hsl(var(--sl-hue-green), 85%, 90%);
+    --sl-color-blue-high: hsl(var(--sl-hue-blue), 80%, 30%);
+    --sl-color-blue: hsl(var(--sl-hue-blue), 90%, 60%);
+    --sl-color-blue-low: hsl(var(--sl-hue-blue), 88%, 90%);
+    --sl-color-purple-high: hsl(var(--sl-hue-purple), 90%, 30%);
+    --sl-color-purple: hsl(var(--sl-hue-purple), 90%, 60%);
+    --sl-color-purple-low: hsl(var(--sl-hue-purple), 80%, 90%);
+    --sl-color-red-high: hsl(var(--sl-hue-red), 80%, 30%);
+    --sl-color-red: hsl(var(--sl-hue-red), 90%, 60%);
+    --sl-color-red-low: hsl(var(--sl-hue-red), 80%, 90%);
+    --sl-color-text-invert: var(--sl-color-black);
+    --sl-color-bg-inline-code: var(--sl-color-gray-6);
+    --sl-color-bg-accent: var(--sl-color-accent);
+    --sl-color-hairline-light: var(--sl-color-gray-6);
+  }
+}
+
+/* ── Brand tokens: override these ─────────────────────────────────────────────────────────── */
+:root {
+  /* Dark theme (Starlight's default when the OS has no preference). */
+  --site-accent: #8b9cff;
+  --site-bg: #111318;
+  --site-surface: #1a1d24; /* cards, header, panels */
+  --site-text: #e8e9ee;
+  --site-muted: #a0a4b0;
+  --site-border: #2b2f3a;
+  --site-code-bg: #0b0d11;
+  --site-code-text: #e8e9ee;
+
+  --site-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial,
+    sans-serif;
+  --site-font-heading: var(--site-font-body);
+  --site-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+
+  --site-radius: 0.75rem; /* cards and panels; buttons use half */
+  --site-space: 1rem; /* base spacing unit; sections use multiples */
+  --site-max-width: 72rem; /* landing/gallery content width */
+  --site-header-height: 3.5rem;
+
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --site-accent: #3b4fd8;
+  --site-bg: #ffffff;
+  --site-surface: #f6f7f9;
+  --site-text: #1b1d23;
+  --site-muted: #5b6070;
+  --site-border: #dfe2e8;
+  --site-code-bg: #1b1d23;
+  --site-code-text: #e8e9ee;
+
+  color-scheme: light;
+}
+
+/* ── Derived tokens: usually leave alone ───────────────────────────────────────────────────── */
+:root {
+  --site-accent-soft: color-mix(in oklab, var(--site-accent) 16%, var(--site-bg));
+  --site-accent-strong: color-mix(in oklab, var(--site-accent) 70%, var(--site-text));
+  /* Text on a solid accent background: the background colour reads well against most accents. */
+  --site-on-accent: var(--site-bg);
+  --site-link: var(--site-accent-strong);
+  --site-focus: var(--site-accent);
+  --site-radius-sm: calc(var(--site-radius) / 2);
+  --site-shadow: 0 1px 2px rgb(0 0 0 / 0.12), 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+/* ── Starlight mapping ─────────────────────────────────────────────────────────────────────── */
+/* Unlayered, so it wins over Starlight's `@layer starlight.base` defaults in both themes. */
+:root,
+:root[data-theme='light'] {
+  --sl-color-accent-low: var(--site-accent-soft);
+  --sl-color-accent: var(--site-accent);
+  --sl-color-accent-high: var(--site-accent-strong);
+
+  /* Starlight's greyscale runs from "white" (strongest text) to "black" (page background) in both themes. */
+  --sl-color-white: var(--site-text);
+  --sl-color-gray-1: color-mix(in oklab, var(--site-text) 92%, var(--site-bg));
+  --sl-color-gray-2: color-mix(in oklab, var(--site-text) 80%, var(--site-bg));
+  --sl-color-gray-3: var(--site-muted);
+  --sl-color-gray-4: color-mix(in oklab, var(--site-muted) 60%, var(--site-bg));
+  --sl-color-gray-5: var(--site-border);
+  --sl-color-gray-6: var(--site-surface);
+  --sl-color-gray-7: color-mix(in oklab, var(--site-surface) 50%, var(--site-bg));
+  --sl-color-black: var(--site-bg);
+
+  --sl-color-text: color-mix(in oklab, var(--site-text) 85%, var(--site-bg));
+  --sl-color-text-accent: var(--site-link);
+  --sl-color-bg-nav: var(--site-bg);
+  --sl-color-bg-sidebar: var(--site-bg);
+  --sl-color-hairline-shade: var(--site-border);
+
+  --sl-font: var(--site-font-body);
+  --sl-font-mono: var(--site-font-mono);
+  --sl-nav-height: var(--site-header-height);
+}

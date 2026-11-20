@@ -1,0 +1,88 @@
+---
+// The top of the landing page: heading, lead paragraph, actions, install command, and a full-bleed `live`
+// slot for anything interactive (a demo canvas, a custom element, a stage of characters).
+//
+// Slots:
+//   default — extra content under the actions (badges, a note).
+//   live    — rendered edge to edge under the copy, in a plain block box with no clipping.
+import type { LinkAction } from '../../index';
+import InstallCommand from './InstallCommand.astro';
+
+interface Props {
+  title: string;
+  lead?: string;
+  primary?: LinkAction;
+  secondary?: LinkAction;
+  install?: string;
+}
+const { title, lead, primary, secondary, install } = Astro.props;
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="site-container copy">
+    <h1 id="hero-title">{title}</h1>
+    {lead && <p class="lead">{lead}</p>}
+    {
+      (primary || secondary) && (
+        <div class="actions">
+          {primary && (
+            <a class="site-btn site-btn--primary" href={primary.href}>
+              {primary.label}
+            </a>
+          )}
+          {secondary && (
+            <a class="site-btn" href={secondary.href}>
+              {secondary.label}
+            </a>
+          )}
+        </div>
+      )
+    }
+    {install && <InstallCommand command={install} />}
+    <slot />
+  </div>
+  {
+    Astro.slots.has('live') && (
+      <div class="live">
+        <slot name="live" />
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .hero {
+    padding-top: calc(var(--site-space) * 5);
+    padding-bottom: calc(var(--site-space) * 3);
+  }
+  .copy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: calc(var(--site-space) * 1.25);
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(2.25rem, 1.4rem + 4vw, 4rem);
+    letter-spacing: -0.02em;
+  }
+  .lead {
+    margin: 0;
+    max-width: 36rem;
+    font-size: clamp(1.125rem, 1rem + 0.5vw, 1.3125rem);
+    color: var(--site-muted);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .live {
+    /* Full bleed: spans the viewport; whatever goes in sizes itself. */
+    position: relative;
+    width: 100%;
+    margin-top: calc(var(--site-space) * 3);
+  }
+</style>

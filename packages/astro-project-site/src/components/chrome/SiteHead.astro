@@ -1,0 +1,57 @@
+---
+// <head> contents for pages outside Starlight: title, description, canonical URL, Open Graph and Twitter
+// tags, favicon, theme bootstrapping. The social image comes from the `ogImage` option or the `ogImageFor`
+// hook unless the page passes `image` (docs pages get the same through route-middleware.ts).
+import site from 'virtual:astro-project-site/config';
+import ogImageFor from 'virtual:astro-project-site/og';
+import { themeOverrideCss } from '../../lib/theme';
+
+interface Props {
+  /** Page title. The landing page passes nothing and gets "Name — tagline". */
+  title?: string;
+  description?: string;
+  /** Social image for this page: overrides the hook. */
+  image?: string;
+  /** Open Graph type. */
+  type?: 'website' | 'article';
+  /** Ask search engines not to index this page (e.g. 404). */
+  noindex?: boolean;
+}
+
+const { title, description = site.tagline, type = 'website', noindex = false } = Astro.props;
+const fullTitle = title ? `${title} | ${site.name}` : `${site.name} — ${site.tagline}`;
+const base = Astro.site ?? new URL(site.url);
+const canonical = new URL(Astro.url.pathname, base).href;
+const imagePath = Astro.props.image ?? ogImageFor({ path: Astro.url.pathname, title: title ?? site.name, description });
+const image = imagePath ? new URL(imagePath, base).href : undefined;
+const themeCss = themeOverrideCss();
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex" />}
+<link rel="icon" href={site.favicon} type={site.favicon.endsWith('.svg') ? 'image/svg+xml' : undefined} />
+<link rel="sitemap" href="/sitemap-index.xml" />
+<meta name="generator" content={Astro.generator} />
+
+<meta property="og:type" content={type} />
+<meta property="og:site_name" content={site.name} />
+<meta property="og:title" content={title ?? site.name} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+{image && <meta property="og:image" content={image} />}
+<meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+
+{/* Same logic as Starlight's ThemeProvider, inlined to avoid a flash of the wrong theme. */}
+<script is:inline>
+  (() => {
+    const stored = typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+    const theme = stored || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+  })();
+</script>
+{themeCss && <style is:inline set:html={themeCss} />}
+<slot />

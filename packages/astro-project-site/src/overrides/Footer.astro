@@ -1,0 +1,9 @@
+---
+// Starlight's Footer override: Starlight's own page footer (edit link, last updated, pagination), then the
+// shared site footer (or the project's `components.Footer`), so docs pages end like every other page.
+import Default from '@astrojs/starlight/components/Footer.astro';
+import { Footer } from 'virtual:astro-project-site/components';
+---
+
+<Default />
+<Footer variant="docs" />

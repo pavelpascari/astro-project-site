@@ -1,0 +1,42 @@
+---
+// Page frame for everything outside the docs: head metadata, the shared header and footer, theme and base styles.
+// The header bar matches Starlight's so moving between the landing page and the docs feels like one site.
+// Use it for a project's own pages too:  import { BaseLayout } from 'astro-project-site/components';
+import '../../styles/theme.css';
+import '../../styles/base.css';
+import 'virtual:astro-project-site/user-css';
+import { Footer, Header } from 'virtual:astro-project-site/components';
+import SiteHead from '../chrome/SiteHead.astro';
+import ThemeSelect from '../chrome/ThemeSelect.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Social image for this page (defaults to the `ogImage` option / `ogImageFor` hook). */
+  image?: string;
+  noindex?: boolean;
+}
+const props = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <SiteHead {...props}><slot name="head" /></SiteHead>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-bar">
+      <div class="site-bar-inner">
+        <Header>
+          <ThemeSelect slot="theme" id="site-theme" />
+          <ThemeSelect slot="theme-menu" id="site-theme-menu" />
+        </Header>
+      </div>
+    </header>
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <Footer variant="page" />
+  </body>
+</html>

@@ -1,0 +1,67 @@
+{
+  "name": "astro-project-site",
+  "version": "0.1.0",
+  "description": "An Astro integration for open-source project sites: landing page, Starlight docs that mount your markdown folder, live examples, a gallery, static apps served as they are, Cloudflare deploys.",
+  "license": "MIT",
+  "author": "Pavel Pascari",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pavelpascari/astro-project-site.git",
+    "directory": "packages/astro-project-site"
+  },
+  "keywords": [
+    "astro-integration",
+    "astro-component",
+    "withastro",
+    "starlight",
+    "documentation",
+    "project-site"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.mjs"
+    },
+    "./components": "./src/components/index.ts",
+    "./content": "./src/content.ts",
+    "./config": "./src/config.ts",
+    "./theme.css": "./src/styles/theme.css",
+    "./virtual": {
+      "types": "./src/virtual.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "project-site": "./bin/project-site.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "starter",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "tsc -p tsconfig.json",
+    "prepack": "node scripts/pack-starter.mjs",
+    "postpack": "node scripts/pack-starter.mjs --clean"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.3.0"
+  },
+  "dependencies": {
+    "starlight-links-validator": "^0.27.0"
+  },
+  "devDependencies": {
+    "@astrojs/starlight": "^0.43.1",
+    "astro": "^7.3.8",
+    "typescript": "^6.0.3"
+  }
+}

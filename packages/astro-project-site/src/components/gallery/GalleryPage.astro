@@ -1,0 +1,52 @@
+---
+// The built-in /gallery/ page body: every published item, with kind and tag filters. Without JavaScript all items
+// are shown; with it, the filters appear (and are reflected in the URL: ?kind=demo&tag=canvas).
+// Replace it with `components.Gallery` (same props; it renders inside BaseLayout).
+import type { GalleryEntry } from '../../index';
+import GalleryGrid from './GalleryGrid.astro';
+import GalleryFilters from './GalleryFilters.astro';
+import { distinct } from '../../lib/gallery';
+
+interface Props {
+  items: GalleryEntry[];
+  title: string;
+  description: string;
+}
+const { items, title, description } = Astro.props;
+const kinds = distinct(items, (item) => [item.data.kind]);
+const tags = distinct(items, (item) => item.data.tags).sort();
+---
+
+<div class="site-container page">
+  <header class="page-header">
+    <h1>{title}</h1>
+    <p class="lead">{description}</p>
+  </header>
+  <GalleryFilters kinds={kinds} tags={tags} target="gallery-items" total={items.length} />
+  {
+    items.length > 0 ? (
+      <GalleryGrid items={items} id="gallery-items" headingLevel={2} />
+    ) : (
+      <p>
+        Nothing here yet. Add a file to <code>src/content/gallery/</code>.
+      </p>
+    )
+  }
+</div>
+
+<style>
+  .page {
+    padding-block: calc(var(--site-space) * 3) calc(var(--site-space) * 4);
+  }
+  .page-header {
+    margin-bottom: calc(var(--site-space) * 1.5);
+  }
+  h1 {
+    font-size: clamp(2rem, 1.4rem + 2.5vw, 3rem);
+  }
+  .lead {
+    color: var(--site-muted);
+    font-size: 1.125rem;
+    margin: 0;
+  }
+</style>

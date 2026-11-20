@@ -1,0 +1,39 @@
+---
+// A responsive grid of gallery cards. Used by /gallery/ and by the landing page's gallery strip.
+// Cards are the built-in GalleryCard, or the project's `components.GalleryCard`.
+import { GalleryCard } from 'virtual:astro-project-site/components';
+import type { GalleryEntry } from '../../index';
+
+interface Props {
+  items: GalleryEntry[];
+  headingLevel?: 2 | 3 | 4;
+  /** Minimum card width before the grid wraps. */
+  minWidth?: string;
+  id?: string;
+}
+const { items, headingLevel = 3, minWidth = '16rem', id } = Astro.props;
+---
+
+<ul class="gallery-grid" id={id} role="list" style={`--gallery-min: ${minWidth}`}>
+  {
+    items.map((item) => (
+      <li data-kind={item.data.kind} data-tags={item.data.tags.join(' ')}>
+        <GalleryCard item={item} headingLevel={headingLevel} />
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .gallery-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--gallery-min)), 1fr));
+    gap: var(--site-space);
+  }
+  .gallery-grid > li[hidden] {
+    display: none;
+  }
+</style>

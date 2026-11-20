@@ -1,0 +1,195 @@
+// Options for projectSite(): the schema, validation with readable errors, and path resolution.
+// Pure (node: modules and astro/zod only) so it can be unit-tested without Astro running.
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { z } from 'astro/zod';
+
+const link = z.strictObject({ label: z.string().min(1), href: z.string().min(1) });
+
+/** A feature/step list: either the items, or `{ title, intro, items }` to also set the section heading. */
+/**
+ * @param {import('astro/zod').ZodType} item
+ * @param {{ title: string, intro?: string }} defaults
+ */
+const section = (item, defaults) =>
+  z
+    .union([z.array(item), z.strictObject({ title: z.string().optional(), intro: z.string().optional(), items: z.array(item) })])
+    .transform((v) => (Array.isArray(v) ? { ...defaults, items: v } : { ...defaults, ...v }));
+
+const demo = z.strictObject({
+  code: z.string(),
+  lang: z.string().optional(),
+  title: z.string().optional(),
+  caption: z.string().optional(),
+  mode: z.enum(['inline', 'iframe']).optional(),
+  preview: z.enum(['above', 'below', 'side']).optional(),
+  runner: z.string().optional(),
+  editable: z.boolean().optional(),
+  options: z.record(z.string(), z.unknown()).optional(),
+  modules: z.array(z.string()).optional(),
+  base: z.string().optional(),
+  height: z.union([z.number(), z.string()]).optional(),
+});
+
+const landing = z.strictObject({
+  hero: z
+    .strictObject({
+      title: z.string().optional(),
+      lead: z.string().optional(),
+      primary: link.optional(),
+      secondary: link.optional(),
+      demo: demo.optional(),
+    })
+    .optional(),
+  features: section(z.strictObject({ title: z.string(), body: z.string(), href: z.string().optional() }), {
+    title: 'Why it exists',
+    intro: 'The short version, for people deciding whether to read on.',
+  }).optional(),
+  steps: section(
+    z.strictObject({ title: z.string(), body: z.string(), code: z.string().optional(), lang: z.string().optional() }),
+    { title: 'How it works' },
+  ).optional(),
+  gallery: z.strictObject({ title: z.string().optional(), intro: z.string().optional(), limit: z.number().int().min(0).optional() }).optional(),
+  cta: z
+    .strictObject({ title: z.string(), body: z.string().optional(), primary: link.optional(), secondary: link.optional() })
+    .optional(),
+});
+
+/** Component slots a project can replace. Values are paths relative to the project root, or package specifiers. */
+export const COMPONENT_NAMES = /** @type {const} */ (['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery']);
+
+export const optionsSchema = z.strictObject({
+  name: z.string().min(1),
+  tagline: z.string(),
+  url: z.url().transform((u) => u.replace(/\/+$/, '')),
+  repo: z.url().transform((u) => u.replace(/\/+$/, '')),
+  repoBranch: z.string().min(1).default('main'),
+  versionFrom: z.string().optional(),
+  nav: z.array(link).optional(),
+  externalDocs: z
+    .array(
+      z.strictObject({
+        dir: z.string().min(1),
+        route: z.string().refine((r) => r.split('/').some(Boolean), 'must not be empty'),
+        label: z.string().min(1),
+        order: z.array(z.string()).optional(),
+        exclude: z.array(z.string()).optional(),
+      }),
+    )
+    .default([]),
+  mirrors: z
+    .array(
+      z.strictObject({
+        from: z.string().min(1),
+        to: z
+          .string()
+          .refine(
+            (to) => {
+              const clean = to.replace(/^\/+|\/+$/g, '');
+              return !!clean && clean.split('/').every((s) => s && s !== '.' && s !== '..' && !s.startsWith('.'));
+            },
+            'must be a URL prefix like "apps" or "pixel/src"',
+          ),
+        include: z.array(z.string()).optional(),
+        exclude: z.array(z.string()).optional(),
+      }),
+    )
+    .default([]),
+  install: z.string().optional(),
+  favicon: z.string().default('/favicon.svg'),
+  ogImage: z.string().optional(),
+  ogImageFor: z.string().optional(),
+  theme: z.strictObject({ accent: z.string().optional(), accentDark: z.string().optional() }).default({}),
+  landing: z.union([z.literal(false), landing]).default({}),
+  gallery: z
+    .union([z.literal(false), z.strictObject({ title: z.string().optional(), description: z.string().optional() })])
+    .default({}),
+  footer: z.strictObject({ note: z.string().optional() }).default({}),
+  llms: z.boolean().default(true),
+  linksValidator: z.union([z.literal(false), z.record(z.string(), z.unknown())]).optional(),
+  customCss: z.array(z.string()).default([]),
+  components: z.strictObject(Object.fromEntries(COMPONENT_NAMES.map((n) => [n, z.string().min(1).optional()]))).default({}),
+  starlight: z.record(z.string(), z.unknown()).default({}),
+});
+
+export class ProjectSiteOptionsError extends Error {
+  /** @param {string[]} problems */
+  constructor(problems) {
+    super(`Invalid projectSite() options:\n${problems.map((p) => `  - ${p}`).join('\n')}`);
+    this.name = 'ProjectSiteOptionsError';
+    this.problems = problems;
+  }
+}
+
+/** Human-readable path of an issue: `landing.hero.primary.href`, `mirrors[0].to`. */
+function issuePath(/** @type {PropertyKey[]} */ p) {
+  return p.reduce((/** @type {string} */ s, k) => (typeof k === 'number' ? `${s}[${k}]` : s ? `${s}.${String(k)}` : String(k)), '');
+}
+
+function describeIssue(/** @type {any} */ issue) {
+  const where = issuePath(issue.path ?? []);
+  if (issue.code === 'unrecognized_keys') {
+    const keys = issue.keys.map((/** @type {string} */ k) => `"${k}"`).join(', ');
+    return `${where ? `${where}: ` : ''}unknown option${issue.keys.length > 1 ? 's' : ''} ${keys}`;
+  }
+  if (issue.code === 'invalid_union' && Array.isArray(issue.errors)) {
+    // Report the branch that got furthest (deepest issue path) instead of "invalid input".
+    const depth = (/** @type {any[]} */ branch) => Math.max(...branch.map((i) => i.path?.length ?? 0));
+    const best = [...issue.errors].sort((/** @type {any[]} */ a, /** @type {any[]} */ b) => depth(b) - depth(a) || a.length - b.length)[0];
+    if (best?.length && depth(best) > 0) {
+      return best.map((/** @type {any} */ i) => describeIssue({ ...i, path: [...(issue.path ?? []), ...(i.path ?? [])] })).join('; ');
+    }
+  }
+  return `${where || '(options)'}: ${issue.message}`;
+}
+
+/**
+ * Validates and normalises projectSite() options. Throws ProjectSiteOptionsError naming every bad field.
+ * @param {unknown} input
+ * @returns {import('./index').ResolvedOptions}
+ */
+export function parseOptions(input) {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) {
+    throw new ProjectSiteOptionsError(['projectSite() expects an options object with at least name, tagline, url and repo.']);
+  }
+  const result = optionsSchema.safeParse(input);
+  if (!result.success) throw new ProjectSiteOptionsError(result.error.issues.map(describeIssue));
+  const options = /** @type {any} */ (result.data);
+  options.nav ??= [{ label: 'Docs', href: '/docs/' }, ...(options.gallery === false ? [] : [{ label: 'Gallery', href: '/gallery/' }])];
+  return options;
+}
+
+/** A path option: relative (`./x`, `../x`) or absolute paths resolve against `root`; anything else is a package specifier. */
+export function resolveModulePath(/** @type {string} */ id, /** @type {string} */ root) {
+  if (id.startsWith('.') || path.isAbsolute(id)) return path.resolve(root, id);
+  return id;
+}
+
+/**
+ * Resolves every file path in the options against the project root and checks that local files exist.
+ * @param {import('./index').ResolvedOptions} options
+ * @param {string} root absolute project root
+ */
+export function resolveOptionPaths(options, root) {
+  /** @type {string[]} */
+  const problems = [];
+  const local = (/** @type {string} */ field, /** @type {string} */ id) => {
+    const resolved = resolveModulePath(id, root);
+    if (path.isAbsolute(resolved) && !existsSync(resolved)) {
+      problems.push(`${field}: "${id}" resolves to ${resolved}, which does not exist (paths are relative to the project root)`);
+    }
+    return resolved;
+  };
+  /** @type {Record<string, string>} */
+  const components = {};
+  for (const [name, id] of Object.entries(options.components)) if (id) components[name] = local(`components.${name}`, id);
+  const resolved = {
+    components,
+    customCss: options.customCss.map((id, i) => local(`customCss[${i}]`, id)),
+    ogImageFor: options.ogImageFor ? local('ogImageFor', options.ogImageFor) : undefined,
+    versionFrom: options.versionFrom ? local('versionFrom', options.versionFrom) : undefined,
+  };
+  options.externalDocs.forEach((d, i) => local(`externalDocs[${i}].dir`, d.dir));
+  if (problems.length) throw new ProjectSiteOptionsError(problems);
+  return resolved;
+}

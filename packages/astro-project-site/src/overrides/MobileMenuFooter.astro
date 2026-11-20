@@ -1,0 +1,55 @@
+---
+// Starlight's MobileMenuFooter override: the site nav at the bottom of Starlight's mobile menu (the sidebar
+// popover), above Starlight's own social links and theme select. Together with SiteHeader hiding its own menu on
+// pages with a sidebar, small screens get a single menu button holding both the docs sidebar and the site nav.
+import Default from '@astrojs/starlight/components/MobileMenuFooter.astro';
+import site from 'virtual:astro-project-site/config';
+import { isActive } from '../lib/nav';
+
+const pathname = Astro.url.pathname;
+---
+
+<nav class="site-nav" aria-label="Site">
+  <ul>
+    {
+      site.nav.map((item) => (
+        <li>
+          <a href={item.href} aria-current={isActive(item.href, pathname) ? 'page' : undefined}>
+            {item.label}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>
+<Default />
+
+<style>
+  .site-nav {
+    border-top: 1px solid var(--sl-color-gray-6);
+    padding-block: 0.5rem;
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+  }
+  a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    color: var(--sl-color-gray-2);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--sl-color-white);
+  }
+  a[aria-current] {
+    color: var(--sl-color-white);
+    background: var(--sl-color-accent-low);
+  }
+</style>

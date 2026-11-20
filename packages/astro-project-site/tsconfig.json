@@ -1,0 +1,12 @@
+{
+  // `npm run check`: type-checks the package's TypeScript and JavaScript (JSDoc) sources. The .astro components are
+  // checked by `astro check` in site/ and starters/default/, which import them.
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "types": ["astro/client", "node"]
+  },
+  "include": ["types/*.d.ts", "src/**/*.ts", "src/**/*.mjs", "bin/*.mjs", "scripts/*.mjs", "test/*.mjs"]
+}
