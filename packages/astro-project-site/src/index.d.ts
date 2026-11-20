@@ -75,6 +75,13 @@ export interface ExternalDocs {
   order?: string[];
   /** Globs relative to `dir` to leave out, e.g. `['plans/**']`. */
   exclude?: string[];
+  /**
+   * Globs relative to `dir`; when given, only matching markdown files are mounted. Matched against the whole path
+   * (`README.md` is the top-level one only); a glob that matches a folder covers its contents. Lets a mount pick
+   * files from the repository root: `{ dir: '..', route: 'project', label: 'Project', include: ['README.md',
+   * 'CHANGELOG.md'] }`. The site's own folder, dot-folders and node_modules are never mounted.
+   */
+  include?: string[];
 }
 
 export interface Mirror {

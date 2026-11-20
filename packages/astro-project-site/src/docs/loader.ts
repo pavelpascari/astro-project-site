@@ -34,8 +34,10 @@ export function projectDocsLoader(): Loader {
     async load(context) {
       const ctx = context as FullContext;
       const project = resolveProject(site, fileURLToPath(ctx.config.root));
+      // The deepest mount whose folder holds the file: `../docs/x.md` belongs to `../docs`, not to a `..` mount.
+      const byDepth = [...project.mounts].sort((a, b) => b.relDir.length - a.relDir.length);
       const owner = (filePath: string | undefined) =>
-        filePath ? project.mounts.find((m) => filePath.startsWith(m.relDir + '/')) : undefined;
+        filePath ? byDepth.find((m) => filePath.startsWith(m.relDir + '/')) : undefined;
 
       // Each sub-loader prunes entries it did not see, so each must only see its own entries in store.keys().
       await docsLoader().load({ ...ctx, store: scoped(ctx.store, (fp) => !owner(fp)) });

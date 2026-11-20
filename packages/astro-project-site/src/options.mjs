@@ -74,6 +74,7 @@ export const optionsSchema = z.strictObject({
         label: z.string().min(1),
         order: z.array(z.string()).optional(),
         exclude: z.array(z.string()).optional(),
+        include: z.array(z.string().min(1)).min(1).optional(),
       }),
     )
     .default([]),

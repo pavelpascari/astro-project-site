@@ -14,11 +14,11 @@ const MD_EXT = /\.md$/i;
 const LOCAL_EXT = /\.(md|mdx|markdown|mdoc)$/i;
 
 /**
- * @typedef {{ dir: string, route: string, label: string, order?: string[], exclude?: string[] }} ExternalDocsEntry
+ * @typedef {{ dir: string, route: string, label: string, order?: string[], exclude?: string[], include?: string[] }} ExternalDocsEntry
  * @typedef {{ name: string, tagline: string, url: string, repo: string, repoBranch?: string,
  *   externalDocs?: ExternalDocsEntry[] }} SiteLike
  * @typedef {{ dir: string, relDir: string, route: string, routeId: string, label: string, order: string[],
- *   exclude: string[] }} Mount
+ *   exclude: string[], include: string[], skip: string[] }} Mount
  * @typedef {{ root: string, gitRoot: string | undefined, repo: string, branch: string, url: string,
  *   localDir: string, mounts: Mount[] }} Project
  */
@@ -38,6 +38,9 @@ export function resolveProject(/** @type {SiteLike} */ site, /** @type {string} 
       label: entry.label,
       order: entry.order ?? [],
       exclude: entry.exclude ?? [],
+      include: entry.include ?? [],
+      // The site's own folder (and with it dist/ and node_modules/) when the mount contains it, e.g. `dir: '..'`.
+      skip: isInside(root, dir) ? [root] : [],
     };
   });
   return /** @type {Project} */ ({
@@ -69,9 +72,49 @@ export function idForFile(/** @type {Mount} */ mount, /** @type {string} */ rel)
 
 export const hrefForId = (/** @type {string} */ id) => `/${id}/`;
 
-/** The mount an absolute path belongs to, if any. */
+/** Mounts whose folder holds the absolute path `abs`, deepest first (`../docs` before `..`). */
+export function mountsFor(/** @type {Project} */ project, /** @type {string} */ abs) {
+  return project.mounts
+    .filter((m) => (abs === m.dir || abs.startsWith(m.dir + path.sep)) && !m.skip.some((s) => abs === s || abs.startsWith(s + path.sep)))
+    .sort((a, b) => b.dir.length - a.dir.length);
+}
+
+/** The mount an absolute path belongs to, if any: the deepest one whose include/exclude globs accept it. */
 export function mountFor(/** @type {Project} */ project, /** @type {string} */ abs) {
-  return project.mounts.find((m) => abs === m.dir || abs.startsWith(m.dir + path.sep));
+  const candidates = mountsFor(project, abs);
+  return candidates.find((m) => accepts(m, toPosix(path.relative(m.dir, abs)))) ?? candidates[0];
+}
+
+/**
+ * Whether a path (posix, relative to the mount dir) passes the mount's `include` and `exclude` globs.
+ * A glob that matches a folder covers everything inside it (`include: ['guides']` = `guides/**`).
+ */
+export function accepts(/** @type {Mount} */ mount, /** @type {string} */ rel) {
+  if (!rel || rel.startsWith('..')) return false;
+  if (mount.exclude.map(globToRegExp).some((re) => re.test(rel))) return false;
+  if (!mount.include.length) return true;
+  const included = mount.include.map(globToRegExp);
+  const parts = rel.split('/');
+  for (let i = parts.length; i > 0; i--) {
+    const sub = parts.slice(0, i).join('/');
+    if (included.some((re) => re.test(sub))) return true;
+  }
+  return false;
+}
+
+/** Whether a file inside folder `relDir` (posix, relative to the mount dir) could still pass `include`. */
+function couldInclude(/** @type {Mount} */ mount, /** @type {string} */ relDir) {
+  if (!mount.include.length) return true;
+  const parts = relDir.split('/');
+  return mount.include.some((glob) => {
+    const segs = glob.replace(/^\.\//, '').replace(/\/+$/, '').split('/');
+    for (let i = 0; i < parts.length; i++) {
+      if (i >= segs.length) return true; // the glob matched an ancestor folder: everything below is included
+      if (segs[i].includes('**')) return true;
+      if (!globToRegExp(segs[i]).test(parts[i])) return false;
+    }
+    return true;
+  });
 }
 
 /** Path of a file relative to the git root, posix, or undefined when it is outside the repo. */
@@ -103,26 +146,37 @@ function findGitRoot(/** @type {string} */ from) {
 
 // ---------- listing ----------
 
-/** Markdown files of a mount, posix paths relative to its dir, minus `exclude` globs. Hidden folders and node_modules are skipped. */
+/**
+ * Markdown files of a mount, posix paths relative to its dir, passing its `include`/`exclude` globs. Hidden
+ * folders, node_modules and the site's own folder are always skipped.
+ */
 export function listMountFiles(/** @type {Mount} */ mount) {
-  const excluded = mount.exclude.map(globToRegExp);
-  return walk(mount.dir).filter((rel) => MD_EXT.test(rel) && !excluded.some((re) => re.test(rel)));
+  return walk(mount, mount.dir).filter((rel) => MD_EXT.test(rel) && accepts(mount, rel));
 }
 
 /** Glob patterns for Astro's glob() loader matching exactly what listMountFiles returns. */
 export function mountGlobPatterns(/** @type {Mount} */ mount) {
-  return ['**/*.md', '!**/node_modules/**', ...mount.exclude.map((p) => `!${p}`)];
+  // With `include`, the exact file list: the include dialect (a folder covers its contents, a name is matched
+  // against the whole path) differs from tinyglobby's, and an `include` mount is usually a few named files.
+  if (mount.include.length) return listMountFiles(mount).map(escapeGlob);
+  const skipped = mount.skip.map((s) => `!${toPosix(path.relative(mount.dir, s))}/**`);
+  return ['**/*.md', '!**/node_modules/**', ...skipped, ...mount.exclude.map((p) => `!${p}`)];
 }
 
-function walk(/** @type {string} */ dir, prefix = '') {
+const escapeGlob = (/** @type {string} */ p) => p.replace(/[*?[\]{}()!+@\\]/g, '\\$&');
+
+function walk(/** @type {Mount} */ mount, /** @type {string} */ dir, prefix = '') {
   /** @type {string[]} */
   const out = [];
   if (!fs.existsSync(dir)) return out;
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     if (ent.name.startsWith('.') || ent.name === 'node_modules') continue;
     const rel = prefix ? `${prefix}/${ent.name}` : ent.name;
-    if (ent.isDirectory()) out.push(...walk(path.join(dir, ent.name), rel));
-    else out.push(rel);
+    const abs = path.join(dir, ent.name);
+    if (ent.isDirectory()) {
+      if (mount.skip.includes(abs) || !couldInclude(mount, rel)) continue;
+      out.push(...walk(mount, abs, rel));
+    } else out.push(rel);
   }
   return out;
 }
@@ -329,19 +383,18 @@ export function resolveHref(/** @type {Project} */ project, /** @type {string} *
   let decoded;
   try { decoded = decodeURIComponent(rawPath); } catch { decoded = rawPath; }
   const target = path.resolve(path.dirname(abs), decoded);
-  const mount = mountFor(project, target);
-  if (mount) {
+  // Deepest mount first; a mount whose globs leave the file out (e.g. `include: ['README.md']` at the repo root)
+  // passes it on to the next one, and finally to the repo link below.
+  for (const mount of mountsFor(project, target)) {
     let rel = toPosix(path.relative(mount.dir, target));
     let file = target;
     if (!MD_EXT.test(rel)) {
       const readme = ['README.md', 'readme.md', 'index.md'].map((n) => path.join(target, n)).find((p) => fs.existsSync(p));
       if (readme) { file = readme; rel = toPosix(path.relative(mount.dir, readme)); }
     }
-    const excluded = mount.exclude.map(globToRegExp).some((re) => re.test(rel));
-    if (MD_EXT.test(rel) && !excluded && fs.existsSync(file)) {
-      return hrefForId(idForFile(mount, rel)) + (hash && hash.slice(1) === titleSlug(file) ? '' : hash);
-    }
-    if (MD_EXT.test(rel) && !excluded) return hrefForId(idForFile(mount, rel)) + hash; // missing file: let the link validator flag it
+    if (!MD_EXT.test(rel) || !accepts(mount, rel)) continue;
+    if (fs.existsSync(file)) return hrefForId(idForFile(mount, rel)) + (hash && hash.slice(1) === titleSlug(file) ? '' : hash);
+    return hrefForId(idForFile(mount, rel)) + hash; // missing file: let the link validator flag it
   }
   const inRepo = repoPath(project, target);
   if (inRepo === undefined) return undefined;
@@ -369,6 +422,10 @@ export function absolutizeLinks(/** @type {string} */ md, /** @type {string} */ 
 // ---------- small utils ----------
 
 const toPosix = (/** @type {string} */ p) => p.split(path.sep).join('/');
+function isInside(/** @type {string} */ child, /** @type {string} */ parent) {
+  const rel = path.relative(parent, child);
+  return rel !== '' && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
+}
 const encodePath = (/** @type {string} */ p) => p.split('/').map(encodeURIComponent).join('/');
 export function titleCase(/** @type {string} */ name) {
   const s = name.replace(/[-_]+/g, ' ').trim();
