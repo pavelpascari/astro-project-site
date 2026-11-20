@@ -45,7 +45,7 @@ jobs:
           npm pack -w astro-project-site --pack-destination "$RUNNER_TEMP"
           tarball=$(ls "$RUNNER_TEMP"/astro-project-site-*.tgz)
           cd "$RUNNER_TEMP"
-          node "$GITHUB_WORKSPACE/packages/astro-project-site/bin/project-site.mjs" init fresh-site --package "file:$tarball"
+          node "$GITHUB_WORKSPACE/packages/astro-project-site/bin/project-site.mjs" init fresh-site --yes --package "file:$tarball"
           cd fresh-site
           npm install --no-audit --no-fund
           npm run build
