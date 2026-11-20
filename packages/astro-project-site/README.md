@@ -103,6 +103,7 @@ All paths are relative to the project root (the folder of `astro.config.mjs`) an
 | `components` | `ComponentOverrides` | `{}` | Replace built-in components (below). |
 | `linksValidator` | `object \| false` | | starlight-links-validator options (`exclude` is added to the built-in list of non-docs pages), or off. |
 | `starlight` | `object` | `{}` | Extra Starlight options (below). |
+| `markdown` | `{ alerts?, emoji?, math?, mermaid?, headingLinks?, codeWrapToggle? }` | all `true` | GitHub-flavoured markdown extras (below). |
 
 ### `landing`
 
@@ -204,6 +205,18 @@ example.setSource('<b>new code</b>'); // re-runs; editable examples show it in t
 
 Keyboard: in an editable example Tab indents; press Escape, then Tab, to move on. If a runner or module cannot be
 fetched, the example says so (the browser's own error is under Details) and offers Retry.
+
+## Markdown
+
+Markdown renders as on GitHub on every page that has it (docs, `externalDocs` folders, blog posts, your own `.md`
+pages); the plugins sit on Astro's global markdown processor. GFM (tables with alignment, task lists, strikethrough,
+autolinks, footnotes, raw HTML), GitHub-compatible heading ids, alerts (`> [!NOTE]` …), emoji shortcodes, math
+(`$…$`, `$$…$$`, ```` ```math ````, KaTeX at build time, its CSS linked only where used) and ```` ```mermaid ````
+diagrams (Mermaid loaded only on pages with diagrams, themed from the tokens). Code blocks are Expressive Code with
+line numbers, collapsible sections, terminal prompts that are not copied and a wrap toggle; set more through
+`starlight.expressiveCode`. Each extra can be switched off with `markdown: { math: false, … }`. Raw HTML is not
+sanitised (the markdown is the project's own). The full list, with source and result side by side, is the site's
+[Markdown guide](https://astro-project-site.workers.dev/docs/guides/markdown/).
 
 ## Theme
 
@@ -307,6 +320,8 @@ they are the project's own files.
 
 ## Licences
 
-MIT. Dependencies: `starlight-links-validator` (MIT); peers `astro` and `@astrojs/starlight` (MIT). Build-time
+MIT. Dependencies: `starlight-links-validator`, `mermaid`, `katex`, `gemoji`, `hast-util-from-html`,
+`@expressive-code/core`, `@expressive-code/plugin-line-numbers`, `@expressive-code/plugin-collapsible-sections`
+(MIT), `github-slugger` (ISC); peers `astro` and `@astrojs/starlight` (MIT). Build-time
 tools pulled in by Astro and Vite include Lightning CSS (MPL-2.0) and libvips via sharp (LGPL-3.0); neither ends
 up in the built site.

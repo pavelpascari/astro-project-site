@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Markdown: GitHub parity
+
+Markdown renders at least as well as on GitHub everywhere it appears (docs, `externalDocs` folders, blog posts,
+a project's own `.md` pages): the plugins are registered on Astro's global markdown processor (Sätteri).
+
+- GitHub alerts (`> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`), emoji shortcodes, visible
+  "Footnotes" label, named task-list checkboxes, tables that scroll in their own box, `<details>`/`<kbd>` styles.
+- Math (`$…$`, `$$…$$`, ```` ```math ````) typeset with KaTeX at build time; KaTeX's CSS and fonts are served from
+  `/_project-site/katex-<version>/` and linked only from pages with math. `$5 and $6` stays text (GitHub's rule).
+- ```` ```mermaid ```` diagrams rendered in the browser: Mermaid is loaded only on pages with diagrams, when one
+  scrolls near; themed from the site tokens and redrawn on theme switch; wide diagrams scroll; source kept as the
+  text alternative and shown when a diagram cannot be drawn.
+- Code blocks: line numbers (`showLineNumbers`) and collapsible sections (`collapse={…}`) plugins, shell prompts
+  that are neither selectable nor copied (output lines left out of the copy), a "Wrap lines" toggle on blocks that
+  overflow, and aliases for `shell-session`, `terminal`, `env`, … Also applied to `<Code>`/`<Live>`.
+- Heading anchor links on markdown pages outside the docs; `--` is no longer turned into an en dash.
+- New `markdown` option: `{ alerts, emoji, math, mermaid, headingLinks, codeWrapToggle }`, all `true` by default.
+- New dependencies (all MIT unless noted): `mermaid`, `katex`, `gemoji`, `github-slugger` (ISC),
+  `hast-util-from-html`, `@expressive-code/core`, `@expressive-code/plugin-line-numbers`,
+  `@expressive-code/plugin-collapsible-sections`.
+
 Responsive design and accessibility pass, checked in Chromium, Firefox and WebKit from 320px phones to 2560px
 screens, at 200%/400% zoom and with a large default font.
 
