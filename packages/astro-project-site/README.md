@@ -412,6 +412,28 @@ instead of downloading one. Inputs: `working-directory`, `install-directory`, `w
 `deploy`. Secrets (all optional): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SOURCE_REPO_TOKEN`. Without the
 Cloudflare secrets it builds and skips the deploy.
 
+### Workflow security
+
+- **Pinned actions.** Every third-party action in this repository's workflows (`ci.yml`, `deploy.yml`,
+  `release.yml`) is pinned to a full commit SHA with its version in a comment. Dependabot proposes updates weekly
+  (grouped, after a 7-day cooldown) for the actions and the npm workspace. Your `site.yml` pins `deploy.yml` to a
+  release tag; enable Dependabot's `github-actions` updates in your repository to get bumps, or pin a commit SHA.
+- **Least privilege.** Workflows default to no permissions (`permissions: {}`); each job asks for what it uses:
+  `contents: read` to check out, `pull-requests: write` only in the deploy job that posts the preview comment.
+  Checkouts never keep the token (`persist-credentials: false`).
+- **Forks and untrusted input.** Nothing runs on `pull_request_target`, and `deploy.yml` refuses to be called from
+  it or from `workflow_run`. Fork PRs are built with a read-only token and no secrets; the deploy job never runs for
+  them. The Cloudflare secrets are only in the environment of the steps that call Cloudflare, not of `npm ci`, and
+  that job installs without a dependency cache. Inputs are validated before use: `working-directory` and
+  `install-directory` must stay inside the repository, `worker-name` must be a Worker slug, `source-repo` must be
+  `owner/name`. Event data and inputs reach shell steps through `env:`, never interpolated into scripts.
+- **Releases.** A `v<version>` tag matching `package.json` runs `release.yml`: a read-only job runs the tests and the
+  full build, then packs the tarball and its SHA-256 (no dependency cache). A second job, which runs no project
+  code, verifies the checksum, creates the GitHub release and publishes that tarball to npm through trusted
+  publishing (OIDC, `id-token: write`): there is no npm token to leak, and npm records provenance for public repositories.
+- **Audited** with [zizmor](https://docs.zizmor.sh) (including `--persona=pedantic`) and
+  [actionlint](https://github.com/rhysd/actionlint); remaining exceptions are commented inline.
+
 ## Development
 
 `npm test` runs the unit tests (`node --test`). The responsive/UX check is separate because it needs browsers:
