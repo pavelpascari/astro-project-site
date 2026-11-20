@@ -55,7 +55,13 @@ export default function projectSite(userOptions) {
         updateConfig({
           site: config.site ?? options.url,
           integrations: [starlight.integration, mirror(options.mirrors)],
-          vite: { plugins: [vitePluginProjectSite({ options, paths, version, search: starlight.search })] },
+          vite: {
+            plugins: [vitePluginProjectSite({ options, paths, version, search: starlight.search })],
+            // starlight-links-validator adds a route middleware by bare specifier, which Starlight imports from the
+            // project root. It is this package's dependency, not the project's: point the specifier at our copy so
+            // it resolves without hoisting (pnpm, file: links).
+            resolve: { alias: [{ find: /^starlight-links-validator\/middleware$/, replacement: fileURLToPath(import.meta.resolve('starlight-links-validator/middleware')) }] },
+          },
         });
       },
 

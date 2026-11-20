@@ -35,7 +35,8 @@ test('Starlight options: ours first, passthrough lists appended, components over
   assert.deepEqual(opts.markdown, { headingLinks: false, processedDirs: [path.join(root, 'docs')] });
   assert.deepEqual(opts.routeMiddleware, [own('route-middleware.ts'), path.join(root, 'src/mw.ts')]);
   assert.equal(opts.plugins.length, 1);
-  assert.equal(opts.editLink, undefined, 'not in a git repo: no edit links');
+  // Not in a git repo: the project root is taken as the repo root.
+  assert.deepEqual(opts.editLink, { baseUrl: 'https://gitlab.com/me/lib/edit/main/' });
 });
 
 test('linksValidator: false turns it off', () => {

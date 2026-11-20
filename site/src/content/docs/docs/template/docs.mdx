@@ -81,7 +81,8 @@ page's markdown in one file, with links made absolute.
 
 - **Restart the dev server after adding or removing a page.** The sidebar is built when the server starts. Edits
   to existing files, including external ones, reload without a restart.
-- External folders must be inside the same git repo as the site for edit links and GitHub links. If a folder is
+- External folders must be inside the same git repo as the site for edit links and GitHub links (without a `.git`
+  folder yet, the project root is taken as the repo root). If a folder is
   outside it, its pages get no edit link and links to non-doc files are left as written, which then fails link
   checking.
 - URLs follow GitHub's layout (`/edit/`, `/blob/`, `/tree/`).

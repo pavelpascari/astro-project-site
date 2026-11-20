@@ -39,7 +39,8 @@ export function resolveProject(/** @type {SiteLike} */ site, /** @type {string} 
   });
   return /** @type {Project} */ ({
     root,
-    gitRoot: findGitRoot(root),
+    // Not in a git checkout yet (e.g. right after `project-site init`): assume the project root becomes the repo root.
+    gitRoot: findGitRoot(root) ?? root,
     repo: site.repo.replace(/\/+$/, ''),
     branch: site.repoBranch ?? 'main',
     url: site.url.replace(/\/+$/, ''),
