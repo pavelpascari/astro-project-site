@@ -1,7 +1,8 @@
 ---
 // A live example: the code is written once, shown with Expressive Code and executed.
 // Docs: the "Live examples" page of the astro-project-site docs.
-import { Code } from '@astrojs/starlight/components';
+// Expressive Code's <Code>, imported without Starlight's component barrel and its stylesheet (see virtual.mjs).
+import { Code } from 'virtual:astro-project-site/code';
 import type { LiveProps } from './types';
 
 type Props = LiveProps;
@@ -68,6 +69,7 @@ const config = {
   id={id}
   class:list={['live-ex', `live-ex--${preview}`, className]}
   data-mode={mode}
+  data-editable={editable ? '' : undefined}
   data-config={JSON.stringify(config)}
 >
   <figure class="live-ex__figure">
@@ -232,6 +234,13 @@ const config = {
   .live-ex__bar[hidden] {
     display: none;
   }
+  /* An editable example always shows its bar once the script runs: keep its place so the code does not jump. */
+  @media (scripting: enabled) {
+    .live-ex[data-editable] .live-ex__bar[hidden] {
+      display: flex;
+      visibility: hidden;
+    }
+  }
   .live-ex__status {
     flex: 1;
     min-width: 0;
@@ -335,5 +344,37 @@ const config = {
   live-example:target .live-ex__preview {
     outline: 2px solid var(--sl-color-accent, Highlight);
     outline-offset: 2px;
+  }
+
+  /* Touch screens have no hover: the anchor is always shown, and the Reset button is a full-size target. */
+  @media (hover: none) {
+    .live-ex__anchor {
+      opacity: 1;
+    }
+  }
+  /* Print the code as written (the editor is a scrolling textarea) and drop the controls. */
+  @media print {
+    .live-ex__bar,
+    .live-ex__editor,
+    .live-ex__anchor {
+      display: none !important;
+    }
+    .live-ex__code .frame:has(.live-ex__editor) pre {
+      display: block;
+    }
+  }
+  @media (pointer: coarse) {
+    .live-ex__reset {
+      min-height: 2.75rem;
+      padding-inline: 1rem;
+    }
+    .live-ex__anchor {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      vertical-align: middle;
+    }
   }
 </style>

@@ -179,6 +179,15 @@ const BOOT = `(function (cfg) {
   }
 })`;
 
+// Firefox's preloader resolves <script src> and <link href> in a srcdoc document against the page's URL, ignoring
+// the <base> (each example then logs a failed load and a 404 before the right request). Resolve those URLs up front
+// when there is a base; what runs is the same code.
+function resolveAgainst(html: string, base: string): string {
+  return html.replace(/(<(?:script|link)\b[^>]*?\s(?:src|href)\s*=\s*)(["'])([^"']*)\2/gi, (match, pre, q, url) =>
+    !url || /^(?:[a-z][\w+.-]*:|\/\/|#)/i.test(url) ? match : `${pre}${q}${new URL(url, base).href}${q}`,
+  );
+}
+
 function frameDocument(cfg: Config, id: string, source: string): string {
   const t = themeSnapshot();
   const vars = Object.entries(t.vars).map(([k, v]) => `${k}:${v};`).join('');
@@ -189,17 +198,17 @@ function frameDocument(cfg: Config, id: string, source: string): string {
     base: cfg.base ? absolute(cfg.base) : document.baseURI,
   };
   return [
-    `<!doctype html><html lang="${escAttr(document.documentElement.lang || 'en')}" data-theme="${t.theme}"><head><meta charset="utf-8">`,
-    `<meta name="viewport" content="width=device-width, initial-scale=1">`,
+    `<!doctype html><html lang="${escAttr(document.documentElement.lang || 'en')}" data-theme="${t.theme}"><head>`,
     cfg.base ? `<base href="${escAttr(absolute(cfg.base))}">` : '',
+    `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">`,
     `<style>:root{color-scheme:${t.scheme};${vars}}html,body{margin:0}body{padding:1rem;font-family:var(--sl-font,system-ui,sans-serif);`,
     `line-height:1.5;color:var(--sl-color-text,CanvasText);background:transparent}</style>`,
     // </script> cannot appear inside a JSON literal in a script; escape "<".
     `<script>${BOOT}(${JSON.stringify(boot).replace(/</g, '\\u003c')})</script>`,
     ...cfg.modules.map((u) => `<script type="module" src="${escAttr(absolute(u))}"></script>`),
-    cfg.head,
+    cfg.base ? resolveAgainst(cfg.head, absolute(cfg.base)) : cfg.head,
     `</head><body>`,
-    cfg.runner ? '<div id="live-root"></div>' : source,
+    cfg.runner ? '<div id="live-root"></div>' : cfg.base ? resolveAgainst(source, absolute(cfg.base)) : source,
     `</body></html>`,
   ].join('');
 }
@@ -251,6 +260,29 @@ class LiveExample extends HTMLElement {
   private io: IntersectionObserver | null = null;
   private timer = 0;
   private lastTheme = '';
+
+  /** The code the example runs now: what is in the editor for an editable example. Public API. */
+  getSource(): string {
+    return this.editor?.value ?? this.source;
+  }
+
+  /**
+   * Replaces the example's code and runs it (if it has started; a lazy example runs it when it scrolls into view).
+   * An editable example shows it in the editor and Reset brings back the original; otherwise the code block keeps
+   * showing the original while the copy button copies the new code. Public API: call it after
+   * `customElements.whenDefined('live-example')`.
+   */
+  setSource(code: string): void {
+    if (!this.mount) throw new Error('<live-example> is not connected yet');
+    if (this.editor) {
+      this.editor.value = code;
+      this.onEdit(true);
+      return;
+    }
+    this.source = code;
+    if (this.copyBtn) this.copyBtn.dataset.code = code.replace(/\n/g, '\u007f');
+    if (this.started) void this.run();
+  }
 
   connectedCallback() {
     if (this.mount) {

@@ -123,6 +123,14 @@
   color-scheme: light;
 }
 
+/* "Increase contrast" (macOS, iOS, Windows): secondary text moves toward the text colour. (Not the border: it is
+   also Starlight's inline-code background.) Doubled :root so it applies over a project's own token overrides. */
+@media (prefers-contrast: more) {
+  :root:root {
+    --site-muted: color-mix(in oklab, var(--site-text) 82%, var(--site-bg));
+  }
+}
+
 /* ── Derived tokens: usually leave alone ───────────────────────────────────────────────────── */
 :root {
   --site-accent-soft: color-mix(in oklab, var(--site-accent) 16%, var(--site-bg));
@@ -163,4 +171,22 @@
   --sl-font: var(--site-font-body);
   --sl-font-mono: var(--site-font-mono);
   --sl-nav-height: var(--site-header-height);
+}
+
+/* Boxes that scroll sideways get a tab stop (lib/scroll-regions.ts); show where focus is. */
+[data-scroll-region]:focus-visible {
+  outline: 2px solid var(--site-focus);
+  outline-offset: 2px;
+}
+
+/* Touch screens: Starlight's mobile menu button at 44×44 (WCAG 2.5.5) instead of 32×32. */
+@media (pointer: coarse) {
+  :root {
+    --sl-menu-button-size: 2.75rem;
+  }
+  /* Expressive Code's copy button: 44×44 instead of 44×40. */
+  .expressive-code .copy button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
 }

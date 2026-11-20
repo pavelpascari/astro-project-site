@@ -34,4 +34,11 @@ const items = all.filter((item) => !kinds || kinds.includes(item.data.kind)).sli
     margin: calc(var(--site-space) * 1.5) 0 0;
     font-weight: 600;
   }
+  @media (pointer: coarse) {
+    .more a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+  }
 </style>

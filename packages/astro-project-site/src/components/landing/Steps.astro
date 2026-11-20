@@ -1,5 +1,6 @@
 ---
 // Numbered "how it works" steps, each with an optional code sample highlighted at build time.
+import '../../styles/components.css';
 import { Code } from 'astro:components';
 import type { ComponentProps } from 'astro/types';
 
@@ -30,7 +31,7 @@ const { items } = Astro.props;
           <Code
             code={step.code}
             lang={(step.lang ?? 'plaintext') as Lang}
-            themes={{ light: 'github-light', dark: 'github-dark' }}
+            themes={{ light: 'github-light-default', dark: 'github-dark-default' }}
             defaultColor={false}
           />
         )}

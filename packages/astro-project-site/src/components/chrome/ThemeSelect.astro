@@ -92,6 +92,11 @@ const { id = 'site-theme' } = Astro.props;
   select:hover {
     border-color: var(--site-border);
   }
+  @media (pointer: coarse) {
+    select {
+      min-height: 2.75rem;
+    }
+  }
   select:focus-visible {
     outline: 2px solid var(--site-focus);
     outline-offset: 2px;
