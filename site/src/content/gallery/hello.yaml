@@ -1,0 +1,8 @@
+title: Hello app
+description: A static page mirrored into the site as it is, with its own HTML and scripts.
+href: /apps/hello/
+kind: demo
+tags: [static, mirror]
+order: 1
+poster: ./hello.png
+pixelated: true

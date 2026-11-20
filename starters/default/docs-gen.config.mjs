@@ -1,5 +1,5 @@
 // Generated blocks in markdown docs: `npm run docs:gen` fills them, `npm run docs:check` fails when one is stale.
-// See scripts/docs-gen.mjs for the block syntax. Paths here are relative to this file (the site root).
+// Block syntax: `<!-- gen:name key=value -->` … `<!-- /gen -->`. Paths here are relative to this file (the project root).
 import fs from 'node:fs';
 import path from 'node:path';
 

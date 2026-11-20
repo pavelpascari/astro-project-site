@@ -8,3 +8,5 @@ node_modules/
 *.log
 .idea/
 .vscode/
+# `npm pack` copies starters/default here (prepack) and removes it again (postpack).
+packages/astro-project-site/starter/
