@@ -36,7 +36,7 @@ folder next to them and reads those files where they are; nothing moves.
 
    ```sh
    cd my-lib
-   npx astro-project-site init website --name "My Lib"
+   npx astro-project-site@beta init website --name "My Lib"
    cd website && npm install
    ```
 
@@ -86,7 +86,7 @@ folder next to them and reads those files where they are; nothing moves.
    on: [pull_request, push, workflow_dispatch]
    jobs:
      site:
-       uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
+       uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.0
        with: { working-directory: website }
        permissions: { contents: read, pull-requests: write }
        secrets:

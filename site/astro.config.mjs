@@ -14,7 +14,7 @@ export default defineConfig({
       url: 'https://astro-project-site.workers.dev',
       repo: 'https://github.com/pavelpascari/astro-project-site',
       versionFrom: '../packages/astro-project-site/package.json',
-      install: 'npx project-site init my-site',
+      install: 'npx astro-project-site@beta init my-site',
       nav: [
         { label: 'Docs', href: '/docs/' },
         { label: 'Gallery', href: '/gallery/' },

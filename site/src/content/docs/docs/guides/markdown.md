@@ -263,13 +263,13 @@ npm create astro@latest -- --template minimal
 ```
 
 ```sh
-$ npx astro-project-site init my-site
+$ npx astro-project-site@beta init my-site
 ```
 
 ```console
 $ npm install astro-project-site
 added 312 packages in 9s
-$ npx project-site init my-site --name "My Lib"
+$ npx astro-project-site@beta init my-site --name "My Lib"
 Created my-site/ (14 files)
 ```
 ````
@@ -280,13 +280,13 @@ npm create astro@latest -- --template minimal
 ```
 
 ```sh
-$ npx astro-project-site init my-site
+$ npx astro-project-site@beta init my-site
 ```
 
 ```console
 $ npm install astro-project-site
 added 312 packages in 9s
-$ npx project-site init my-site --name "My Lib"
+$ npx astro-project-site@beta init my-site --name "My Lib"
 Created my-site/ (14 files)
 ```
 

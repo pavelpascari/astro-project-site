@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.0-beta.0 - 2026-11-20
+
+The first published release: on npm under the `beta` tag (`npx astro-project-site@beta init website`), and as a
+tarball with its SHA-256 on the GitHub release. Everything below, from the package's first layout to the blog,
+the repository-reading `init` and GitHub-flavoured markdown.
+
 ### Blog
 
 - New option `blog` (`true` or `{ route, title, description, authors, postsPerPage, rss, landing }`), off unless set.
@@ -124,7 +130,7 @@ screens, at 200%/400% zoom and with a large default font.
   `OPTION_NAMES` and `COMPONENT_NAMES` from `astro-project-site` and `astro-project-site/config`; the
   `astro-project-site/live` export (`<Live>` without the components barrel).
 
-## 0.1.0 (unreleased)
+### The package
 
 First release as a package. Previously a copy-and-edit template.
 

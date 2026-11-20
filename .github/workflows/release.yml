@@ -1,0 +1,122 @@
+# Release: push a signed tag `v<version>` matching packages/astro-project-site/package.json.
+#
+#   1. checks the tag against the package version, runs the tests and the full build
+#   2. packs the package and writes its SHA-256
+#   3. creates the GitHub release (pre-release for versions with a `-`), with the tarball, the checksum and the
+#      version's CHANGELOG section as notes
+#   4. publishes to npm when the NPM_TOKEN secret is set: `--tag beta` for pre-releases, `latest` otherwise;
+#      with provenance once the repository is public. Without the secret the step is skipped with a notice.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write   # create the release and upload assets
+      id-token: write   # npm provenance
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Tag matches the package version
+        id: version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(node -p "require('./packages/astro-project-site/package.json').version")
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error title=Version mismatch::tag $TAG but packages/astro-project-site/package.json says $version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          case "$version" in *-*) echo "dist_tag=beta" >> "$GITHUB_OUTPUT"; echo "prerelease=true" >> "$GITHUB_OUTPUT";;
+                             *)   echo "dist_tag=latest" >> "$GITHUB_OUTPUT"; echo "prerelease=false" >> "$GITHUB_OUTPUT";; esac
+
+      - run: npm ci
+      - name: Tests
+        run: npm test
+      - name: Build everything
+        run: npm run build
+
+      - name: Pack
+        id: pack
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release"
+          npm pack -w astro-project-site --pack-destination "$RUNNER_TEMP/release"
+          cd "$RUNNER_TEMP/release"
+          file="astro-project-site-$VERSION.tgz"
+          test -f "$file"
+          sha256sum "$file" > "$file.sha256"
+          echo "file=$RUNNER_TEMP/release/$file" >> "$GITHUB_OUTPUT"
+
+      - name: Release notes from the CHANGELOG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          awk -v v="$VERSION" '
+            $0 ~ "^## " v "( |$)" { on = 1; next }
+            on && /^## / { exit }
+            on { print }
+          ' packages/astro-project-site/CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
+            echo "::error title=No changelog section::packages/astro-project-site/CHANGELOG.md has no '## $VERSION' section"
+            exit 1
+          fi
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          FILE: ${{ steps.pack.outputs.file }}
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+        run: |
+          flags=()
+          [ "$PRERELEASE" = true ] && flags+=(--prerelease)
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$FILE" "$FILE.sha256" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" "$FILE" "$FILE.sha256" --repo "$GITHUB_REPOSITORY" \
+              --title "astro-project-site $TAG" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag "${flags[@]}"
+          fi
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          FILE: ${{ steps.pack.outputs.file }}
+          DIST_TAG: ${{ steps.version.outputs.dist_tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+          PUBLIC_REPO: ${{ github.event.repository.private == false }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::notice title=npm publish skipped::NPM_TOKEN is not set; publish with: npm publish $(basename "$FILE") --tag $DIST_TAG"
+            exit 0
+          fi
+          if npm view "astro-project-site@$VERSION" version > /dev/null 2>&1; then
+            echo "::notice title=Already on npm::astro-project-site@$VERSION is already published"
+            exit 0
+          fi
+          flags=(--tag "$DIST_TAG" --access public)
+          # npm provenance needs a public source repository.
+          [ "$PUBLIC_REPO" = true ] && flags+=(--provenance)
+          npm publish "$FILE" "${flags[@]}"

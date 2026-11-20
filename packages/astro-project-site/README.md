@@ -6,7 +6,7 @@ with a preview per pull request. Astro 7 + Starlight 0.43. MIT.
 
 ```bash
 cd my-lib                                # your project's repository
-npx astro-project-site init website      # the package's only bin is `project-site`
+npx astro-project-site@beta init website      # the package's only bin is `project-site`
 cd website && npm install && npm run dev
 ```
 
@@ -37,8 +37,8 @@ The repository read is `dir`'s parent when `dir` is inside a git repository, oth
 copies that plain starter.
 
 ```bash
-npx astro-project-site init website --dry-run         # what it would do
-npx astro-project-site init website --yes --name "My Lib"
+npx astro-project-site@beta init website --dry-run         # what it would do
+npx astro-project-site@beta init website --yes --name "My Lib"
 ```
 
 A project is five small files plus content:
@@ -397,7 +397,7 @@ The starter deploys as a static-assets Worker (`wrangler.jsonc`, `public/_header
 
 ```yaml
 on: [pull_request, push, workflow_dispatch]
-jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0, permissions: { contents: read, pull-requests: write }, secrets: { CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" } } }
+jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.0, permissions: { contents: read, pull-requests: write }, secrets: { CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" } } }
 ```
 
 `init` pins the workflow to the release it came from (`@v<version>`); a full commit SHA is the stricter option.

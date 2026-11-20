@@ -7,19 +7,11 @@ sidebar:
 
 import { Steps, Aside } from '@astrojs/starlight/components';
 
-<Aside type="caution" title="Before the first npm release">
-`astro-project-site` 0.1.0 is not on the npm registry yet, so `npx astro-project-site` cannot download it.
-Until it is, pack it from a clone and use the tarball for both the CLI and the dependency:
-
-```sh
-git clone https://github.com/pavelpascari/astro-project-site
-(cd astro-project-site/packages/astro-project-site && npm pack --pack-destination "$OLDPWD")
-npx --package ./astro-project-site-0.1.0.tgz project-site init my-lib-site \
-  --package "file:$PWD/astro-project-site-0.1.0.tgz"
-```
-
-A `file:` link to the package folder itself does not work: the linked package resolves its own copy of Astro
-and the build fails with "No cached compile metadata found". The rest of this page is the same either way.
+<Aside type="note" title="Beta">
+`astro-project-site` is in beta: it is published on npm under the `beta` tag, so the commands on these pages ask
+for `astro-project-site@beta`. Each release's package tarball (with its SHA-256) is also attached to its
+[GitHub release](https://github.com/pavelpascari/astro-project-site/releases), for installing without the npm
+registry: `npm i <tarball URL>`.
 </Aside>
 
 <Steps>
@@ -28,7 +20,7 @@ and the build fails with "No cached compile metadata found". The rest of this pa
    it after the folder, or after `--name`:
 
    ```sh
-   npx astro-project-site init my-lib-site --name "My Lib"
+   npx astro-project-site@beta init my-lib-site --name "My Lib"
    ```
 
    ```text

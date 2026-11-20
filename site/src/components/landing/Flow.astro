@@ -25,7 +25,7 @@ const steps = [
     body: 'Copies the starter, a complete site that builds as it is, and names it after the folder. It never overwrites a file unless you pass --force.',
     time: 'init + install ≈ 15 s',
     lines: [
-      { cmd: 'npx project-site init my-site' },
+      { cmd: 'npx astro-project-site@beta init my-site' },
       { out: `Created "My Site" in ~/code/my-site${files ? ` (${files} files)` : ''}.` },
       { cmd: 'cd my-site && npm install' },
     ],

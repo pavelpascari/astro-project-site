@@ -29,8 +29,8 @@ npm run build
 commit SHA) in the same PR, so CI and package match:
 
 ```diff lang="yaml"
--    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
-+    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.2.0
+-    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.0
++    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.1
 ```
 
 ## Files init copied
@@ -40,7 +40,7 @@ commit SHA) in the same PR, so CI and package match:
 differently, generate one next to your site and compare:
 
 ```sh
-npx astro-project-site@latest init /tmp/starter-new
+npx astro-project-site@beta init /tmp/starter-new
 diff -ru --exclude=example --exclude=node_modules /tmp/starter-new . | less
 ```
 

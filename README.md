@@ -5,7 +5,7 @@ the project's own markdown folder, live examples, a gallery, static apps served 
 with a preview per pull request. Astro 7 + Starlight 0.43, MIT.
 
 ```bash
-npx astro-project-site init my-site
+npx astro-project-site@beta init my-site
 cd my-site && npm install && npm run dev
 ```
 
