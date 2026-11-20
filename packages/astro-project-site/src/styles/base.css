@@ -122,8 +122,5 @@ html:where([data-site-page]) {
 /* The `site-*` utility classes and build-time code styles live in components.css: components import it
    themselves so they look the same on docs pages. */
 
-@media (prefers-reduced-motion: no-preference) {
-  html:where([data-site-page]) {
-    scroll-behavior: smooth;
-  }
-}
+/* No smooth scrolling, as on the docs pages: with it, the scroll that brings a focused element into view is animated,
+   and for a moment the element can sit under the sticky header. Keyboard users get there at once. */
