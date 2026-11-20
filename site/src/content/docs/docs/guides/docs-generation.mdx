@@ -1,0 +1,100 @@
+---
+title: Docs generation
+description: Keep API tables and other facts in your markdown in sync with the code - docs:gen fills marked blocks, docs:check fails CI when one is stale.
+sidebar:
+  order: 7
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Some parts of the docs are facts about the code: the list of exports, an options table, the CLI's `--help`. Write
+them once as a **generator**, mark where they go, and let `docs:check` fail the build when the code changed and
+the docs did not. Zero dependencies; the markers are HTML comments, so the files still read fine on GitHub.
+
+This site does it: every table under [Reference](/docs/reference/) is generated from the package source.
+
+## Mark a block
+
+```md title="docs/api.md"
+## Exports
+
+<!-- gen:exports from=src/index.js -->
+<!-- /gen -->
+```
+
+- The opening marker is `<!-- gen:<name> key=value key2="quoted value" -->` on a line of its own; the closing one
+  is `<!-- /gen -->`. Arguments arrive as strings.
+- Everything between the markers belongs to the generator and is replaced on each run.
+- Markers inside fenced code blocks are ignored (which is how this page shows them).
+
+<Aside type="caution" title="Not in .mdx">
+MDX does not accept HTML comments, so put generated blocks in `.md` files. A `.md` file starting with `_` can hold
+just the block and be imported into an `.mdx` page as a component.
+</Aside>
+
+## Configure generators
+
+`docs-gen.config.mjs` in the project root (the starter has one):
+
+```js title="docs-gen.config.mjs"
+import fs from 'node:fs';
+import path from 'node:path';
+
+export default {
+  // Folders (every .md/.mdx/.markdown inside), single files, or globs ('docs/**/*.md'). Relative to this file.
+  files: ['../docs', 'src/content/docs'],
+
+  generators: {
+    /** <!-- gen:exports from=src/index.js -->: a table of a module's exports. */
+    async exports({ args, root }) {
+      const source = fs.readFileSync(path.resolve(root, args.from), 'utf8');
+      const names = [...source.matchAll(/export\s+(?:async\s+)?(?:function|const|class)\s+(\w+)/g)].map((m) => m[1]);
+      return ['| Export |', '|---|', ...names.sort().map((n) => `| \`${n}\` |`)].join('\n');
+    },
+  },
+};
+```
+
+A generator receives `{ name, args, file, relFile, root, current }` (`root` is the config file's folder,
+`current` the block's current text) and returns a markdown string, or a promise of one. Leading blank lines and
+trailing whitespace are trimmed, so output compares stably.
+
+The starter's `exports` generator (a table with each export's kind and the first line of its JSDoc) is a good
+template. This site's [`docs-gen.config.mjs`](https://github.com/pavelpascari/astro-project-site/blob/main/site/docs-gen.config.mjs)
+has heavier ones: an options table that reads `index.d.ts` with the TypeScript compiler API and defaults from the
+zod schema, component props from `.astro` frontmatter, the CLI's `--help`. Any import your project already has
+(here, `typescript`) is fair game.
+
+## Run it
+
+```sh
+npm run docs:gen      # project-site docs:gen: rewrite stale blocks in place
+npm run docs:check    # project-site docs:check: change nothing, exit 1 with a diff
+```
+
+`docs:gen` is idempotent: a second run changes nothing. A stale block under `docs:check` looks like this
+(`-` is what the file has, `+` what the generator returns):
+
+```text
+src/content/docs/docs/reference/cli.md:11: gen:cli is stale
+          --check             Change nothing; exit 1 with a diff when a block is stale
+          --config <file>     Another config file
+  +   docs:check          Same as docs:gen --check
+  -   docs:check          Same thing
+      deploy:preview      Upload dist/ to Cloudflare as a preview version (uses the project's wrangler)
+    ...
+
+docs-gen: 1 stale block(s). Run `project-site docs:gen` and commit the result.
+```
+
+Errors (exit 1, nothing written for that block): an unknown generator name (the message lists the known ones),
+an unclosed or nested block, a generator that throws or returns something other than a string, a path in
+`files` that does not exist. Other options: `--config <file>`.
+
+## In CI
+
+- The starter's `npm run build` is `astro check && astro build && project-site docs:check`.
+- The [reusable workflow](/docs/guides/deploying/#ci-with-the-reusable-workflow) runs
+  `project-site docs:check` after the build whenever `docs-gen.config.mjs` exists in the site folder.
+
+So a PR that changes an export without running `docs:gen` fails with the diff above.

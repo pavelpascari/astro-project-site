@@ -1,0 +1,78 @@
+---
+title: Mirrors
+description: Serve static HTML/JS folders (a playground, demos, your library's src/) byte for byte next to the docs, with their relative layout intact.
+sidebar:
+  order: 6
+---
+
+A mirror serves a folder under a URL prefix exactly as it is on disk. Astro never processes the files: no
+bundling, no HTML rewriting. Relative URLs inside keep working, so `import '../src/x.js'` and
+`fetch('../examples/a.json')` behave as they do with any static server. Use it for playgrounds, demo pages, and
+your library's own source that those demos (and [live examples](/docs/guides/live-examples/)) import.
+
+```js title="astro.config.mjs"
+mirrors: [{ from: './example/apps', to: 'apps' }],
+// example/apps/hello/index.html → /apps/hello/
+```
+
+| Field | Meaning |
+|---|---|
+| `from` | Folder to mirror, relative to the project root. May be outside it: `'../'`, `'../../my-lib'`. |
+| `to` | URL prefix. Nested prefixes (`'lib/src'`) work, and several mirrors may share one. |
+| `include` | Globs relative to `from`; when given, only matching paths are mirrored. |
+| `exclude` | Globs relative to `from`; matching paths are skipped. |
+
+Globs: `*` and `?` stay within one path segment, `**` crosses segments, `{a,b}` is either, `[abc]` a character
+class. A pattern that matches a folder covers everything in it (`src` = `src/**`). A pattern **without a `/`** is
+tried against every path segment, so `*.test.js` or `fixtures` match at any depth.
+
+Never mirrored: dotfiles and dot-folders (`.git`, `.env`), `node_modules`, and the site's own folder (and its
+`dist/`) when `from` contains it. Symlinked files are copied as the file they point to; symlinked folders are
+skipped.
+
+## Keeping a repo's layout
+
+A demo in `demos/` that imports `../src/index.js` needs both folders under one prefix. Mirror the repo root with
+an `include` list:
+
+```js title="website/astro.config.mjs"
+mirrors: [
+  { from: '../', to: 'lib', include: ['src', 'demos', 'examples/*.json'], exclude: ['*.test.js', '*.map'] },
+],
+// → /lib/src/index.js, /lib/demos/playground/, /lib/examples/basic.json
+```
+
+Link to mirrored pages from anywhere (`nav`, gallery `href`, docs links): the links validator accepts every path
+under a mirror prefix without checking it.
+
+## In dev and at build
+
+- **`astro dev`** serves the files straight from disk with the right `Content-Type` (JavaScript for
+  `.js`/`.mjs`, JSON, Markdown, images, `.wasm`, fonts, audio, video) and `Cache-Control: no-store`, so edits show
+  on reload (mirrored pages do not hot-reload). A folder serves its `index.html`; `/apps/hello` redirects to
+  `/apps/hello/`. Hidden paths, `..` and excluded files fall through to Astro (a 404). The dev server logs each
+  mirror at startup: `/apps/ → ./example/apps`.
+- **`astro build`** copies the files into `dist/<to>/` after Astro has finished and logs a count and size per
+  mirror (`/apps/ ← ./example/apps: 9 files, 8.1 KB`).
+
+The build **fails** when:
+
+- `from` does not exist or is not a folder (the error names the resolved path; in CI, check that the repo holding
+  it is checked out);
+- `to` is empty, contains `.`/`..`, or a segment starting with `.`;
+- a mirrored file would overwrite a file the site builds itself:
+
+  ```text
+  [mirror] mirrors[0] (../) would overwrite /index.html, which the site itself builds. Change `to` or exclude the file.
+  ```
+
+It **warns** when two mirrors write the same file (the later one wins) and when a mirror matches no files.
+
+## On its own
+
+`mirror` is also exported, for an Astro site that does not use the rest:
+
+```js
+import { mirror } from 'astro-project-site';
+export default defineConfig({ integrations: [mirror([{ from: '../demos', to: 'demos' }])] });
+```

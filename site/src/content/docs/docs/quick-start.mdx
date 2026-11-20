@@ -1,0 +1,124 @@
+---
+title: Quick start
+description: Create a site with project-site init, run it, make the first edits and build it.
+sidebar:
+  order: 1
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+<Aside type="caution" title="Before the first npm release">
+`astro-project-site` 0.1.0 is not on the npm registry yet, so `npx astro-project-site` cannot download it.
+Until it is, pack it from a clone and use the tarball for both the CLI and the dependency:
+
+```sh
+git clone https://github.com/pavelpascari/astro-project-site
+(cd astro-project-site/packages/astro-project-site && npm pack --pack-destination "$OLDPWD")
+npx --package ./astro-project-site-0.1.0.tgz project-site init my-lib-site \
+  --package "file:$PWD/astro-project-site-0.1.0.tgz"
+```
+
+A `file:` link to the package folder itself does not work: the linked package resolves its own copy of Astro
+and the build fails with "No cached compile metadata found". The rest of this page is the same either way.
+</Aside>
+
+<Steps>
+
+1. **Create the site.** `init` copies the starter (a complete site that builds) into a new folder and names
+   it after the folder, or after `--name`:
+
+   ```sh
+   npx astro-project-site init my-lib-site --name "My Lib"
+   ```
+
+   ```text
+   Created "My Lib" in /home/you/my-lib-site (29 files).
+
+   Next:
+     cd my-lib-site
+     npm install
+     npm run dev        # http://localhost:4321
+   ```
+
+   It never overwrites an existing file unless you pass `--force`.
+
+2. **Run it.**
+
+   ```sh
+   cd my-lib-site
+   npm install
+   npm run dev
+   ```
+
+   Open `http://localhost:4321`: a landing page, `/docs/`, `/gallery/`, and `/apps/hello/` (a static app
+   served by a mirror).
+
+3. **Make it yours.** Everything about the site is one call in `astro.config.mjs`:
+
+   ```js title="astro.config.mjs" ins={9-12}
+   // @ts-check
+   import { defineConfig } from 'astro/config';
+   import projectSite from 'astro-project-site';
+
+   export default defineConfig({
+     integrations: [
+       projectSite({
+         name: 'My Lib',
+         tagline: 'Parses things, quickly.',
+         url: 'https://my-lib.dev',
+         repo: 'https://github.com/me/my-lib',
+         install: 'npm i my-lib',
+         externalDocs: [{ dir: './example/docs', route: 'reference', label: 'Reference' }],
+         mirrors: [{ from: './example/apps', to: 'apps' }],
+       }),
+     ],
+   });
+   ```
+
+   A typo fails with the field's name before Astro starts (`unknown option "taglin"`). The dev server restarts
+   by itself when the config changes. All options: [Options](/docs/reference/options/).
+
+4. **Write a docs page.** Add `src/content/docs/docs/usage.md`:
+
+   ```md title="src/content/docs/docs/usage.md"
+   ---
+   title: Usage
+   description: How to call it.
+   sidebar:
+     order: 1
+   ---
+
+   Call `parse()` with a string.
+   ```
+
+   It is served at `/docs/usage/`. **Restart the dev server** after adding or removing a page: the sidebar is
+   built at startup. Edits to existing pages reload live.
+
+5. **Build.**
+
+   ```sh
+   npm run build
+   ```
+
+   This runs `astro check`, `astro build` (which fails on a broken link in any docs page) and
+   `project-site docs:check`. The result is static files in `dist/`. `npm run preview` serves them.
+
+</Steps>
+
+## What you got
+
+| Path | What it is |
+|---|---|
+| `astro.config.mjs` | The site: `projectSite({ … })` |
+| `src/content.config.ts` | `projectSiteCollections()`: docs, gallery and i18n collections |
+| `src/content/docs/docs/` | Your docs pages (`.md` / `.mdx`), under `/docs/` |
+| `src/content/gallery/` | One YAML/JSON/MD file per gallery item |
+| `example/docs/`, `example/apps/` | Stand-ins for your project's markdown docs and static apps. Point `externalDocs` and `mirrors` at the real ones, then delete `example/` |
+| `docs-gen.config.mjs` | [Generated blocks](/docs/guides/docs-generation/) in markdown |
+| `wrangler.jsonc`, `public/_headers` | [Cloudflare Workers](/docs/guides/deploying/) deploy |
+| `.github/workflows/site.yml` | CI: checks, a preview per PR, production on `v*` tags |
+
+`package.json` scripts: `dev`, `build`, `preview`, `check`, `docs:gen`, `docs:check`, `deploy`
+(`build` + `wrangler deploy`), `deploy:preview`, `cf:dev` (the built site on Cloudflare's local runtime).
+
+Next: most libraries already have a repo with a `docs/` folder. [Add the site to it](/docs/existing-repo/).

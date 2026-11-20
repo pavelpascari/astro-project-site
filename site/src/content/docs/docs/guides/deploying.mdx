@@ -1,0 +1,169 @@
+---
+title: Deploying
+description: Cloudflare Workers static assets, the reusable GitHub workflow pinned to a tag with explicit secrets, a preview per PR, next from main, production from tags, custom domains and API token permissions.
+sidebar:
+  order: 10
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+`astro build` produces static files in `dist/`; any static host serves them. The starter is set up for
+**Cloudflare Workers with static assets** (no server code, free plan is enough) and a GitHub workflow that gives
+every pull request its own preview URL.
+
+| Event | Result | URL |
+|---|---|---|
+| Pull request | Preview version, sticky PR comment updated on each push | `https://pr-<number>-<worker>.<subdomain>.workers.dev` |
+| Push to `main` | Preview version | `https://next-<worker>.<subdomain>.workers.dev` |
+| Tag `v*` | Production (`wrangler deploy`) | `https://<worker>.<subdomain>.workers.dev` or your domain |
+| Manual run, "production" ticked | Production, from the chosen ref | as above |
+| Manual run, not ticked | Preview aliased to the branch name | `https://<branch>-<worker>.<subdomain>.workers.dev` |
+| Any other push | Checks and build only | |
+
+A preview never changes what production serves.
+
+## The Worker: wrangler.jsonc
+
+```jsonc title="wrangler.jsonc"
+{
+  "name": "my-lib",                    // the Worker: https://my-lib.<subdomain>.workers.dev
+  "compatibility_date": "2026-11-18",  // bump deliberately
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",          // unknown URLs get dist/404.html with status 404
+    "html_handling": "auto-trailing-slash"     // /docs → /docs/, like astro dev; keeps mirrored apps' relative URLs working
+  },
+  "workers_dev": true,                 // serve on workers.dev
+  "preview_urls": true                 // required for preview aliases
+  // "routes": [{ "pattern": "docs.my-lib.dev", "custom_domain": true }]
+}
+```
+
+`init` sets `name` from the folder. `public/_headers` (copied to `dist/`) adds `X-Content-Type-Options`,
+`Referrer-Policy` and `Content-Security-Policy: frame-ancestors 'self'` to every response and caches
+`/_astro/*` (hashed files) for a year; it also has a stricter, commented-out CSP to adopt once you know what your
+examples need. Set each header in one rule only: Cloudflare joins values from several matching rules with a comma.
+
+| Command | What it does |
+|---|---|
+| `npm run cf:dev` | Builds, then serves `dist/` on the real Workers runtime at `http://localhost:8787`, no account needed |
+| `npm run deploy` | `npm run build` then `wrangler deploy` (production). Run `npx wrangler login` first |
+| `npm run deploy:preview` | Build, then a preview version aliased to the current branch (`-- --alias name` to choose). See [CLI](/docs/reference/cli/#deploypreview) |
+
+## One-time setup
+
+<Steps>
+
+1. **Name it.** Set `name` in `wrangler.jsonc` and `url` in `astro.config.mjs` to
+   `https://<name>.<subdomain>.workers.dev` (or your domain).
+
+2. **Create the Worker from your machine.** `npx wrangler login`, then `npm run deploy` once. Creating a Worker
+   needs more rights than updating one, so CI only ever updates it.
+
+3. **Create an API token for CI.** In the Cloudflare dashboard create an **account API token** limited to this
+   account, with:
+   - **Workers → Specified Workers → your Worker, role Editor.** Editor can update and deploy a Worker but not
+     create or delete it ([Workers authorization](https://developers.cloudflare.com/workers/authorization/)).
+   - **Workers Routes Write** on the zone, only if `wrangler.jsonc` has `routes` (custom domain): changing routes or
+     custom domains on deploy needs it for every affected zone.
+
+   The older alternative is the **Edit Cloudflare Workers** template
+   ([GitHub Actions guide](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)), which
+   covers all Workers on the account: restrict its account and zone resources as far as possible.
+
+4. **Add the secrets** under the repo's *Settings → Secrets and variables → Actions*:
+   - `CLOUDFLARE_API_TOKEN`: the token;
+   - `CLOUDFLARE_ACCOUNT_ID`: from the dashboard (*Workers & Pages*) or `npx wrangler whoami`.
+
+5. **Optional: gate production.** Deploys run in GitHub environments named `preview` and `production`; add
+   required reviewers to `production` under *Settings → Environments*.
+
+</Steps>
+
+<Aside type="note">
+Cloudflare's granular Workers roles are recent (September 2026). Its docs state what Editor allows (update and
+deploy) but do not list version uploads with preview aliases separately; if a preview upload is refused, check the
+token in the dashboard first.
+</Aside>
+
+## CI with the reusable workflow
+
+The starter's whole CI is one job calling this repo's reusable workflow, **pinned to a release tag** and passing
+**only** the secrets it declares:
+
+```yaml title=".github/workflows/site.yml"
+on: [pull_request, push, workflow_dispatch]
+jobs:
+  site:
+    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
+    permissions: { contents: read, pull-requests: write }
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+```
+
+- `init` pins `@v<its own version>`. A full commit SHA is stricter still. Never `@main`.
+- Never `secrets: inherit`: the called workflow would receive every secret of the repo.
+- `pull-requests: write` is only for the sticky preview comment.
+
+What it does: **build job** (no secrets): checkout, `npm ci`, `astro check`, `astro build`, `project-site
+docs:check` if `docs-gen.config.mjs` exists, upload `dist/`. **Deploy job**: download `dist/`, `npm ci`, then
+`project-site deploy:preview` (previews) or `wrangler deploy` (production). Everything that runs with the
+Cloudflare secrets is the lockfile-pinned copy in the project's `node_modules` (`npx --no-install`); a project
+without `wrangler` in its devDependencies fails with a clear message instead of downloading one.
+
+Deploys are **skipped, not failed** for fork PRs (no secrets), Dependabot, and when the secrets are not set: the
+build still runs. A newer push to the same PR cancels the older run; production deploys are queued, never
+cancelled.
+
+| Input | Default | |
+|---|---|---|
+| `working-directory` | `.` | Folder with the site's `package.json`, `astro.config.mjs`, `wrangler.jsonc` (e.g. `website`) |
+| `install-directory` | `working-directory` | Where to run `npm ci` (the folder with `package-lock.json`); `.` for a workspace member |
+| `worker-name` | | Overrides `name` in `wrangler.jsonc` |
+| `source-repo` | | A second repo (`owner/name`) checked out beside this one, for mirrors/docs read from it |
+| `source-ref` | `main` | Branch, tag or SHA of `source-repo` |
+| `node-version` | `22` | |
+| `production` | `false` | Manual runs: deploy to production |
+| `deploy` | `true` | `false` only checks and builds |
+
+Secrets (all optional): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SOURCE_REPO_TOKEN` (read-only token for a
+private `source-repo`). Output: `url`, the preview or production URL.
+
+## Previews
+
+A preview is a Worker **version** uploaded with `wrangler versions upload --preview-alias <alias>`: the alias
+URL `https://<alias>-<worker>.<subdomain>.workers.dev` stays the same for the life of a PR and moves to each new
+upload. Aliases are lowercase letters, digits and dashes, start with a letter, and `<alias>-<worker>` must fit in
+63 characters ([Cloudflare: preview URLs](https://developers.cloudflare.com/workers/configuration/previews/));
+`deploy:preview` makes any branch name fit. Cloudflare keeps the 1000 most recent aliases; they are not deleted
+when a PR closes.
+
+Preview URLs are **public** by default. To restrict them, put
+[Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/applications/) in front of the Worker.
+Previews need `preview_urls: true` and the account's workers.dev subdomain.
+
+## Custom domain
+
+<Steps>
+
+1. Add the domain's zone to Cloudflare (it must be a zone you own).
+2. In `wrangler.jsonc`: `"routes": [{ "pattern": "docs.my-lib.dev", "custom_domain": true }]`.
+3. Set `url: 'https://docs.my-lib.dev'` in `astro.config.mjs`.
+4. Deploy (tag `v*`, or `npm run deploy`). Cloudflare creates the DNS record and certificate; the hostname must not
+   already have a CNAME record
+   ([Custom Domains](https://developers.cloudflare.com/workers/configuration/routing/custom-domains/)).
+5. Optional: `"workers_dev": false` so production is only on your domain. Keep `"preview_urls": true` explicitly:
+   when it is not set, preview URLs follow `workers_dev`.
+
+</Steps>
+
+The CI token now also needs **Workers Routes Write** on that zone.
+
+## Release flow
+
+```sh
+git tag v1.2.0 && git push origin v1.2.0   # → production
+```
+
+Merges to `main` keep `next-<worker>…` current, so "what will ship" is always one URL away.

@@ -1,0 +1,54 @@
+---
+title: Upgrading
+description: Update the package, the reusable workflow pin and the files init copied, and what to check afterwards.
+sidebar:
+  order: 11
+---
+
+A site has two kinds of code: the **package** (`astro-project-site` in `node_modules`, updated by npm) and the
+**files `init` copied once** (config, CI, Cloudflare files), which are yours and never change by themselves.
+
+## The package
+
+```sh
+npm install astro-project-site@latest
+npm run build
+```
+
+- Read the [changelog](https://github.com/pavelpascari/astro-project-site/blob/main/packages/astro-project-site/CHANGELOG.md)
+  first. Before 1.0, a minor version (0.1 → 0.2) may change options; the options validator names any option that
+  no longer exists or changed type, so a build tells you what to fix.
+- Peer dependencies: `astro` ^7.3 and `@astrojs/starlight` ^0.43. Upgrade them together with the package when a
+  release raises them (`npm install astro@latest @astrojs/starlight@latest`).
+- `npm run build` runs type checks, the links validator and `docs:check`; a green build is a good sign nothing
+  silently changed. Regenerate generated blocks if your generators read package files: `npm run docs:gen`.
+
+## The workflow pin
+
+`.github/workflows/site.yml` calls `deploy.yml@v<version>`. Move the pin to the release you upgraded to (or its
+commit SHA) in the same PR, so CI and package match:
+
+```diff lang="yaml"
+-    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
++    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.2.0
+```
+
+## Files init copied
+
+`wrangler.jsonc`, `public/_headers`, `tsconfig.json`, `src/content.config.ts`, `docs-gen.config.mjs` and the
+`package.json` scripts came from the starter of the version you started with. To see what a newer starter does
+differently, generate one next to your site and compare:
+
+```sh
+npx astro-project-site@latest init /tmp/starter-new
+diff -ru --exclude=example --exclude=node_modules /tmp/starter-new . | less
+```
+
+Take what you want (a new `_headers` rule, a new script); nothing requires the starter's files to match.
+
+## Overrides
+
+If you override components (`components.*`) or Starlight components, check them against the release notes: a
+built-in component's props are listed, generated from the source, under [Components](/docs/reference/components/).
+Overrides that wrap the built-ins (`import { SiteHeader } from 'astro-project-site/components'`) pick up fixes
+automatically.

@@ -1,11 +1,56 @@
 ---
-title: Introduction
-description: Start here.
+title: Overview
+description: astro-project-site turns an open-source library's repo into a site - landing page, Starlight docs that mount your markdown, live examples, a gallery, static demos, Cloudflare deploys.
 sidebar:
   order: 0
 ---
 
-Placeholder introduction for the project's docs. Replace this page with your own.
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 
-- The framework's own markdown docs are mounted under [Reference](/docs/reference/).
-- How this template works is described under Template, for example [the docs pipeline](/docs/template/docs/).
+**astro-project-site** is one Astro integration that gives an open-source library or framework its website:
+
+- a **landing page** written as config (hero, features, steps, gallery strip, call to action) or as your own page
+  built from the same components;
+- **Starlight docs** that mount your repo's existing `docs/` folder as it is: titles from the first heading,
+  `.md` links rewritten, "edit this page" links into the right folder, a generated sidebar, link checking,
+  search, `llms.txt`;
+- **live examples** (`<Live>`): the code on the page is the code that runs, inline or in an iframe, editable,
+  with your own runner for JSON specs or DSLs;
+- a **gallery** of demos with posters and filters;
+- **mirrors**: static HTML/JS folders (a playground, your library's `src/`) served byte for byte next to the docs;
+- **generated docs blocks** (`docs:gen` / `docs:check`) so API tables cannot drift from the code;
+- **Cloudflare Workers deploys** with a preview URL per pull request, `next` from `main` and production from tags.
+
+This site is built with it. The page you are reading is a local MDX page; the
+[Example: mounted docs](/docs/example/) group is the starter's plain markdown folder mounted with `externalDocs`;
+the reference tables are generated from the package source.
+
+## What it is not
+
+- **Not a fork of Starlight.** It configures Starlight for you and passes anything else through
+  ([`starlight` option](/docs/guides/overriding-components/#starlight-passthrough)). Starlight plugins,
+  components and frontmatter work as documented upstream.
+- **Not a theme you copy and edit.** Upgrades come from npm. You change the site with options, CSS tokens and
+  component overrides.
+- **Not multilingual yet.** One locale; see [i18n](/docs/recipes/i18n/).
+- **Not a server.** The output is static files. The deploy tooling targets Cloudflare Workers static assets, but
+  `dist/` works on any static host.
+- **GitHub-shaped.** Edit links and links to source files use GitHub's URL layout (`/edit/`, `/blob/`, `/tree/`).
+
+Requirements: Node 22+, Astro 7.3+, Starlight 0.43+.
+
+## Where to go
+
+<CardGrid>
+  <LinkCard title="Quick start" description="A new site running in five minutes." href="/docs/quick-start/" />
+  <LinkCard title="Add it to an existing repo" description="website/ next to your code, mounting ../docs." href="/docs/existing-repo/" />
+  <LinkCard title="Guides" description="Configure, landing page, docs, live examples, gallery, deploys…" href="/docs/guides/configure/" />
+  <LinkCard title="Reference" description="Every option, component, prop and command, generated from source." href="/docs/reference/" />
+</CardGrid>
+
+## For agents
+
+Everything an agent needs to configure a site is in [Options](/docs/reference/options/) (one table, generated
+from the schema) and [Components](/docs/reference/components/). The whole documentation is also served as
+markdown at [`/llms.txt`](/llms.txt) (index) and [`/llms-full.txt`](/llms-full.txt) (every page in one file).
+Options are validated before Astro starts, so a wrong key fails `astro build` with the field's path.

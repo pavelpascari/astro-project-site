@@ -1,0 +1,153 @@
+---
+title: Docs
+description: Local MDX pages, mounting your repo's markdown folder (titles, link rewriting, order, exclude, edit links), and the generated sidebar.
+sidebar:
+  order: 3
+---
+
+import { FileTree, Aside } from '@astrojs/starlight/components';
+
+The docs are Starlight, fed from two places:
+
+- **Local pages** in `src/content/docs/docs/`, `.md` or `.mdx` with frontmatter, served under `/docs/`.
+- **Mounted folders** (`externalDocs`): plain markdown that lives elsewhere, usually your repo's `docs/`, served
+  under `/docs/<route>/`. These files need no frontmatter and stay readable on GitHub.
+
+Both are one Starlight collection: search, the links validator, edit links, `llms.txt` and the sidebar treat them
+alike.
+
+## Local pages
+
+```md title="src/content/docs/docs/usage.md"
+---
+title: Usage
+description: Shown in search results, meta tags and llms.txt.
+sidebar:
+  order: 2
+---
+
+Body in Markdown. In `.mdx` you can import components.
+```
+
+- `src/content/docs/docs/index.mdx` is `/docs/`; `usage.md` is `/docs/usage/`; `guides/setup.md` is
+  `/docs/guides/setup/`.
+- All of [Starlight's frontmatter](https://starlight.astro.build/reference/frontmatter/) and
+  [components](https://starlight.astro.build/components/using-components/) work. Add fields with
+  [`docsExtend`](/docs/reference/content/).
+- Link to other pages with **root-relative** paths (`/docs/usage/`, `/docs/usage/#options`). The links validator
+  rejects relative links (`./usage/`) in local pages.
+- Files and folders starting with `_` are not pages; use them for partials and components (this site keeps a
+  helper component in `src/content/docs/_components/`).
+
+## The sidebar
+
+The sidebar is generated when the dev server starts, so **restart it after adding, removing or renaming a page**.
+Edits to existing pages, local or mounted, reload live.
+
+1. **Top-level local pages** of `src/content/docs/docs/`: `index` first, then by `sidebar.order`, then by file
+   name. `sidebar.hidden: true` leaves a page out.
+2. **One group per `externalDocs` entry**, labelled with its `label`.
+3. **One collapsed group per local subfolder**, in folder-name order, labelled from the folder name
+   (`getting-started/` → "Getting started"), with Starlight's `autogenerate` inside, so pages are ordered by
+   `sidebar.order` then name. A group opens when it holds the current page.
+
+This site's sidebar is exactly that: three top-level pages, the mounted example folder, then `guides/`,
+`recipes/` and `reference/`.
+
+To add links after the generated items, pass Starlight's `sidebar` through; it is appended:
+
+```js
+starlight: {
+  sidebar: [{ label: 'Changelog', link: 'https://github.com/me/my-lib/releases' }],
+},
+```
+
+<Aside>
+A local subfolder with the same name as the first segment of an `externalDocs` `route` is left out of the
+sidebar (its pages are still built). Give them different names.
+</Aside>
+
+## Mount markdown from elsewhere
+
+```js title="astro.config.mjs"
+externalDocs: [
+  {
+    dir: '../docs',                          // relative to the project root; may be outside it
+    route: 'reference',                      // → /docs/reference/…  (nested routes like 'api/v2' work)
+    label: 'Reference',                      // sidebar group
+    order: ['getting-started.md', 'api.md'], // listed first, in this order (.md optional)
+    exclude: ['plans/**', 'drafts/*.md'],    // globs relative to dir
+  },
+],
+```
+
+Given this folder:
+
+<FileTree>
+- docs/
+  - README.md
+  - getting-started.md
+  - api.md
+  - SPEC.md
+  - guides/
+    - README.md
+    - deploying.md
+  - plans/
+    - roadmap.md excluded
+</FileTree>
+
+| File | URL | Sidebar |
+|---|---|---|
+| `README.md` | `/docs/reference/` | "Overview", first |
+| `getting-started.md`, `api.md` | `/docs/reference/getting-started/`, `/docs/reference/api/` | in `order` |
+| `SPEC.md` | `/docs/reference/spec/` | then by file name |
+| `guides/README.md` | `/docs/reference/guides/` | a collapsed group named after its H1 |
+| `guides/deploying.md` | `/docs/reference/guides/deploying/` | inside that group |
+
+What happens to each file:
+
+- **Only `.md`** files are mounted (not `.mdx`). Dot-folders and `node_modules` are skipped, and so is anything
+  matching `exclude` (`**`, `*` and `?` are supported).
+- **URL:** the path without `.md`, each segment lowercased with spaces turned into dashes and punctuation
+  dropped. `README.md` and `index.md` are their folder's page.
+- **Title:** frontmatter `title`, else the first `# H1` (which is then removed from the body, so it is not
+  shown twice), else the file name.
+- **Description:** frontmatter `description`, else the first paragraph before any heading, cut to one sentence.
+- **Links:** relative links to `.md` files (or to a folder with a `README.md`) in any mount become site URLs; an
+  `#anchor` pointing at the target's H1 is dropped. Relative links to anything else in the repo (source files,
+  folders, markdown outside every mount) go to GitHub: `<repo>/blob/<branch>/<path>` (`/tree/` for folders).
+  Absolute URLs, `/root` paths, `#anchors`, images and code are left alone.
+- **Edit link:** `<repo>/edit/<repoBranch>/<path in the git repo>`.
+- **Starlight markdown** (`:::note` asides, heading anchors) works in mounted folders too.
+- In dev the folder is watched: saving `../docs/api.md` reloads the page.
+
+You can see it on this site: [Example: mounted docs](/docs/example/) is the starter's `example/docs/` folder,
+plain GitHub-flavoured markdown with relative links. Compare [its source](https://github.com/pavelpascari/astro-project-site/tree/main/starters/default/example/docs).
+
+<Aside type="caution" title="Folders outside the git repo">
+Edit links and GitHub links are computed from the git repository the site is in (the nearest folder with a
+`.git`; before `git init`, the project root). A mounted folder **outside** that repo (a second clone next to
+yours) gets no edit link, and its relative links to non-markdown files are left as written, which the links
+validator then reports. See [Separate site repo](/docs/recipes/separate-repo/).
+</Aside>
+
+## Edit links
+
+- Local pages: Starlight's `editLink.baseUrl` is set to `<repo>/edit/<repoBranch>/<site folder in the repo>/`,
+  so a site in `website/` links to `website/src/content/docs/…`.
+- Mounted pages: each page's `editUrl` points at its own file.
+- Turn one off with frontmatter `editUrl: false`; replace the local base with `starlight: { editLink: { baseUrl } }`.
+
+## Search, llms.txt, 404
+
+- **Search** is Starlight's Pagefind, built with `astro build` (so `npm run dev` has no search index). It covers
+  local and mounted pages. `starlight: { pagefind: false }` turns it off, and the header hides the box.
+- **`/llms.txt`** lists every docs page (title, URL, description) grouped like the sidebar;
+  **`/llms-full.txt`** is every page's markdown in one file with root links made absolute. `llms: false` turns
+  both off.
+- **404:** a default "Page not found" page is built unless you add `src/content/docs/404.md`.
+
+## Pages outside /docs/
+
+Starlight pages anywhere in `src/content/docs/` work (`src/content/docs/changelog.md` → `/changelog/`), but the
+generated sidebar and `llms.txt` only cover `/docs/`.

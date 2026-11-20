@@ -1,0 +1,116 @@
+---
+title: Overriding components
+description: Replace the header, footer, hero, landing body, gallery card or gallery page with your own components, and pass anything else through to Starlight.
+sidebar:
+  order: 9
+---
+
+import { SiteFooter } from 'astro-project-site/components';
+import Rendered from '../../_components/Rendered.astro';
+
+When options and CSS are not enough, replace a built-in component. The `components` option maps a slot to an
+`.astro` file (relative to the project root, or a package specifier); the integration renders yours wherever it
+rendered the built-in, docs pages included. The file must exist: a wrong path fails before Astro starts.
+
+```js title="astro.config.mjs"
+components: {
+  Header: './src/components/Header.astro',
+  Footer: './src/components/Footer.astro',
+  Hero: './src/components/Hero.astro',
+  Landing: './src/components/Landing.astro',
+  GalleryCard: './src/components/GalleryCard.astro',
+  Gallery: './src/components/Gallery.astro',
+},
+```
+
+| Slot | Replaces | Receives |
+|---|---|---|
+| `Header` | The header bar's contents, on every page (on docs pages through Starlight's `Header`) | Slots `search` (docs only, when search is on), `theme`, and on non-docs pages `theme-menu` (the switch inside the small-screen menu) |
+| `Footer` | The footer: under landing and gallery (`variant="page"`), at the end of every docs page after the edit link and pagination (`variant="docs"`) | `variant: 'page' \| 'docs'` |
+| `Hero` | The landing page hero | `title`, `lead`, `primary`, `secondary`, `install`; slot `live` with the `landing.hero.demo` example |
+| `Landing` | The whole landing page body (inside `BaseLayout`) | Nothing; read `astro-project-site/config` |
+| `GalleryCard` | One card, on `/gallery/` and in the landing strip (anything using `GalleryGrid`) | `item: GalleryEntry`, `headingLevel` |
+| `Gallery` | The whole `/gallery/` body (inside `BaseLayout`) | `items`, `title`, `description` |
+
+Imports from `astro-project-site/components` always give the **built-in** versions, so an override can wrap the
+original instead of rewriting it.
+
+## Wrap the original
+
+<Rendered
+  title="src/components/Footer.astro"
+  code={`---
+import { SiteFooter } from 'astro-project-site/components';
+const { variant } = Astro.props;
+---
+<SiteFooter variant={variant} />
+{variant === 'page' && (
+  <p class="sponsors site-container">Sponsored by <a href="https://example.com">Example Co</a>.</p>
+)}`}
+>
+  <SiteFooter variant="page" />
+  <p class="site-container" style="margin: 0.75rem auto 0; color: var(--site-muted)">
+    Sponsored by <a href="https://example.com">Example Co</a>.
+  </p>
+</Rendered>
+
+The same pattern for a header with an extra link, keeping search and the theme switch:
+
+```astro title="src/components/Header.astro"
+---
+import { SiteHeader } from 'astro-project-site/components';
+---
+<SiteHeader>
+  {Astro.slots.has('search') && <slot name="search" slot="search" />}
+  <slot name="theme" slot="theme" />
+  {Astro.slots.has('theme-menu') && <slot name="theme-menu" slot="theme-menu" />}
+</SiteHeader>
+<a class="sponsor" href="https://github.com/sponsors/me">Sponsor</a>
+```
+
+A gallery card that adds a "new" badge (these three overrides are tested against a fresh `init` project):
+
+```astro title="src/components/GalleryCard.astro"
+---
+import { GalleryCard } from 'astro-project-site/components';
+import type { GalleryEntry } from 'astro-project-site';
+interface Props { item: GalleryEntry; headingLevel?: 2 | 3 | 4 }
+const { item, headingLevel } = Astro.props;
+---
+<div class="wrap">
+  {item.data.tags.includes('new') && <span class="badge">New</span>}
+  <GalleryCard item={item} headingLevel={headingLevel} />
+</div>
+```
+
+`GalleryGrid` renders each card inside an `<li>` and filters by the `data-kind`/`data-tags` of that `<li>`, so
+filters keep working with any card.
+
+## Starlight passthrough
+
+Everything under `starlight` goes to Starlight. List options are **appended** to the ones the integration sets;
+everything else is **set as given**, so it can also replace a default (for example `title`, `social`, `editLink`):
+
+| Starlight option | What happens |
+|---|---|
+| `sidebar` | Appended after the generated sidebar |
+| `plugins` | Appended after starlight-links-validator |
+| `customCss` | Appended after `theme.css` and your `customCss`; docs pages only |
+| `routeMiddleware` | Appended after the og:image middleware |
+| `markdown.processedDirs` | Appended after the mounted folders |
+| `components` | Merged over the integration's (`Header`, `Footer`, `MobileMenuFooter`); yours win |
+| `social` | Replaces the default (one link to `repo`) |
+| anything else | Set as given: `head`, `locales`, `lastUpdated`, `pagefind`, `tableOfContents`, `expressiveCode`, `credits`, … |
+
+```js title="astro.config.mjs"
+starlight: {
+  lastUpdated: true,
+  tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
+  components: { PageTitle: './src/components/PageTitle.astro' },
+  head: [{ tag: 'meta', attrs: { name: 'theme-color', content: '#17151d' } }],
+},
+```
+
+Overriding Starlight's own `Header`, `Footer` or `MobileMenuFooter` here takes the docs pages off the shared
+chrome (your `components.Header` then applies to non-docs pages only). Overriding `Search` or `ThemeSelect` is
+picked up by the shared header on docs pages. Paths are relative to the project root.

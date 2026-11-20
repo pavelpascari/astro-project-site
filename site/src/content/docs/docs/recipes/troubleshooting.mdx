@@ -1,0 +1,95 @@
+---
+title: Troubleshooting
+description: Link validator failures, mirror collisions, edit links without git, a page missing from the sidebar, option errors and deploy problems.
+sidebar:
+  order: 5
+---
+
+## The build fails on a link
+
+`astro build` runs [starlight-links-validator](https://github.com/HiDeoo/starlight-links-validator) over every docs
+page, local and mounted, and stops on a broken internal link or `#anchor`:
+
+```text
+ validating links
+
+    ╭─ docs/quick-start.mdx
+    ·
+117 | /docs/guides/docs-generation/
+    ·                            ╰── invalid link
+
+╭─                                   ─╮
+· Found 1 invalid links in 1 files. ·
+╰─                                   ─╯
+```
+
+| Report | Cause | Fix |
+|---|---|---|
+| invalid link to a docs page | The page does not exist, or was renamed | Fix the path. Mounted files: link the `.md` file, not the URL |
+| invalid hash | No heading with that slug on the target | Slugs are the lowercased heading text, spaces → `-`, punctuation dropped (`## The CLI!` → `#the-cli`) |
+| relative link (local page) | `./usage/` or `../guides/` in a page under `src/content/docs/` | Use root-relative links: `/docs/usage/` |
+| relative link (mounted page) | A link to a file outside the git repo the site is in (see [Separate site repo](/docs/recipes/separate-repo/#limits-of-a-second-repo)) | Absolute URL, or `linksValidator: { errorOnRelativeLinks: false }` |
+| link to a page of your own (`/about/`) | The validator only knows docs pages; the landing page, `/gallery/`, `/llms*.txt` and mirror prefixes are pre-registered | `linksValidator: { exclude: ['/about/', '/blog/**'] }` |
+
+Links to other sites are not checked. `linksValidator: false` turns the check off (not recommended).
+
+## A new page is not in the sidebar
+
+The sidebar is built when the dev server starts. Restart `npm run dev` after adding, removing or renaming a page.
+If it still is not there: a top-level page with `sidebar.hidden: true`, a file or folder starting with `_`, a
+local folder named like an `externalDocs` route, or (mounted) a non-`.md` file or an `exclude` match.
+
+## Mirror errors
+
+```text
+[mirror] mirrors[0] (../) would overwrite /index.html, which the site itself builds. Change `to` or exclude the file.
+```
+
+A mirrored file lands on a path the site builds (a page, something in `public/`). Mirror under a prefix no page
+uses, or `exclude` the file. Two mirrors writing the same file only warn (the later one wins).
+
+```text
+[mirror] mirrors[0].from "../my-lib" resolves to /home/runner/work/…/my-lib, which is not a folder.
+```
+
+Paths are relative to the project root. In CI, the folder may need a [`source-repo`](/docs/recipes/separate-repo/#in-ci-source-repo)
+checkout. A mirror that matches nothing only warns: check `include`.
+
+## Edit links point to the wrong place
+
+Edit links are `<repo>/edit/<repoBranch>/<path from the git root>`. The git root is the nearest folder with a
+`.git`. **Before `git init`** (straight after `project-site init`) the project root is taken as the repo root, so
+links lack a `website/` prefix until the folder is inside a repository. Also check `repoBranch` (default `main`),
+and that `repo` is the repository holding the site. For mounted folders outside the site's repo there is no edit
+link.
+
+## Option errors
+
+```text
+Invalid projectSite() options:
+  - landing.hero.primary.href: Invalid input: expected string, received undefined
+  - unknown option "navv"
+```
+
+Each line names the field. Paths that must exist are checked too:
+`customCss[0]: "./src/brand.css" resolves to /…/src/brand.css, which does not exist (paths are relative to the project root)`.
+
+## "No cached compile metadata found"
+
+The package was installed as a `file:` link to a folder outside the project (for example a clone of this repo),
+so it resolves a second copy of Astro. Install from the registry or from an `npm pack` tarball
+([Quick start](/docs/quick-start/)).
+
+## Search does nothing in dev
+
+Pagefind's index is built by `astro build`. Use `npm run build && npm run preview` to try search.
+
+## Deploys
+
+| Symptom | Cause |
+|---|---|
+| "Deploy skipped" notice, build green | No `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` for this run: fork PR, Dependabot, or secrets not set |
+| `wrangler missing` error | `wrangler` is not a devDependency of the site; `npm i -D wrangler` and commit the lockfile |
+| "uploaded but has no preview URL" | `preview_urls` is not `true` in `wrangler.jsonc`, or the account has no workers.dev subdomain |
+| Authentication or permission error on deploy | Token scope: see [one-time setup](/docs/guides/deploying/#one-time-setup) (Editor on the Worker; Workers Routes Write for a custom domain) |
+| `docs-gen: … stale block(s)` | Run `npm run docs:gen` and commit |

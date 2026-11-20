@@ -1,0 +1,29 @@
+---
+title: i18n status
+description: What works today for non-English and multilingual sites, and what does not.
+sidebar:
+  order: 4
+---
+
+**Multilingual sites are not supported yet.** The generated sidebar, the mounted docs, the landing page, the
+gallery and `llms.txt` all assume one language.
+
+What works today, for a site in **one language other than English**:
+
+```js
+starlight: { locales: { root: { label: 'Deutsch', lang: 'de' } } },
+```
+
+- Docs pages get `<html lang="de">` and Starlight's German UI strings ("Zum Inhalt springen", search,
+  pagination). Adjust Starlight's strings in `src/content/i18n/de.json` (the `i18n` collection is set up).
+- Your own text (options, docs, gallery) is whatever language you write it in.
+
+What does not follow the locale:
+
+- Pages outside Starlight (landing, gallery, your `BaseLayout` pages) are always `<html lang="en">`.
+- Built-in component text is English: "Skip to content", the theme switch labels, "See the whole gallery",
+  the gallery filter labels, the 404 text, `<Live>`'s "Reset" and status text.
+
+Starlight's multi-locale setup (`locales` with several entries and `src/content/docs/<lang>/` folders) passes
+through, but the generated sidebar only reads `src/content/docs/docs/`, so translated pages would need a
+hand-written `starlight.sidebar`. It is untested.

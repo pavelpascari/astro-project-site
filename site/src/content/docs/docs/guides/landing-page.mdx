@@ -1,0 +1,226 @@
+---
+title: Landing page
+description: The landing page from config (hero, live demo, features, steps, gallery strip, call to action), or your own page built from the same components.
+sidebar:
+  order: 2
+---
+
+import { Hero, Section, Features, Steps, CallToAction, InstallCommand, Live } from 'astro-project-site/components';
+import Rendered from '../../_components/Rendered.astro';
+
+The page at `/` comes in three levels of control:
+
+1. **Config:** the `landing` option fills the built-in page. Most sites stop here.
+2. **Replace the body:** `components.Landing` swaps the page body, keeping the shared header and footer.
+3. **Your own page:** `src/pages/index.astro` replaces the injected route; build it from the exported components.
+
+`landing: false` removes the page (and its entry from the link validator's known pages).
+
+## From config
+
+```js title="astro.config.mjs"
+projectSite({
+  name: 'My Lib',
+  tagline: 'Parses things, quickly.',
+  install: 'npm i my-lib',
+  landing: {
+    hero: {
+      title: 'My Lib',          // default: name
+      lead: 'Parses things.',   // default: tagline
+      primary: { label: 'Get started', href: '/docs/' },
+      secondary: { label: 'Gallery', href: '/gallery/' },
+      demo: { /* a <Live> example, see below */ },
+    },
+    features: [
+      { title: 'Small', body: 'One module, no dependencies.' },
+      { title: 'Typed', body: 'Ships its own types.', href: '/docs/reference/' },
+    ],
+    steps: {
+      title: 'Three lines',       // default "How it works"
+      items: [{ title: 'Install', body: 'Add the package.', code: 'npm i my-lib', lang: 'sh' }],
+    },
+    gallery: { title: 'See it running', limit: 3 },   // limit: 0 hides the strip
+    cta: { title: 'Ready?', primary: { label: 'Read the docs', href: '/docs/' } },
+  },
+}),
+```
+
+The sections render in this order: hero, features, gallery strip, steps, call to action. A section without content
+is left out: no `features` means no features section; the gallery strip shows when `gallery` is not `false`, the
+collection has items, and `landing.gallery.limit` is not `0`. `features` and `steps` take an array or
+`{ title, intro, items }`. Every field: [LandingContent](/docs/reference/options/#landingcontent).
+
+### A live demo in the hero
+
+`landing.hero.demo` takes the [`<Live>` props](/docs/reference/live/) (except `id`, `head`, `sandbox`, `lazy`,
+`debounce`, `class`) and renders the example under the hero copy. The demo code is a string:
+
+```js
+demo: {
+  code: `<script type="module" src="/apps/live-assets/hello-badge.js"></script>
+<hello-badge name="world"></hello-badge>`,
+  title: 'hello.html',
+  mode: 'iframe',
+  editable: true,
+},
+```
+
+For a JSON spec run by your library, set `runner` (see [custom runners](/docs/guides/live-examples/#custom-runners)).
+
+## The components, rendered
+
+Everything the built-in page uses is exported from `astro-project-site/components`. Below, each one is rendered
+by this page at build time, under the code that renders it. Props: [Components](/docs/reference/components/).
+
+### Hero
+
+<Rendered code={`<Hero
+  title="My Lib"
+  lead="Parses things, quickly. No dependencies."
+  primary={{ label: 'Get started', href: '/docs/quick-start/' }}
+  secondary={{ label: 'Reference', href: '/docs/reference/' }}
+  install="npm i my-lib"
+>
+  <p>Optional content under the actions.</p>
+  <div slot="live">
+    <Live code={'<status-pill label="hero slot"></status-pill>'} modules={['/docs-assets/status-pill.js']} />
+  </div>
+</Hero>`}>
+  <Hero
+    title="My Lib"
+    lead="Parses things, quickly. No dependencies."
+    primary={{ label: 'Get started', href: '/docs/quick-start/' }}
+    secondary={{ label: 'Reference', href: '/docs/reference/' }}
+    install="npm i my-lib"
+  >
+    <p>Optional content under the actions.</p>
+    <div slot="live" style="padding-inline: 1rem">
+      <Live code={'<status-pill label="hero slot"></status-pill>'} modules={['/docs-assets/status-pill.js']} />
+    </div>
+  </Hero>
+</Rendered>
+
+The `live` slot is a plain, unclipped block under the copy: anything interactive (a canvas, characters walking
+on the page) can go there. The default slot sits under the actions.
+
+### Section and Features
+
+<Rendered code={`<Section title="Why it exists" intro="The short version." tone="surface">
+  <Features items={[
+    { title: 'Small', body: 'One module you can read in an afternoon.' },
+    { title: 'Typed', body: 'Ships its own TypeScript types.', href: '/docs/reference/' },
+    { title: 'Portable', body: 'Plain HTML, any bundler, or none.' },
+  ]} />
+</Section>`}>
+  <Section title="Why it exists" intro="The short version." tone="surface">
+    <Features
+      items={[
+        { title: 'Small', body: 'One module you can read in an afternoon.' },
+        { title: 'Typed', body: 'Ships its own TypeScript types.', href: '/docs/reference/' },
+        { title: 'Portable', body: 'Plain HTML, any bundler, or none.' },
+      ]}
+    />
+  </Section>
+</Rendered>
+
+A feature with `href` gets a real link on its title, and the whole card is clickable. `tone="surface"` tints the
+section band.
+
+### Steps
+
+<Rendered code={`<Steps items={[
+  { title: 'Install', body: 'Add the package.', code: 'npm i my-lib', lang: 'sh' },
+  { title: 'Call it', body: 'One function.', code: "parse('1 + 2'); // 3", lang: 'js' },
+]} />`}>
+  <div class="site-container">
+    <Steps
+      items={[
+        { title: 'Install', body: 'Add the package.', code: 'npm i my-lib', lang: 'sh' },
+        { title: 'Call it', body: 'One function.', code: "parse('1 + 2'); // 3", lang: 'js' },
+      ]}
+    />
+  </div>
+</Rendered>
+
+Code is highlighted at build time (light and dark themes).
+
+### InstallCommand and CallToAction
+
+<Rendered code={`<CallToAction
+  title="Ready when you are"
+  body="Read the guide, then try the playground."
+  primary={{ label: 'Read the docs', href: '/docs/' }}
+  secondary={{ label: 'Quick start', href: '/docs/quick-start/' }}
+>
+  <InstallCommand command="npm i my-lib" />
+</CallToAction>`}>
+  <CallToAction
+    title="Ready when you are"
+    body="Read the guide, then try the playground."
+    primary={{ label: 'Read the docs', href: '/docs/' }}
+    secondary={{ label: 'Quick start', href: '/docs/quick-start/' }}
+  >
+    <InstallCommand command="npm i my-lib" />
+  </CallToAction>
+</Rendered>
+
+The copy button appears only where the Clipboard API is available. `GalleryStrip` is shown on the
+[Gallery](/docs/guides/gallery/#on-the-landing-page) page.
+
+## Replace the body: components.Landing
+
+Keep the injected route, the header, footer and meta tags, and write only the body:
+
+```js title="astro.config.mjs"
+components: { Landing: './src/components/MyLanding.astro' },
+```
+
+```astro title="src/components/MyLanding.astro"
+---
+import { Hero, Section, Features, GalleryStrip } from 'astro-project-site/components';
+import config from 'astro-project-site/config';
+const landing = config.landing || {};
+---
+<Hero title={config.name} lead={config.tagline} install={config.install} primary={landing.hero?.primary} />
+<Section title="Benchmarks"><p>…your own section…</p></Section>
+<Features items={landing.features?.items ?? []} />
+<GalleryStrip limit={6} kinds={['demo']} />
+```
+
+It renders inside `BaseLayout` and takes no props; read what you need from `astro-project-site/config`
+(`config.landing` has `features` and `steps` normalised to `{ title, intro, items }`).
+
+## Your own page: src/pages/index.astro
+
+A file at `src/pages/index.astro` (or `index.md`, `index.mdx`, `index.html`) replaces the injected `/` route;
+the build logs `src/pages/index.astro replaces the built-in / page.` Use `BaseLayout` to keep the shared header,
+footer and theme:
+
+```astro title="src/pages/index.astro"
+---
+import { BaseLayout, Hero, Section, Steps, CallToAction, Live } from 'astro-project-site/components';
+import config from 'astro-project-site/config';
+import demo from '../demos/hello.html?raw';
+---
+<BaseLayout>
+  <Hero title={config.name} lead={config.tagline} install={config.install}
+        primary={{ label: 'Docs', href: '/docs/' }}>
+    <div slot="live" class="site-container">
+      <Live code={demo} mode="iframe" editable title="hello.html" />
+    </div>
+  </Hero>
+  <Section title="How it works" tone="surface">
+    <Steps items={[{ title: 'Install', body: 'Add it.', code: 'npm i my-lib', lang: 'sh' }]} />
+  </Section>
+  <CallToAction title="Try it" primary={{ label: 'Playground', href: '/apps/hello/' }} />
+</BaseLayout>
+```
+
+`BaseLayout` without a `title` gives the page "Name — tagline" as its title. On a `BaseLayout` page the
+`site-container` (centred, max width) and `site-btn` / `site-btn--primary` classes are available.
+
+<Live
+  caption="A Live example inside the docs, as it would sit in the hero"
+  modules={['/docs-assets/status-pill.js']}
+  code={`<status-pill label="it runs"></status-pill> <status-pill label="in the page" tone="green"></status-pill>`}
+/>
