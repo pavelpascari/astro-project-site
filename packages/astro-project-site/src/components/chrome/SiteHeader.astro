@@ -129,11 +129,15 @@ const hasSearch = Astro.slots.has('search');
     const list = header.querySelector<HTMLElement>('.nav ul');
     const search = header.querySelector<HTMLElement>('.search');
     if (!brand || !list) continue;
+    const squeezed = (el: HTMLElement | null, min = Infinity) => !!el && el.clientWidth + 1 < Math.min(el.scrollWidth, min);
     const fit = () => {
       header.removeAttribute('data-collapsed');
-      if (getComputedStyle(list.parentElement!).display === 'none') return; // small screen: the menu holds the nav
-      const squeezed = (el: HTMLElement | null, min = Infinity) => !!el && el.clientWidth + 1 < Math.min(el.scrollWidth, min);
-      if (squeezed(brand, 160) || squeezed(list) || squeezed(search)) header.setAttribute('data-collapsed', '');
+      header.removeAttribute('data-tight');
+      // On small screens the menu already holds the nav.
+      if (getComputedStyle(list.parentElement!).display !== 'none' && (squeezed(brand, 160) || squeezed(list) || squeezed(search)))
+        header.setAttribute('data-collapsed', '');
+      // Still no room for the name (a phone with a large default font): the version badge goes; the footer has it.
+      if (squeezed(brand, 96)) header.setAttribute('data-tight', '');
     };
     // Re-measure when the bar's width changes or its contents do (not on the list's own size: hiding it would loop).
     new ResizeObserver(fit).observe(header);
@@ -343,6 +347,9 @@ const hasSearch = Astro.slots.has('search');
   }
   [data-collapsed] .menu {
     display: block;
+  }
+  [data-tight] .version {
+    display: none;
   }
 
   @media (max-width: 49.99rem) {
