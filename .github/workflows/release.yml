@@ -4,8 +4,10 @@
 #   2. packs the package and writes its SHA-256
 #   3. creates the GitHub release (pre-release for versions with a `-`), with the tarball, the checksum and the
 #      version's CHANGELOG section as notes
-#   4. publishes to npm when the NPM_TOKEN secret is set: `--tag beta` for pre-releases, `latest` otherwise;
-#      with provenance once the repository is public. Without the secret the step is skipped with a notice.
+#   4. publishes the same tarball to npm through trusted publishing (OIDC: no token, no one-time code), `--tag beta`
+#      for pre-releases and `latest` otherwise. npm adds provenance on its own once the repository is public.
+#      One-time setup on npmjs.com: astro-project-site → Settings → Trusted publishing → GitHub Actions,
+#      user `pavelpascari`, repository `astro-project-site`, workflow `release.yml`.
 name: Release
 
 on:
@@ -25,16 +27,16 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: write   # create the release and upload assets
-      id-token: write   # npm provenance
+      id-token: write   # npm trusted publishing (OIDC) and provenance
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
+      # Trusted publishing needs npm 11.5.1+ (Node 24 ships it). No dependency cache in release builds.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
-          cache: npm
+          node-version: 24
           registry-url: https://registry.npmjs.org
 
       - name: Tag matches the package version
@@ -100,23 +102,16 @@ jobs:
               --title "astro-project-site $TAG" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag "${flags[@]}"
           fi
 
-      - name: Publish to npm
+      - name: Publish to npm (trusted publishing)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           FILE: ${{ steps.pack.outputs.file }}
           DIST_TAG: ${{ steps.version.outputs.dist_tag }}
           VERSION: ${{ steps.version.outputs.version }}
-          PUBLIC_REPO: ${{ github.event.repository.private == false }}
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::notice title=npm publish skipped::NPM_TOKEN is not set; publish with: npm publish $(basename "$FILE") --tag $DIST_TAG"
-            exit 0
-          fi
+          npm --version
           if npm view "astro-project-site@$VERSION" version > /dev/null 2>&1; then
             echo "::notice title=Already on npm::astro-project-site@$VERSION is already published"
             exit 0
           fi
-          flags=(--tag "$DIST_TAG" --access public)
-          # npm provenance needs a public source repository.
-          [ "$PUBLIC_REPO" = true ] && flags+=(--provenance)
-          npm publish "$FILE" "${flags[@]}"
+          # No token: npm exchanges this job's OIDC identity (id-token: write) for a one-off publish credential.
+          npm publish "$FILE" --tag "$DIST_TAG" --access public
