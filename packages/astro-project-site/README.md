@@ -88,9 +88,10 @@ All paths are relative to the project root (the folder of `astro.config.mjs`) an
 | `versionFrom` | `string` | | A `package.json` whose `version` the header shows. |
 | `nav` | `{ label, href }[]` | Docs, Gallery | Top navigation on every page (and in the docs' mobile menu). |
 | `externalDocs` | `{ dir, route, label, order?, exclude? }[]` | `[]` | Markdown folders mounted under `/docs/<route>/`. `order`: file names listed first. `exclude`: globs. |
-| `mirrors` | `{ from, to, include?, exclude? }[]` | `[]` | Folders served byte for byte under `/<to>/`. Globs: `*`, `?`, `**`, `{a,b}`, `[…]`. |
+| `mirrors` | `{ from, to, include?, exclude? }[]` | `[]` | Folders served byte for byte under `/<to>/`. Globs (here, in `externalDocs.exclude` and docs-gen `files`): `*`, `?`, `**`, `{a,b}`, `[…]`. |
 | `install` | `string` | | Install command on the landing page. |
 | `favicon` | `string` | `'/favicon.svg'` | Under `public/`. |
+| `head` | `{ tag, attrs?, content? }[]` | `[]` | Tags added to the `<head>` of every page, docs included (Starlight's `head` shape; `starlight.head` adds docs-only tags after these). |
 | `ogImage` | `string` | | Default social image (path under `public/` or URL). |
 | `ogImageFor` | `string` | | Module whose default export is `(page: { path, title, description }) => string \| undefined`, for per-page images. Used on every page, docs included. |
 | `theme` | `{ accent?, accentDark? }` | | Accent colours. For more, override tokens in `customCss`. |
@@ -137,18 +138,21 @@ original.
 ### `starlight`
 
 Passed to Starlight. List options are **appended** to the ones projectSite() sets: `sidebar` (after the generated
-sidebar), `plugins`, `customCss` (docs pages only, after `customCss`), `routeMiddleware`, `markdown.processedDirs`.
-`components` entries override ours (your own `Header` replaces the shared header on docs pages). Everything else
+sidebar), `plugins`, `customCss` (docs pages only, after `customCss`), `head` (after `head`), `routeMiddleware`,
+`markdown.processedDirs`. `components` entries override ours (your own `Header` replaces the shared header on docs
+pages). The shared header shows whatever `Search` Starlight resolved (a `components.Search` override or a search
+plugin). Everything else
 (`head`, `locales`, `lastUpdated`, `pagefind`, `social`, `editLink`, …) is set as given.
 
 ## Exports
 
 | import | what |
 |---|---|
-| `astro-project-site` | `default projectSite(options)`, `mirror(entries)`; types `ProjectSiteOptions`, `LandingContent`, `ComponentOverrides`, `SiteConfig`, `GalleryEntry`, `GalleryData`, `OgImageHook`, `LiveRunner`, `LiveContext`, `LiveProps`, … |
+| `astro-project-site` | `default projectSite(options)`, `mirror(entries)`, `OPTION_NAMES` (every top-level option name), `COMPONENT_NAMES` (the `components` slots); types `ProjectSiteOptions`, `LandingContent`, `ComponentOverrides`, `SiteConfig`, `GalleryEntry`, `GalleryData`, `OgImageHook`, `LiveRunner`, `LiveContext`, `LiveProps`, … |
 | `astro-project-site/components` | `Live`, `BaseLayout`, `SiteHead`, `SiteHeader`, `SiteFooter`, `ThemeSelect`, `Landing`, `Hero`, `Section`, `Features`, `Steps`, `GalleryStrip`, `CallToAction`, `InstallCommand`, `GalleryPage`, `GalleryGrid`, `GalleryCard`, `GalleryFilters`; helpers `galleryItems()`, `distinct()`, `isActive()`, `isExternal()` |
+| `astro-project-site/live` | the `<Live>` component alone (`import Live from 'astro-project-site/live'`): lighter than the barrel, which also brings the layout and landing components |
 | `astro-project-site/content` | `projectSiteCollections({ docsExtend?, galleryBase? })` → `{ docs, gallery, i18n }`; `gallerySchema`, `projectDocsLoader` |
-| `astro-project-site/config` | the validated options plus `version` (`SiteConfig`), for your own pages |
+| `astro-project-site/config` | the validated options plus `version` (`SiteConfig`), for your own pages; also `OPTION_NAMES`, `COMPONENT_NAMES` |
 | `astro-project-site/theme.css` | the design tokens (loaded automatically; import it only in pages that use neither BaseLayout nor Starlight) |
 
 Types for the virtual modules behind these (`virtual:astro-project-site/*`) are injected into `.astro/` by the
@@ -189,7 +193,26 @@ Props: `code`, `lang`, `title`, `caption`, `id`, `mode` (`inline`/`iframe`), `pr
 `base`, `sandbox`, `height`, `lazy`, `debounce`. Works on docs pages and on any `BaseLayout` page: `theme.css`
 supplies the `--sl-*` tokens it needs outside Starlight.
 
+From a script, the rendered `<live-example>` element (type `LiveExampleElement`) reads and replaces its code:
+
+```js
+await customElements.whenDefined('live-example');
+const example = document.querySelector('live-example#live-edit-me');
+example.getSource();                  // what runs now (the editor's text when editable)
+example.setSource('<b>new code</b>'); // re-runs; editable examples show it in the editor, Reset restores the original
+```
+
+Keyboard: in an editable example Tab indents; press Escape, then Tab, to move on. If a runner or module cannot be
+fetched, the example says so (the browser's own error is under Details) and offers Retry.
+
 ## Theme
+
+The landing, gallery and docs pages use the same language and direction: pages outside the docs take `lang`/`dir`
+from Starlight's root locale (or `defaultLocale`) in `starlight.locales`, else `en`. Setting `starlight.title`,
+`description` or `favicon` changes the docs only and logs a warning; use `name`, `tagline`, `favicon`.
+
+The landing and gallery components import `styles/components.css` (the `site-container`, `site-btn`,
+`site-visually-hidden` classes and build-time code styles), so they look the same when used inside a docs page.
 
 Every colour, Starlight's included, derives from a few tokens. Override them in a `customCss` file:
 
@@ -241,6 +264,46 @@ instead of downloading one. Inputs: `working-directory`, `install-directory`, `w
 (a second repo checked out beside this one, for mirrors or docs that live there), `node-version`, `production`,
 `deploy`. Secrets (all optional): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SOURCE_REPO_TOKEN`. Without the
 Cloudflare secrets it builds and skips the deploy.
+
+## Development
+
+`npm test` runs the unit tests (`node --test`). The responsive/UX check is separate because it needs browsers:
+it drives Chromium, Firefox and WebKit through Playwright against a running site and fails on what users would hit.
+
+```bash
+# once: Playwright lives outside the repo (it is not a dependency)
+mkdir -p /tmp/pw && (cd /tmp/pw && npm i playwright && npx playwright install chromium firefox webkit)
+
+npm run build && (cd site && npx astro preview --port 4433 &)
+PLAYWRIGHT_DIR=/tmp/pw node packages/astro-project-site/test/ux/ux-check.mjs --url http://localhost:4433 --out ux-report
+```
+
+Options: `--engines chromium,firefox,webkit`, `--pages /,/docs/` (default: the sitemap plus pages linked from it, and a
+missing page for the 404), `--max-pages 40`, `--quick` (Chromium, four viewports), `--no-shots`. It writes
+`report.md`, `report.json` and `shots/*.png` (plus print PDFs) and exits 1 on any error-level finding; warnings never fail.
+
+What it checks, on every page:
+
+- **Layout** at 320×568 through 2560×1440, phones in landscape, tablets both ways, 200% and 400% zoom (WCAG 1.4.10)
+  and a 32px default font size: no horizontal page scroll (wide tables and code scroll in their own, focusable box);
+  header items never overlap, leave the screen or wrap out of the bar, also with a long project name and eight nav
+  items injected (stress test); line length.
+- **Input**: targets under 24×24 without spacing (WCAG 2.5.8) fail, under 44×44 on touch viewports warn; the tab
+  order walked to the end with a visible focus indicator at every stop, never under the sticky header; skip link;
+  Live editor keyboard (Tab indents, Escape then Tab leaves); copy buttons announce through a live region.
+- **Menus**: the site menu (opens, `aria-expanded`, fits short screens, Escape returns focus, closes on focus leaving,
+  click outside and on a link) and Starlight's mobile menu (one menu button, the site nav inside, scroll lock, focus
+  trap, Escape); search dialog; gallery filters announce the result count.
+- **Preferences**: no flash of the wrong theme for stored × OS theme; `prefers-reduced-motion` (no smooth scroll or
+  running animations); forced colours (pressed/current states and focus still visible); `prefers-contrast: more`;
+  text contrast AA in both themes computed from the rendered colours, plus a token-pair table.
+- **Semantics**: `lang`, one `main` and `h1`, heading order, duplicate ids, `alt`, accessible names, landmark labels.
+- **Other**: console errors and failed requests, broken internal links, viewport meta (zoom allowed; `viewport-fit=cover`
+  only with safe-area padding), layout shift (CLS), image dimensions and lazy loading, JS/CSS bytes per page, and the
+  docs print stylesheet (no navigation chrome).
+
+Pages that are not built by Astro (mirrored apps under `mirrors`) are checked too, but their findings are warnings:
+they are the project's own files.
 
 ## Licences
 
