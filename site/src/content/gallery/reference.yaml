@@ -1,6 +1,6 @@
 title: A mounted docs folder
-description: Plain markdown from the repository, no frontmatter, mounted under /docs/reference/ with its .md links rewritten.
-href: /docs/reference/
+description: Plain markdown from the repository, no frontmatter, mounted under /docs/example/ with its .md links rewritten.
+href: /docs/example/
 kind: docs
 tags: [externalDocs, markdown]
 order: 2

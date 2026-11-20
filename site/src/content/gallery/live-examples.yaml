@@ -1,6 +1,6 @@
 title: Live examples
 description: The <Live> component on a docs page, inline and in iframes, editable, with a custom runner.
-href: /docs/template/live-examples/
+href: /docs/guides/live-examples/
 kind: demo
 tags: [live, mdx]
 order: 3

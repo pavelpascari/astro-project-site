@@ -1,7 +1,7 @@
 # Response headers for Cloudflare Workers static assets (copied to dist/_headers; not served itself).
 # Syntax: a URL pattern line, then indented `Name: value` lines. All matching rules apply, so set each header
 # in one rule only (a header set by two rules gets both values joined with a comma).
-# Docs: src/content/docs/docs/template/deploy.mdx
+# Docs: src/content/docs/docs/guides/deploying.mdx
 
 /*
   X-Content-Type-Options: nosniff

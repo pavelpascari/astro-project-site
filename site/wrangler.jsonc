@@ -1,10 +1,10 @@
 // Cloudflare Workers config: the site is deployed as a static-assets-only Worker (no server code).
-// Docs: src/content/docs/docs/template/deploy.mdx (rendered at /docs/template/deploy/).
+// Docs: src/content/docs/docs/guides/deploying.mdx (rendered at /docs/guides/deploying/).
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   // CHANGE ME: the Worker's name. It becomes the URL https://<name>.<your-subdomain>.workers.dev and is part of
   // every preview URL (https://<alias>-<name>.<your-subdomain>.workers.dev). Lowercase letters, digits and dashes.
-  "name": "example-project",
+  "name": "astro-project-site",
   // Bump deliberately (e.g. when upgrading wrangler); it pins the Workers runtime behaviour.
   "compatibility_date": "2026-11-18",
   "assets": {
