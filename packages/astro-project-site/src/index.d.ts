@@ -278,6 +278,26 @@ export interface ProjectSiteOptions {
    * `markdown.processedDirs`. `components` entries override ours (e.g. your own `Header` replaces the shared one).
    */
   starlight?: Record<string, unknown>;
+
+  // ── markdown ──
+  /** GitHub-flavoured markdown extras, on every page that renders markdown. Each switch defaults to `true`. */
+  markdown?: MarkdownOptions;
+}
+
+/** Switches for the markdown extras (src/markdown/). All default to `true`. */
+export interface MarkdownOptions {
+  /** `> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]` blockquotes as callouts. */
+  alerts?: boolean;
+  /** `:tada:` shortcodes (GitHub's names) as emoji. */
+  emoji?: boolean;
+  /** `$…$`, `$$…$$` and ```` ```math ```` blocks rendered with KaTeX; its CSS loads only on pages with math. */
+  math?: boolean;
+  /** ```` ```mermaid ```` diagrams, rendered in the browser; Mermaid loads only on pages with diagrams. */
+  mermaid?: boolean;
+  /** Anchor links on headings in markdown outside the docs (Starlight adds its own on docs pages). */
+  headingLinks?: boolean;
+  /** A "wrap lines" button on code blocks whose lines overflow. */
+  codeWrapToggle?: boolean;
 }
 
 /** The options after validation and defaults (what projectSite() works with internally). */
@@ -297,6 +317,7 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   head: HeadTag[];
   components: ComponentOverrides;
   starlight: Record<string, unknown>;
+  markdown: MarkdownOptions;
 }
 
 /** A `<head>` tag, same shape as Starlight's `head` entries. */

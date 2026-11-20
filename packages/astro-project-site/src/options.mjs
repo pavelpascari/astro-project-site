@@ -134,6 +134,18 @@ export const optionsSchema = z.strictObject({
     .default([]),
   components: z.strictObject(Object.fromEntries(COMPONENT_NAMES.map((n) => [n, z.string().min(1).optional()]))).default({}),
   starlight: z.record(z.string(), z.unknown()).default({}),
+
+  // ── markdown (src/markdown/): GitHub-flavoured rendering switches, all on by default ──
+  markdown: z
+    .strictObject({
+      alerts: z.boolean().optional(),
+      emoji: z.boolean().optional(),
+      math: z.boolean().optional(),
+      mermaid: z.boolean().optional(),
+      headingLinks: z.boolean().optional(),
+      codeWrapToggle: z.boolean().optional(),
+    })
+    .default({}),
 });
 
 /** Every top-level option projectSite() accepts, for tools that check a config without hardcoding the list. */

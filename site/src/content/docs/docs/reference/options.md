@@ -45,6 +45,7 @@ Types and descriptions come from `src/index.d.ts`, defaults and required fields 
 | `customCss` | `string[]` | `[]` | Stylesheets (relative to the project root) loaded on every page after theme.css: override tokens here. |
 | `components` | `ComponentOverrides` | `{}` | Replace built-in components. |
 | `starlight` | `Record<string, unknown>` | `{}` | Extra Starlight options, passed through. List options are appended to the ones projectSite() sets: `sidebar` (after the generated sidebar), `plugins`, `customCss` (docs pages only), `routeMiddleware`, `markdown.processedDirs`. `components` entries override ours (e.g. your own `Header` replaces the shared one). |
+| `markdown` | `MarkdownOptions` | `{}` | GitHub-flavoured markdown extras, on every page that renders markdown. Each switch defaults to `true`. |
 <!-- /gen -->
 
 When `nav` is not set it defaults to Docs (`/docs/`), plus Gallery (`/gallery/`) unless `gallery: false`.
