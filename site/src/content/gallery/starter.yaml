@@ -1,0 +1,8 @@
+title: The starter
+description: What project-site init copies. A complete site that builds as it is, built in this repository's CI.
+href: https://github.com/pavelpascari/astro-project-site/tree/main/starters/default
+kind: starter
+tags: [init, template]
+external: true
+order: 5
+poster: ./starter.jpg

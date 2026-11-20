@@ -1,0 +1,110 @@
+---
+// The theme playground: a customCss file, editable, restyling a small site preview (runner:
+// public/landing-assets/runners/theme-tokens.js). Presets and the accent picker rewrite the editor's text, so what
+// you see is always the file you would ship. "Apply to this page" puts the same tokens on the whole page.
+import { Live } from 'astro-project-site/components';
+import { palettes, paletteCss } from './palettes';
+
+const initial = paletteCss(palettes.signal);
+const presets = Object.fromEntries(Object.entries(palettes).map(([k, p]) => [k, paletteCss(p)]));
+---
+
+<theme-playground data-presets={JSON.stringify(presets)}>
+  <div class="tpc" role="group" aria-label="Theme playground controls">
+    <fieldset class="tpc-presets">
+      <legend>Start from</legend>
+      {
+        Object.entries(palettes).map(([key, p], i) => (
+          <button type="button" class="tpc-preset" data-preset={key} aria-pressed={i === 0 ? 'true' : 'false'}>
+            <span class="tpc-swatch" aria-hidden="true" style={`--a:${p.dark['--site-accent']};--b:${p.dark['--site-bg']};--c:${p.light['--site-accent']};--d:${p.light['--site-bg']}`} />
+            {p.label}
+          </button>
+        ))
+      }
+    </fieldset>
+    <div class="tpc-row">
+      <label class="tpc-accent">
+        <input type="color" value={palettes.signal.dark['--site-accent']} data-accent />
+        <span>Accent <span class="tpc-hint">(current theme)</span></span>
+      </label>
+      <button type="button" class="tpc-apply site-btn" aria-pressed="false" data-apply>Apply to this page</button>
+    </div>
+  </div>
+  <Live
+    code={initial}
+    lang="css"
+    title="src/styles/brand.css"
+    id="live-theme"
+    runner="/landing-assets/runners/theme-tokens.js"
+    preview="side"
+    editable
+    lazy
+    height={320}
+    debounce={150}
+  />
+</theme-playground>
+
+<script>
+  // The controls edit the playground's code, which the Live example re-runs. The editor is the <textarea> that
+  // <Live editable> creates; editing it and firing `input` is the same path as typing.
+  class ThemePlayground extends HTMLElement {
+    connectedCallback() {
+      const presets = JSON.parse(this.dataset.presets ?? '{}') as Record<string, string>;
+      const live = this.querySelector('live-example')!;
+      const editor = () => live.querySelector<HTMLTextAreaElement>('.live-ex__editor');
+      const setCode = (code: string) => {
+        const ta = editor();
+        if (!ta) return;
+        ta.value = code;
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
+      };
+      const theme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
+
+      const presetButtons = [...this.querySelectorAll<HTMLButtonElement>('[data-preset]')];
+      for (const b of presetButtons) {
+        b.addEventListener('click', () => {
+          setCode(presets[b.dataset.preset!] ?? '');
+          for (const o of presetButtons) o.setAttribute('aria-pressed', String(o === b));
+          syncPicker();
+        });
+      }
+
+      // The accent of the rule that applies in the current theme: `:root[data-theme='light'] { … }` or `:root { … }`.
+      const blockRe = () =>
+        theme() === 'light' ? /(:root\[data-theme=['"]?light['"]?\]\s*\{)([^}]*)\}/ : /((?:^|\n)[ \t]*:root\s*\{)([^}]*)\}/;
+      const accentRe = /--site-accent\s*:\s*([^;]*);/;
+      const picker = this.querySelector<HTMLInputElement>('[data-accent]')!;
+      const syncPicker = () => {
+        const body = blockRe().exec(editor()?.value ?? '')?.[2] ?? '';
+        const v = accentRe.exec(body)?.[1]?.trim();
+        if (v && /^#[0-9a-f]{6}$/i.test(v)) picker.value = v.toLowerCase();
+      };
+      picker.addEventListener('focus', syncPicker);
+      picker.addEventListener('input', () => {
+        const ta = editor();
+        if (!ta) return;
+        const v = picker.value;
+        const next = ta.value.replace(blockRe(), (_all, open: string, body: string) =>
+          `${open}${accentRe.test(body) ? body.replace(accentRe, `--site-accent: ${v};`) : `\n  --site-accent: ${v};${body}`}}`,
+        );
+        if (next === ta.value) return;
+        setCode(next);
+        for (const o of presetButtons) o.setAttribute('aria-pressed', 'false');
+      });
+      requestAnimationFrame(syncPicker);
+      new MutationObserver(syncPicker).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+      const apply = this.querySelector<HTMLButtonElement>('[data-apply]')!;
+      apply.addEventListener('click', () => {
+        const on = apply.getAttribute('aria-pressed') !== 'true';
+        apply.setAttribute('aria-pressed', String(on));
+        let style = document.getElementById('theme-playground-page');
+        if (on) {
+          style ??= document.head.appendChild(Object.assign(document.createElement('style'), { id: 'theme-playground-page' }));
+          style.textContent = (window as unknown as { __themePlaygroundCss?: string }).__themePlaygroundCss ?? '';
+        } else style?.remove();
+      });
+    }
+  }
+  customElements.define('theme-playground', ThemePlayground);
+</script>

@@ -1,0 +1,181 @@
+---
+// The body of astro-project-site's own landing page (src/pages/index.astro renders it inside the package's BaseLayout). It uses the package's public components (Live, Section, InstallCommand,
+// GalleryStrip, CallToAction) plus a few site-local ones in this folder. Every demo on it is a <Live> example.
+import config from 'astro-project-site/config';
+import { CallToAction, GalleryStrip, InstallCommand, Live, Section } from 'astro-project-site/components';
+import configSource from '../../../astro.config.mjs?raw';
+import docsConfig from '../../../docs.config.mjs';
+import Kit from './Kit.astro';
+import MountDemo from './MountDemo.astro';
+import ThemePlayground from './ThemePlayground.astro';
+import Flow from './Flow.astro';
+import Compare from './Compare.astro';
+import '../../styles/landing.css';
+
+// Plain data for the hero runner: what `...docs` spreads in, and the version the header shows.
+const spreads = { docs: JSON.parse(JSON.stringify(docsConfig)) };
+// Pages of the site's own that take the place of injected ones (`/` is this page).
+const ownPages = Object.keys(import.meta.glob('../../pages/**/*.astro')).map((f) =>
+  f.replace('../../pages', '').replace(/(index)?\.astro$/, '').replace(/([^/])$/, '$1/'),
+);
+
+const sprite = `{
+  "alt": "A small box whose lid hops open",
+  "fps": 3,
+  "scale": 10,
+  "palette": { "k": "#3a2418", "o": "#ff7a4d", "w": "#f6efe4", "y": "#ffd166" },
+  "frames": [
+    ["............", "............", "............", ".kkkkkkkkkk.",
+     ".kwwwwwwwwk.", ".kkkkkkkkkk.", ".kooooooook.", ".kooowwoook.",
+     ".kooooooook.", ".kooooooook.", ".kkkkkkkkkk.", "............"],
+    ["...y....y...", ".kkkkkkkkkk.", ".kwwwwwwwwk.", ".kkkkkkkkkk.",
+     "....y..y....", "............", ".kooooooook.", ".kooowwoook.",
+     ".kooooooook.", ".kooooooook.", ".kkkkkkkkkk.", "............"]
+  ]
+}`;
+const sections = [
+  ['kit', 'What’s in the box'],
+  ['docs', 'Docs'],
+  ['live', 'Live examples'],
+  ['theme', 'Theme'],
+  ['ship', 'Ship it'],
+  ['upgrade', 'Upgrades'],
+];
+const num = (id: string) => String(sections.findIndex(([s]) => s === id) + 1).padStart(2, '0');
+---
+
+<div class="lp">
+  <section class="lp-hero" aria-labelledby="hero-title">
+    <div class="site-container lp-hero-copy">
+      <div class="lp-hero-head">
+        <p class="lp-eyebrow">
+          <span>Astro integration</span>
+          {config.version && <span>v{config.version}</span>}
+          <span>MIT</span>
+        </p>
+        <h1 id="hero-title">Your project’s whole site, from one&nbsp;integration.</h1>
+      </div>
+      <div class="lp-hero-side">
+        <p class="lp-lead">
+          A landing page, docs that mount your repo’s markdown, live examples, a gallery, your static tools and a
+          Cloudflare preview for every pull request. About twenty lines of config. Upgrades are a version bump.
+        </p>
+        <div class="lp-actions">
+          <a class="site-btn site-btn--primary" href="/docs/">Read the docs</a>
+          <a class="site-btn" href="#kit">What’s in the box</a>
+        </div>
+        {config.install && <InstallCommand command={config.install} label="Start a project site" />}
+      </div>
+    </div>
+    <div class="site-container lp-hero-demo">
+      <p class="lp-demo-note" id="hero-demo-note">
+        <span class="lp-dot" aria-hidden="true"></span>
+        This is this site’s own <code>astro.config.mjs</code>, and what it builds. Edit it; try misspelling an option.
+      </p>
+      <Live
+        code={configSource}
+        lang="js"
+        title="site/astro.config.mjs"
+        id="live-config"
+        runner="/landing-assets/runners/config-preview.js"
+        options={{ version: config.version, spreads, ownPages }}
+        preview="side"
+        editable
+        height={420}
+      />
+    </div>
+  </section>
+
+  <Section id="kit" title="What’s in the box" intro="Everything a library or framework site needs, wired together and configured from one place.">
+    <span slot="header" class="lp-num" aria-hidden="true">{num('kit')}</span>
+    <Kit />
+  </Section>
+
+  <Section
+    id="docs"
+    tone="surface"
+    title="Your docs folder stays where it is"
+    intro="Mount the markdown your project already has. It keeps reading well on GitHub; on the site it gets a sidebar, search and working links."
+  >
+    <span slot="header" class="lp-num" aria-hidden="true">{num('docs')}</span>
+    <MountDemo />
+    <p class="lp-more">
+      <a href="/docs/reference/">See the mounted pages on this site <span aria-hidden="true">→</span></a>
+    </p>
+  </Section>
+
+  <Section
+    id="live"
+    title="Examples that run next to their code"
+    intro="<Live> renders HTML as it is, or hands the code to a runner: a plain module of yours. This one is the starter’s pixel engine, served from a mirrored folder."
+  >
+    <span slot="header" class="lp-num" aria-hidden="true">{num('live')}</span>
+    <div class="lp-live">
+      <Live
+        code={sprite}
+        lang="json"
+        title="box.json"
+        id="live-sprite"
+        caption="Change a colour in the palette, or a character in a frame."
+        runner="/apps/live-assets/pixel-engine.js"
+        preview="side"
+        editable
+        lazy
+        height={160}
+      />
+      <div class="lp-live-how">
+        <p>In a docs page it is one component around a code block:</p>
+        <pre class="lp-snippet" tabindex="0" aria-label="MDX source"><code>&lt;Live runner="/apps/live-assets/pixel-engine.js" editable&gt;
+
+```json
+{'{'} "palette": {'{'} … {'}'}, "frames": [ … ] {'}'}
+```
+
+&lt;/Live&gt;</code></pre>
+        <p>
+          Inline or in an iframe, lazy below the fold, re-run on theme and reduced-motion changes.{' '}
+          <a href="/docs/template/live-examples/">How live examples work</a>
+        </p>
+      </div>
+    </div>
+  </Section>
+
+  <Section
+    id="theme"
+    tone="surface"
+    title="A few tokens restyle all of it"
+    intro="Accent, background, surface, text, muted, border, radius: the landing page, the gallery and Starlight’s docs all derive from them. Try a preset, pick an accent, or apply it to this page."
+  >
+    <span slot="header" class="lp-num" aria-hidden="true">{num('theme')}</span>
+    <ThemePlayground />
+  </Section>
+
+  <Section id="ship" title="From nothing to a preview URL" intro="Real commands, and how long each step took on a fresh run with a warm npm cache.">
+    <span slot="header" class="lp-num" aria-hidden="true">{num('ship')}</span>
+    <Flow />
+  </Section>
+
+  <GalleryStrip
+    title="Gallery: the parts of this site"
+    intro="Each one is running on this site right now."
+    limit={6}
+  />
+
+  <Section
+    id="upgrade"
+    title="Install it, don’t copy it"
+    intro="A copied starter is yours forever, including every fix you will never get. An installed one moves with you."
+  >
+    <span slot="header" class="lp-num" aria-hidden="true">{num('upgrade')}</span>
+    <Compare />
+  </Section>
+
+  <CallToAction
+    title="Give your project a site"
+    body="One command to start, one file to configure. Pixel Studio, a pixel-art character engine, was the first project built on it."
+    primary={{ label: 'Read the docs', href: '/docs/' }}
+    secondary={{ label: 'Source on GitHub', href: config.repo }}
+  >
+    {config.install && <InstallCommand command={config.install} label="Start a project site" />}
+  </CallToAction>
+</div>

@@ -1,0 +1,7 @@
+title: The docs
+description: Starlight with this site's theme, header and footer. Search, a generated sidebar, edit links, a link check on every build.
+href: /docs/
+kind: docs
+tags: [starlight, search]
+order: 1
+poster: ./docs.jpg

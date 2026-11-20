@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>rect{fill:#3b4fd8}path{fill:#fff}@media (prefers-color-scheme:dark){rect{fill:#a5b4fc}path{fill:#111318}}</style><rect width="32" height="32" rx="7"/><path d="M9 9h6v6H9zm8 8h6v6h-6zM9 17h6v6H9z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- astro-project-site's mark: two offset squares, a kit of parts. Colours follow the light/dark accents. -->
+  <style>
+    .a { fill: #b93b0e } .b { fill: #e0a58f }
+    @media (prefers-color-scheme: dark) { .a { fill: #ff7a4d } .b { fill: #8a4a33 } }
+  </style>
+  <rect class="b" x="11" y="11" width="19" height="19" rx="2" />
+  <rect class="a" x="2" y="2" width="19" height="19" rx="2" />
+</svg>
