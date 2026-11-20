@@ -8,6 +8,15 @@ sidebar:
 import { SiteFooter } from 'astro-project-site/components';
 import Rendered from '../../_components/Rendered.astro';
 
+export const code1 = `---
+import { SiteFooter } from 'astro-project-site/components';
+const { variant } = Astro.props;
+---
+<SiteFooter variant={variant} />
+{variant === 'page' && (
+  <p class="sponsors site-container">Sponsored by <a href="https://example.com">Example Co</a>.</p>
+)}`;
+
 When options and CSS are not enough, replace a built-in component. The `components` option maps a slot to an
 `.astro` file (relative to the project root, or a package specifier); the integration renders yours wherever it
 rendered the built-in, docs pages included. The file must exist: a wrong path fails before Astro starts.
@@ -39,14 +48,7 @@ original instead of rewriting it.
 
 <Rendered
   title="src/components/Footer.astro"
-  code={`---
-import { SiteFooter } from 'astro-project-site/components';
-const { variant } = Astro.props;
----
-<SiteFooter variant={variant} />
-{variant === 'page' && (
-  <p class="sponsors site-container">Sponsored by <a href="https://example.com">Example Co</a>.</p>
-)}`}
+  code={code1}
 >
   <SiteFooter variant="page" />
   <p class="site-container" style="margin: 0.75rem auto 0; color: var(--site-muted)">
@@ -74,6 +76,7 @@ A gallery card that adds a "new" badge (these three overrides are tested against
 ---
 import { GalleryCard } from 'astro-project-site/components';
 import type { GalleryEntry } from 'astro-project-site';
+
 interface Props { item: GalleryEntry; headingLevel?: 2 | 3 | 4 }
 const { item, headingLevel } = Astro.props;
 ---

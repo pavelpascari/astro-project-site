@@ -8,6 +8,38 @@ sidebar:
 import { Hero, Section, Features, Steps, CallToAction, InstallCommand, Live } from 'astro-project-site/components';
 import Rendered from '../../_components/Rendered.astro';
 
+export const code1 = `<Hero
+  title="My Lib"
+  lead="Parses things, quickly. No dependencies."
+  primary={{ label: 'Get started', href: '/docs/quick-start/' }}
+  secondary={{ label: 'Reference', href: '/docs/reference/' }}
+  install="npm i my-lib"
+>
+  <p>Optional content under the actions.</p>
+  <div slot="live">
+    <Live code={'<status-pill label="hero slot"></status-pill>'} modules={['/docs-assets/status-pill.js']} />
+  </div>
+</Hero>`;
+export const code2 = `<Section title="Why it exists" intro="The short version." tone="surface">
+  <Features items={[
+    { title: 'Small', body: 'One module you can read in an afternoon.' },
+    { title: 'Typed', body: 'Ships its own TypeScript types.', href: '/docs/reference/' },
+    { title: 'Portable', body: 'Plain HTML, any bundler, or none.' },
+  ]} />
+</Section>`;
+export const code3 = `<Steps items={[
+  { title: 'Install', body: 'Add the package.', code: 'npm i my-lib', lang: 'sh' },
+  { title: 'Call it', body: 'One function.', code: "parse('1 + 2'); // 3", lang: 'js' },
+]} />`;
+export const code4 = `<CallToAction
+  title="Ready when you are"
+  body="Read the guide, then try the playground."
+  primary={{ label: 'Read the docs', href: '/docs/' }}
+  secondary={{ label: 'Quick start', href: '/docs/quick-start/' }}
+>
+  <InstallCommand command="npm i my-lib" />
+</CallToAction>`;
+
 The page at `/` comes in three levels of control:
 
 1. **Config:** the `landing` option fills the built-in page. Most sites stop here.
@@ -74,18 +106,7 @@ by this page at build time, under the code that renders it. Props: [Components](
 
 ### Hero
 
-<Rendered code={`<Hero
-  title="My Lib"
-  lead="Parses things, quickly. No dependencies."
-  primary={{ label: 'Get started', href: '/docs/quick-start/' }}
-  secondary={{ label: 'Reference', href: '/docs/reference/' }}
-  install="npm i my-lib"
->
-  <p>Optional content under the actions.</p>
-  <div slot="live">
-    <Live code={'<status-pill label="hero slot"></status-pill>'} modules={['/docs-assets/status-pill.js']} />
-  </div>
-</Hero>`}>
+<Rendered code={code1}>
   <Hero
     title="My Lib"
     lead="Parses things, quickly. No dependencies."
@@ -105,13 +126,7 @@ on the page) can go there. The default slot sits under the actions.
 
 ### Section and Features
 
-<Rendered code={`<Section title="Why it exists" intro="The short version." tone="surface">
-  <Features items={[
-    { title: 'Small', body: 'One module you can read in an afternoon.' },
-    { title: 'Typed', body: 'Ships its own TypeScript types.', href: '/docs/reference/' },
-    { title: 'Portable', body: 'Plain HTML, any bundler, or none.' },
-  ]} />
-</Section>`}>
+<Rendered code={code2}>
   <Section title="Why it exists" intro="The short version." tone="surface">
     <Features
       items={[
@@ -128,10 +143,7 @@ section band.
 
 ### Steps
 
-<Rendered code={`<Steps items={[
-  { title: 'Install', body: 'Add the package.', code: 'npm i my-lib', lang: 'sh' },
-  { title: 'Call it', body: 'One function.', code: "parse('1 + 2'); // 3", lang: 'js' },
-]} />`}>
+<Rendered code={code3}>
   <div class="site-container">
     <Steps
       items={[
@@ -146,14 +158,7 @@ Code is highlighted at build time (light and dark themes).
 
 ### InstallCommand and CallToAction
 
-<Rendered code={`<CallToAction
-  title="Ready when you are"
-  body="Read the guide, then try the playground."
-  primary={{ label: 'Read the docs', href: '/docs/' }}
-  secondary={{ label: 'Quick start', href: '/docs/quick-start/' }}
->
-  <InstallCommand command="npm i my-lib" />
-</CallToAction>`}>
+<Rendered code={code4}>
   <CallToAction
     title="Ready when you are"
     body="Read the guide, then try the playground."
@@ -201,6 +206,7 @@ footer and theme:
 import { BaseLayout, Hero, Section, Steps, CallToAction, Live } from 'astro-project-site/components';
 import config from 'astro-project-site/config';
 import demo from '../demos/hello.html?raw';
+
 ---
 <BaseLayout>
   <Hero title={config.name} lead={config.tagline} install={config.install}

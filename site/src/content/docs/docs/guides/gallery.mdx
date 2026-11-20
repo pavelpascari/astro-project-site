@@ -9,6 +9,16 @@ import { GalleryStrip } from 'astro-project-site/components';
 import Rendered from '../../_components/Rendered.astro';
 import GalleryDemo from '../../_components/GalleryDemo.astro';
 
+export const code1 = `---
+import { GalleryGrid, GalleryFilters, galleryItems, distinct } from 'astro-project-site/components';
+const items = await galleryItems();              // published, sorted
+const kinds = distinct(items, (i) => [i.data.kind]);
+const tags = distinct(items, (i) => i.data.tags).sort();
+---
+<GalleryFilters kinds={kinds} tags={tags} target="grid" total={items.length} />
+<GalleryGrid items={items} id="grid" headingLevel={4} minWidth="12rem" />`;
+
+
 The gallery is a content collection: one file per item in `src/content/gallery/`. It feeds the `/gallery/` page
 (with kind and tag filters) and the strip on the landing page. Items can link anywhere: a mirrored demo, a docs
 page, another site.
@@ -57,14 +67,7 @@ card with `GalleryCard` ([Overriding components](/docs/guides/overriding-compone
 
 This site's own gallery items, through the same components the page uses:
 
-<Rendered code={`---
-import { GalleryGrid, GalleryFilters, galleryItems, distinct } from 'astro-project-site/components';
-const items = await galleryItems();              // published, sorted
-const kinds = distinct(items, (i) => [i.data.kind]);
-const tags = distinct(items, (i) => i.data.tags).sort();
----
-<GalleryFilters kinds={kinds} tags={tags} target="grid" total={items.length} />
-<GalleryGrid items={items} id="grid" headingLevel={4} minWidth="12rem" />`}>
+<Rendered code={code1}>
   <GalleryDemo filters />
 </Rendered>
 

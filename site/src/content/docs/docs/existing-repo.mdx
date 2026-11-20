@@ -69,7 +69,10 @@ folder next to them and reads those files where they are; nothing moves.
      `website/src/content/docs/…`: the integration finds the git root and works out the folder.
    - The mirror never copies the `website/` folder into itself, nor dotfiles or `node_modules`.
 
-   Then delete `website/example/` and its line in `website/docs-gen.config.mjs`.
+   Then remove the starter's stand-ins: delete `website/example/`, drop `'example/docs'` from `files` in
+   `website/docs-gen.config.mjs`, and rewrite `src/content/docs/docs/index.mdx` and
+   `src/content/gallery/hello.yaml`, which link to `/apps/…` (the links validator reports the links; the live
+   examples on that page would load nothing).
 
 3. **Move CI to the repo root.** GitHub only reads workflows from the root `.github/`:
 
@@ -94,7 +97,7 @@ folder next to them and reads those files where they are; nothing moves.
    If the site is an npm workspace member of the root `package.json` instead (one lockfile at the root), add
    `install-directory: .`.
 
-4. **Build it.** `npm run build` in `website/`. The links validator now checks every link in your `docs/`
+4. **Build it.** `npm run build` in `website/`. The build log lists the mirror (`/lib/ ← ../: N files, …`). The links validator now checks every link in your `docs/`
    folder; fix what it reports (see [Troubleshooting](/docs/recipes/troubleshooting/#the-build-fails-on-a-link)).
 
 </Steps>

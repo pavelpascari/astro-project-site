@@ -51,7 +51,7 @@ under a mirror prefix without checking it.
   `.js`/`.mjs`, JSON, Markdown, images, `.wasm`, fonts, audio, video) and `Cache-Control: no-store`, so edits show
   on reload (mirrored pages do not hot-reload). A folder serves its `index.html`; `/apps/hello` redirects to
   `/apps/hello/`. Hidden paths, `..` and excluded files fall through to Astro (a 404). The dev server logs each
-  mirror at startup: `/apps/ → ./example/apps`.
+  mirror at startup: `/apps/ → ./example/apps (/abs/path/example/apps)`.
 - **`astro build`** copies the files into `dist/<to>/` after Astro has finished and logs a count and size per
   mirror (`/apps/ ← ./example/apps: 9 files, 8.1 KB`).
 
