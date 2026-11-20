@@ -1,0 +1,121 @@
+---
+title: Configure the site
+description: Identity, navigation, version, social images, footer and accent colour - the options every site sets.
+sidebar:
+  order: 1
+---
+
+All configuration is the object passed to `projectSite()` in `astro.config.mjs`. This page covers the options
+that describe the project; the others have their own guides. Full table: [Options](/docs/reference/options/).
+
+## Identity
+
+```js title="astro.config.mjs"
+projectSite({
+  name: 'My Lib',                        // header, page titles ("Usage | My Lib"), Starlight's title
+  tagline: 'Parses things, quickly.',    // landing lead, default meta description
+  url: 'https://my-lib.dev',             // canonical URLs, sitemap, og:image; Astro's `site` unless you set it
+  repo: 'https://github.com/me/my-lib',  // header link, edit links, links to source files
+  repoBranch: 'main',                    // default 'main'
+  versionFrom: '../package.json',        // header shows "v1.4.0", linked to <repo>/releases
+  install: 'npm i my-lib',               // landing page install command with a copy button
+}),
+```
+
+- `url` and `repo` must be full URLs; a trailing slash is dropped.
+- `repo` on github.com, gitlab.com or codeberg.org gets that site's icon and name in the header and in
+  Starlight's mobile menu; anything else is labelled "Source code". Edit and source links always use GitHub's
+  URL layout.
+- `versionFrom` is read when the dev server starts (and watched). A file without a `version` logs a warning and
+  shows no version.
+
+## Navigation
+
+`nav` is the top navigation on every page, docs included (on small docs screens it moves into Starlight's
+menu, so there is one menu button). A link is marked current when the page path starts with its `href`.
+
+```js
+nav: [
+  { label: 'Docs', href: '/docs/' },
+  { label: 'Playground', href: '/apps/hello/' },
+  { label: 'Changelog', href: 'https://github.com/me/my-lib/releases' },
+],
+```
+
+Without `nav` you get Docs, plus Gallery unless `gallery: false`. The footer repeats `nav` and adds a "Source"
+link.
+
+## Social images and favicon
+
+```js
+favicon: '/favicon.svg',          // under public/; the default
+ogImage: '/og.png',               // 1200×630 under public/, or a full URL
+ogImageFor: './src/og.mjs',       // per-page images, docs pages included
+```
+
+```js title="src/og.mjs"
+/** @type {import('astro-project-site').OgImageHook} */
+export default function ogImageFor({ path, title, description }) {
+  if (path.startsWith('/docs/reference/')) return '/og/reference.png';
+  return '/og.png'; // or undefined for no image
+}
+```
+
+Pages with an image get `og:image` and a `summary_large_image` Twitter card. Image paths become absolute
+against `url`.
+
+## Footer, llms.txt, link checking
+
+```js
+footer: { note: 'Released under the MIT licence.' },  // after "© 2026 My Lib · v1.4.0"
+llms: true,                                            // /llms.txt and /llms-full.txt (default)
+linksValidator: { exclude: ['/api/**'] },              // or false to turn link checking off
+```
+
+`linksValidator` takes [starlight-links-validator's options](https://github.com/HiDeoo/starlight-links-validator).
+The landing page, `/gallery/`, `/llms*.txt` and every mirror prefix are always accepted as link targets;
+your `exclude` is added to that list.
+
+## Accent colour
+
+```js
+theme: { accent: '#c2541b', accentDark: '#ffb347' },  // light theme, dark theme
+```
+
+`accentDark` falls back to `accent`. For anything beyond the accent (backgrounds, fonts, radius), override the
+tokens in CSS: [Theming](/docs/guides/theming/).
+
+## Keeping the config readable
+
+The config is plain JavaScript; split it however you like. This site keeps its docs options in a second file and
+spreads them in:
+
+```js title="docs.config.mjs"
+/** @type {Partial<import('astro-project-site').ProjectSiteOptions>} */
+export default {
+  externalDocs: [{ dir: '../docs', route: 'reference', label: 'Reference' }],
+};
+```
+
+```js title="astro.config.mjs"
+import docs from './docs.config.mjs';
+// …
+projectSite({ ...docs, name: 'My Lib', /* … */ }),
+```
+
+## Using the options in your own pages
+
+```astro title="src/pages/about.astro"
+---
+import { BaseLayout, Section } from 'astro-project-site/components';
+import config from 'astro-project-site/config';
+---
+<BaseLayout title="About" description={`Who makes ${config.name}`}>
+  <Section title={`About ${config.name}`} intro={config.tagline}>
+    <p>Version {config.version}. Source: <a href={config.repo}>{config.repo}</a></p>
+  </Section>
+</BaseLayout>
+```
+
+`BaseLayout` gives a page the shared header, footer, theme switch and meta tags. `config` is the validated
+options (see [Exports](/docs/reference/exports/#astro-project-siteconfig)).

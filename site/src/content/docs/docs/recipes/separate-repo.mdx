@@ -1,0 +1,67 @@
+---
+title: Separate site repo
+description: Keep the website in its own repository and read the library's docs and demos from a second checkout, locally and in CI with source-repo.
+sidebar:
+  order: 2
+---
+
+Sometimes the site cannot live in the library's repo (different maintainers, a repo you do not control). Keep two
+clones side by side and point the site at the other one:
+
+```text
+~/code/
+  my-lib/          the library (docs/, src/, demos/)
+  my-lib-site/     the site
+```
+
+```js title="my-lib-site/astro.config.mjs"
+projectSite({
+  name: 'My Lib',
+  tagline: 'Parses things, quickly.',
+  url: 'https://my-lib.dev',
+  repo: 'https://github.com/me/my-lib-site',
+  externalDocs: [{ dir: '../my-lib/docs', route: 'reference', label: 'Reference' }],
+  mirrors: [{ from: '../my-lib', to: 'lib', include: ['src', 'demos'] }],
+}),
+```
+
+## In CI: source-repo
+
+The reusable workflow checks this repo out into a folder named after it and, with `source-repo`, the other one
+beside it under **its** name, which is the same layout as on your machine:
+
+```yaml title="my-lib-site/.github/workflows/site.yml"
+jobs:
+  site:
+    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
+    with:
+      source-repo: me/my-lib    # → ../my-lib
+      source-ref: main          # branch, tag or SHA
+    permissions: { contents: read, pull-requests: write }
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # SOURCE_REPO_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}  # only for a private source repo: a read-only token
+```
+
+To rebuild the site when the library changes, trigger this workflow from the library's repo (for example
+`workflow_dispatch` via the GitHub API) or on a schedule.
+
+## Limits of a second repo
+
+Edit links and GitHub links are computed from the git repository **the site** is in. For a mounted folder
+outside it:
+
+- its pages get **no** "edit this page" link;
+- relative links to non-markdown files (`../src/parse.js`) are **left as written**. The links validator reports
+  them as relative links and fails the build.
+
+Until the package can map a mount to another repository, either write those links as absolute GitHub URLs in the
+library's docs, or relax the validator for them:
+
+```js
+linksValidator: { errorOnRelativeLinks: false },
+```
+
+(they then stay relative and 404 on the site, so absolute URLs are the better fix). Links between the mounted
+`.md` files are rewritten as usual.

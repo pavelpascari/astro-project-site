@@ -1,0 +1,106 @@
+---
+title: Add it to an existing repo
+description: The realistic setup - a website/ folder inside your library's repo, mounting ../docs and serving ../ demos, with CI from the repo root.
+sidebar:
+  order: 2
+---
+
+import { FileTree, Steps } from '@astrojs/starlight/components';
+
+Most projects already have a repository with code and a `docs/` folder written for GitHub. The site goes in a
+folder next to them and reads those files where they are; nothing moves.
+
+<FileTree>
+- my-lib/
+  - .github/workflows/
+    - site.yml  calls the reusable workflow
+  - docs/  your markdown, unchanged
+    - README.md
+    - api.md
+    - guides/
+  - src/  your library
+  - demos/  plain HTML/JS demos
+    - playground/index.html
+  - package.json  your library's
+  - website/  **the site**
+    - astro.config.mjs
+    - package.json
+    - package-lock.json
+    - src/content/docs/docs/index.mdx
+    - wrangler.jsonc
+</FileTree>
+
+<Steps>
+
+1. **Create the site in `website/`.**
+
+   ```sh
+   cd my-lib
+   npx astro-project-site init website --name "My Lib"
+   cd website && npm install
+   ```
+
+2. **Mount `../docs` and serve `../` demos.** In `website/astro.config.mjs` replace the `example/` paths:
+
+   ```js title="website/astro.config.mjs"
+   projectSite({
+     name: 'My Lib',
+     tagline: 'Parses things, quickly.',
+     url: 'https://my-lib.dev',
+     repo: 'https://github.com/me/my-lib',
+     versionFrom: '../package.json', // the header shows your library's version
+     externalDocs: [
+       { dir: '../docs', route: 'reference', label: 'Reference', order: ['getting-started.md', 'api.md'], exclude: ['plans/**'] },
+     ],
+     mirrors: [
+       // /lib/src/… and /lib/demos/… keep their relative layout, so a demo's `import '../src/x.js'` works.
+       { from: '../', to: 'lib', include: ['src', 'demos'], exclude: ['*.test.js'] },
+     ],
+     nav: [
+       { label: 'Docs', href: '/docs/' },
+       { label: 'Playground', href: '/lib/demos/playground/' },
+     ],
+   }),
+   ```
+
+   - `../docs/README.md` becomes `/docs/reference/`, `../docs/api.md` becomes `/docs/reference/api/`.
+     Relative `.md` links between them are rewritten; a link to `../src/parse.js` goes to the file on GitHub.
+   - "Edit this page" on those pages opens `docs/api.md` in your repo, and on local pages
+     `website/src/content/docs/…`: the integration finds the git root and works out the folder.
+   - The mirror never copies the `website/` folder into itself, nor dotfiles or `node_modules`.
+
+   Then remove the starter's stand-ins: delete `website/example/`, drop `'example/docs'` from `files` in
+   `website/docs-gen.config.mjs`, and rewrite `src/content/docs/docs/index.mdx` and
+   `src/content/gallery/hello.yaml`, which link to `/apps/…` (the links validator reports the links; the live
+   examples on that page would load nothing).
+
+3. **Move CI to the repo root.** GitHub only reads workflows from the root `.github/`:
+
+   ```sh
+   mkdir -p .github/workflows && git mv website/.github/workflows/site.yml .github/workflows/site.yml
+   ```
+
+   and tell the reusable workflow where the site is:
+
+   ```yaml title=".github/workflows/site.yml" {4}
+   on: [pull_request, push, workflow_dispatch]
+   jobs:
+     site:
+       uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
+       with: { working-directory: website }
+       permissions: { contents: read, pull-requests: write }
+       secrets:
+         CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+         CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+   ```
+
+   If the site is an npm workspace member of the root `package.json` instead (one lockfile at the root), add
+   `install-directory: .`.
+
+4. **Build it.** `npm run build` in `website/`. The build log lists the mirror (`/lib/ ← ../: N files, …`). The links validator now checks every link in your `docs/`
+   folder; fix what it reports (see [Troubleshooting](/docs/recipes/troubleshooting/#the-build-fails-on-a-link)).
+
+</Steps>
+
+Next: [deploying](/docs/guides/deploying/) (one-time Cloudflare setup), and if the site must live in its own
+repository instead, [Separate site repo](/docs/recipes/separate-repo/).

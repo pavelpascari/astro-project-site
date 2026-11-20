@@ -1,0 +1,221 @@
+---
+title: Live examples
+description: Write an example once; the page shows the code and runs it - inline or in an iframe, editable, or through your own runner module.
+sidebar:
+  order: 4
+---
+
+import { Live } from 'astro-project-site/components';
+import { Aside } from '@astrojs/starlight/components';
+
+`<Live>` turns one piece of code into a code block **and** its running result. The component reads the source back
+from the rendered code block, so what runs is exactly what is shown (and, when editable, what the reader typed).
+Every example on this page is a `<Live>`; the modules they load are in this site's `public/docs-assets/`.
+All props: [Live and runners](/docs/reference/live/).
+
+## Write one
+
+In MDX, put a fenced code block inside `<Live>`, with a blank line after the opening tag and before the closing
+one. MDX never touches the inside of a fence, so `<script>`, `{braces}` and template literals are safe.
+
+````mdx title="src/content/docs/docs/usage.mdx"
+import { Live } from 'astro-project-site/components';
+
+<Live caption="A custom element from a module">
+
+```html title="pill.html"
+<script type="module" src="/docs-assets/status-pill.js"></script>
+<status-pill label="it runs"></status-pill>
+```
+
+</Live>
+````
+
+<Live caption="A custom element from a module">
+
+```html title="pill.html"
+<script type="module" src="/docs-assets/status-pill.js"></script>
+<status-pill label="it runs"></status-pill>
+```
+
+</Live>
+
+The fence's `title="…"` and other Expressive Code meta work as usual. Serve the modules your examples load from
+`public/` or from a [mirror](/docs/guides/mirrors/) of your library's source (`/lib/src/index.js`).
+
+In `.astro` files, or for code kept in a file, pass `code` instead (with `lang` and `title`):
+
+```astro
+---
+import { Live } from 'astro-project-site/components';
+import demo from '../demos/pill.html?raw';
+---
+<Live code={demo} title="pill.html" caption="Straight from a file" />
+```
+
+<Live
+  code={`<script type="module" src="/docs-assets/status-pill.js"></script>\n<status-pill label="from the code prop" tone="purple"></status-pill>`}
+  title="from-a-prop.html"
+  caption="Source passed as the code prop"
+/>
+
+## Inline mode (default): part of the page
+
+`mode="inline"` renders into the page. Scripts run, classic and module, inline and external. Modules are
+evaluated once per page (the browser's module map), so two examples loading the same custom element do not
+define it twice; external classic scripts are de-duplicated the same way.
+
+Inline examples share the page: they can read and change it, a `<style>` applies to the whole page, and ids must
+be unique. This one counts the headings of the page around it:
+
+<Live caption="Reaching the page around the example">
+
+```html
+<p>This page has <strong id="h2-count">…</strong> sections.</p>
+<script>
+  document.getElementById('h2-count').textContent =
+    document.querySelectorAll('.sl-markdown-content h2').length;
+</script>
+```
+
+</Live>
+
+## Iframe mode: isolated
+
+`mode="iframe"` renders in a sandboxed iframe that sizes itself to its content. It receives Starlight's colour and
+font tokens (`--sl-color-*`, `--sl-font`) and follows the theme switch, so it still looks like the page. Use
+`head` for styles or import maps, `modules` for module URLs, and `base` so relative URLs resolve against your
+assets.
+
+<Live
+  mode="iframe"
+  caption="Isolated styles, a base URL, auto-height"
+  base="/docs-assets/"
+  head="<style>button { font: inherit; padding: .3rem .8rem } li { color: var(--sl-color-accent-high) }</style>"
+>
+
+```html
+<script type="module" src="status-pill.js"></script>
+<status-pill label="in an iframe"></status-pill>
+<p><button id="more">Add a line</button> The frame grows with its content.</p>
+<ul id="list"></ul>
+<script>
+  let n = 0;
+  document.getElementById('more').onclick = () => {
+    const li = document.createElement('li');
+    li.textContent = `line ${++n}`;
+    document.getElementById('list').append(li);
+  };
+</script>
+```
+
+</Live>
+
+Errors in the iframe (exceptions, rejected promises, a script or stylesheet that fails to load) are shown under
+the preview.
+
+<Aside type="caution" title="Sandbox">
+The default sandbox is `allow-scripts allow-same-origin allow-popups allow-forms allow-modals`. Same-origin lets
+the frame load your modules without CORS, and also lets it reach the page: it isolates styles and globals, not
+trust. For untrusted code pass `sandbox="allow-scripts"` and serve what it needs with CORS headers.
+</Aside>
+
+## Editable
+
+`editable` turns the code into a text area. Edits re-run the example after `debounce` ms (300 by default), the
+copy button copies what was typed, and **Reset** restores the original. Tab inserts two spaces; Escape then Tab
+leaves the editor. Editable HTML is best in an iframe, which starts from a clean document on every run.
+
+<Live mode="iframe" editable caption="Edit me" base="/docs-assets/">
+
+```html
+<script type="module" src="status-pill.js"></script>
+<status-pill label="edit this label" tone="orange"></status-pill>
+<p>Try <code>tone="green"</code> or <code>tone="red"</code>.</p>
+```
+
+</Live>
+
+## Custom runners
+
+With `runner="/url/of/module.js"` the source is not HTML: it is handed to the module's `run(source, mount, ctx)`,
+which renders it. That is how a library shows its own format (a chart spec, a config, a small language) running.
+The code defaults to `lang="json"`.
+
+```js title="public/docs-assets/runners/bar-chart.js (abridged)"
+/** @type {import('astro-project-site').LiveRunner} */
+export function run(source, mount, ctx) {
+  const spec = JSON.parse(source);             // throw → the error shows under the preview
+  const limit = Number(ctx.options.max ?? 12); // the `options` prop
+  // …build an <svg> from spec.bars, coloured for ctx.theme, animated unless ctx.reducedMotion…
+  mount.append(svg);
+  ctx.status(`${n} bars`, 'ok');               // one line under the preview
+  return () => animations.forEach((a) => a.cancel()); // cleanup before the next run
+}
+```
+
+````mdx
+<Live runner="/docs-assets/runners/bar-chart.js" editable preview="side" options={{ max: 6 }} lazy>
+
+```json title="downloads.json"
+{ "title": "Weekly downloads", "unit": "k", "bars": { "mon": 4, "tue": 7 } }
+```
+
+</Live>
+````
+
+<Live
+  runner="/docs-assets/runners/bar-chart.js"
+  editable
+  lazy
+  preview="side"
+  options={{ max: 6 }}
+  caption="A runner: JSON in, a chart out (editable)"
+  id="bar-chart-playground"
+>
+
+```json title="downloads.json"
+{
+  "title": "Weekly downloads",
+  "unit": "k",
+  "bars": { "mon": 4, "tue": 7, "wed": 9, "thu": 6, "fri": 11 }
+}
+```
+
+</Live>
+
+Add a sixth and seventh bar to see the `max` option's warning; switch the theme to see it re-run with
+`ctx.theme`. When `run` throws, the error is shown and the last good render stays:
+
+<Live runner="/docs-assets/runners/bar-chart.js" mode="iframe" editable caption="A runner error (fix the value)">
+
+```json
+{ "bars": { "ok": 3, "broken": "seven" } }
+```
+
+</Live>
+
+The runner contract (`LiveContext`, when it re-runs, cleanup): [Live and runners](/docs/reference/live/#runner-modules).
+In iframe mode the runner module is loaded inside the iframe once; later edits only call `run` again.
+
+## Layout
+
+- `preview="above"` (default), `"below"` or `"side"` (side by side from about 36rem of width, stacked below that).
+- `caption` adds a caption with a `#` link. The anchor is `id`, else derived from the caption or title
+  (`#live-…`), else from a hash of the source.
+- `height` is the preview's minimum height (number = px), which avoids layout shift; in iframe mode also the
+  frame's height before it measures itself.
+- `lazy` starts the example only when it scrolls near the viewport.
+
+<Live preview="below" caption="Preview below the code" height={60}>
+
+```html
+<p style="margin: 0">The preview can sit under the code, too.</p>
+```
+
+</Live>
+
+## Outside the docs
+
+`<Live>` works on any `BaseLayout` page and in the landing hero (`landing.hero.demo`): `theme.css` supplies the
+`--sl-*` tokens it uses outside Starlight. Its styles are scoped under `live-example`.

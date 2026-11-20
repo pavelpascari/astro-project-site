@@ -1,0 +1,86 @@
+---
+title: Monorepo with external docs
+description: One site for a multi-package repo - each package's docs folder mounted under its own route, examples mirrored, the site as an npm workspace member, CI from the root.
+sidebar:
+  order: 1
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+<FileTree>
+- my-lib/
+  - package.json  `"workspaces": ["packages/*", "website"]`
+  - package-lock.json  one lockfile for everything
+  - packages/
+    - core/
+      - docs/
+      - src/
+      - package.json
+    - react/
+      - docs/
+  - examples/
+  - website/  the site, a workspace member
+</FileTree>
+
+```js title="website/astro.config.mjs"
+projectSite({
+  name: 'My Lib',
+  tagline: 'Parsing for every framework.',
+  url: 'https://my-lib.dev',
+  repo: 'https://github.com/me/my-lib',
+  versionFrom: '../packages/core/package.json',
+  externalDocs: [
+    { dir: '../packages/core/docs', route: 'core', label: 'Core', order: ['getting-started.md'] },
+    { dir: '../packages/react/docs', route: 'react', label: 'React' },
+  ],
+  mirrors: [
+    // Examples import the built package from ../packages/core/src, so mirror both under one prefix.
+    { from: '../', to: 'x', include: ['examples', 'packages/core/src'], exclude: ['*.test.*'] },
+  ],
+}),
+```
+
+- Each package's `docs/README.md` is its group's overview: `/docs/core/`, `/docs/react/`. Groups follow the order
+  of `externalDocs`.
+- Links **between** mounts are rewritten too: `packages/react/docs/hooks.md` can link
+  `../../core/docs/api.md#parse` and it becomes `/docs/core/api/#parse`.
+- A link to `../src/parse.ts` from a mounted page goes to the file on GitHub, at `repoBranch`.
+- Edit links open the right file in the right package.
+
+## Install and CI
+
+Add `website` to the root `workspaces`, install from the root (`npm install`), and run the site with
+`npm run dev -w website`. In CI, `npm ci` must run at the root (where the lockfile is) and the build in
+`website/`:
+
+```yaml title=".github/workflows/site.yml"
+jobs:
+  site:
+    uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0
+    with:
+      working-directory: website
+      install-directory: .
+    permissions: { contents: read, pull-requests: write }
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+```
+
+`wrangler` must be a devDependency of `website` (or the root) so the lockfile pins it; the deploy job will not
+download one.
+
+## Generated API tables per package
+
+One `website/docs-gen.config.mjs` can fill blocks in every package's docs:
+
+```js title="website/docs-gen.config.mjs"
+export default {
+  files: ['../packages/core/docs', '../packages/react/docs', 'src/content/docs'],
+  generators: { exports: async ({ args, root }) => { /* … read path.resolve(root, args.from) … */ } },
+};
+```
+
+Paths in `args` resolve against `root`, the folder of the config. See [Docs generation](/docs/guides/docs-generation/).
+
+This site is itself an example: it lives in `site/` of a workspace repo, mounts `../starters/default/example/docs`
+and runs a generator over the package in `../packages/astro-project-site`.

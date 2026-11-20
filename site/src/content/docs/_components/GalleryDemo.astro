@@ -1,0 +1,19 @@
+---
+// Docs helper: the real gallery components, fed from this site's gallery collection, for the Gallery guide.
+import { GalleryGrid, GalleryFilters, galleryItems, distinct } from 'astro-project-site/components';
+
+interface Props {
+  /** Show kind/tag filters above the grid. */
+  filters?: boolean;
+  limit?: number;
+}
+const { filters = false, limit } = Astro.props;
+const items = (await galleryItems()).slice(0, limit);
+const kinds = distinct(items, (item) => [item.data.kind]);
+const tags = distinct(items, (item) => item.data.tags).sort();
+---
+
+<div class="site-container">
+  {filters && <GalleryFilters kinds={kinds} tags={tags} target="docs-gallery-demo" total={items.length} />}
+  <GalleryGrid items={items} id="docs-gallery-demo" headingLevel={4} minWidth="12rem" />
+</div>

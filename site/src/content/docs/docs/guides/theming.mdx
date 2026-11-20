@@ -1,0 +1,131 @@
+---
+title: Theming
+description: Restyle the whole site - landing, gallery and docs - from a few CSS tokens, for light and dark, with custom CSS and fonts.
+sidebar:
+  order: 8
+---
+
+import { Live } from 'astro-project-site/components';
+import { Aside } from '@astrojs/starlight/components';
+
+Every page, the docs included, is styled from a few `--site-*` CSS custom properties in
+`astro-project-site/theme.css`. Starlight's own palette (`--sl-color-*`), fonts and header height are mapped from
+them, so one set of tokens restyles the landing page, the gallery, the docs and the live examples together.
+The full list with defaults: [Theme tokens](/docs/reference/theme-tokens/).
+
+## Try it
+
+The example below previews a set of tokens on a miniature page. Edit the values; **Apply to this page** sets them
+on this page's `<html>`, so the docs around you (sidebar, links, code, the header) restyle live. Reset, Restore,
+or leaving the page undoes it.
+
+<Live
+  runner="/docs-assets/runners/theme-tokens.js"
+  lang="css"
+  editable
+  options={{ apply: true }}
+  caption="Brand tokens, previewed and applied"
+  id="theme-preview"
+>
+
+```css title="tokens.css"
+--site-accent: #ffb347;
+--site-bg: #17151d;
+--site-surface: #211e29;
+--site-text: #f2eee8;
+--site-muted: #a9a3b4;
+--site-border: #322e3c;
+--site-code-bg: #0e0c12;
+--site-code-text: #f2eee8;
+--site-radius: 4px;
+--site-font-heading: Georgia, serif;
+```
+
+</Live>
+
+The derived tokens (`--site-accent-soft`, `--site-accent-strong`, `--site-link`, `--site-on-accent`, …) are
+recomputed from the ones you set. Applied inline on `<html>`, the values win in both themes; in a stylesheet you
+set each theme separately, below.
+
+## Your stylesheet
+
+List a CSS file in `customCss`; it loads on every page after `theme.css`:
+
+```js title="astro.config.mjs"
+customCss: ['./src/styles/brand.css'],
+```
+
+```css title="src/styles/brand.css"
+/* Dark theme: the default when the OS has no preference. */
+:root {
+  --site-accent: #ffb347;
+  --site-bg: #17151d;
+  --site-surface: #211e29;
+  --site-text: #f2eee8;
+  --site-muted: #a9a3b4;
+  --site-border: #322e3c;
+  --site-radius: 4px;
+}
+
+/* Light theme. */
+:root[data-theme='light'] {
+  --site-accent: #c2541b;
+  --site-bg: #fbf8f2;
+  --site-surface: #f3ede2;
+  --site-text: #23212c;
+  --site-muted: #5d5a6b;
+  --site-border: #e4ded3;
+}
+```
+
+- **Brand tokens** (set these): `--site-accent`, `--site-bg`, `--site-surface`, `--site-text`, `--site-muted`,
+  `--site-border`, `--site-code-bg`, `--site-code-text`; fonts `--site-font-body`, `--site-font-heading`,
+  `--site-font-mono`; shape and space `--site-radius`, `--site-space`, `--site-max-width`,
+  `--site-header-height`.
+- **Derived tokens** (usually leave alone): `--site-accent-soft`, `--site-accent-strong`, `--site-on-accent`,
+  `--site-link`, `--site-focus`, `--site-radius-sm`, `--site-shadow`.
+
+Only the accent? `theme: { accent: '#c2541b', accentDark: '#ffb347' }` in the config does that without CSS, and
+wins over a `customCss` value for `--site-accent`.
+
+## Light and dark
+
+The theme is `<html data-theme="light|dark">`, shared with Starlight: the switch in the header (on every page)
+stores the choice in `localStorage['starlight-theme']`, so a choice made on the landing page carries over to the
+docs and back. "Auto" follows the OS. Write `:root` for dark and `:root[data-theme='light']` for light, like
+`theme.css` does.
+
+## Fonts
+
+The defaults are system font stacks. To use a web font, self-host it (no third-party request), declare it, and
+point the tokens at it:
+
+```css title="src/styles/brand.css"
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/InterVariable.woff2') format('woff2'); /* public/fonts/InterVariable.woff2 */
+  font-weight: 100 900;
+  font-display: swap;
+}
+:root {
+  --site-font-body: 'Inter', system-ui, sans-serif;
+  --site-font-heading: 'Inter', system-ui, sans-serif;
+}
+```
+
+Check the font's licence allows redistribution (most open fonts, e.g. OFL, do) and keep its licence file next to
+it.
+
+## More than tokens
+
+`customCss` files are ordinary global CSS on every page, so you can style anything. Two more hooks:
+
+- **Docs-only CSS:** `starlight: { customCss: ['./src/styles/docs.css'] }` is appended after yours, on docs pages
+  only.
+- **Components:** the built-in components keep their styles scoped; to change markup, [override
+  them](/docs/guides/overriding-components/).
+
+<Aside>
+Pages outside both `BaseLayout` and Starlight (a bare `src/pages/*.astro`) do not get `theme.css`; import
+`astro-project-site/theme.css` there.
+</Aside>

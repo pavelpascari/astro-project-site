@@ -1,0 +1,52 @@
+---
+title: Search and analytics
+description: Pagefind search out of the box, swapping in another search through Starlight, and adding an analytics script to every page.
+sidebar:
+  order: 3
+---
+
+## Search
+
+Starlight's **Pagefind** search is on by default: the index is built by `astro build` and covers every docs page,
+local and mounted. The shared header shows Starlight's search box on docs pages. Exclude one page with frontmatter
+`pagefind: false`; turn search off with:
+
+```js
+starlight: { pagefind: false },   // the header hides the search box
+```
+
+**Another search provider** (Algolia DocSearch, …) usually comes as a Starlight plugin that replaces Starlight's
+`Search` component. Add the plugin through `starlight.plugins`. The shared header only knows about a `Search`
+override set in `starlight.components`, not one a plugin sets, so name the plugin's component there too:
+
+```js
+import docsearch from '@astrojs/starlight-docsearch';
+// …
+starlight: {
+  plugins: [docsearch({ appId: '…', apiKey: '…', indexName: '…' })],
+  components: { Search: '<the search component the plugin documents>' },
+  pagefind: false,
+},
+```
+
+## Analytics
+
+`starlight.head` adds tags to **docs pages only**; the landing page and gallery are not Starlight pages. To put a
+script on every page, add it to a [Footer override](/docs/guides/overriding-components/#wrap-the-original),
+which renders on every page, docs included:
+
+```astro title="src/components/Footer.astro"
+---
+import { SiteFooter } from 'astro-project-site/components';
+const { variant } = Astro.props;
+---
+<SiteFooter variant={variant} />
+<script is:inline defer data-domain="my-lib.dev" src="https://plausible.io/js/script.js"></script>
+```
+
+```js
+components: { Footer: './src/components/Footer.astro' },
+```
+
+If your `_headers` has a strict `Content-Security-Policy`, allow the analytics origin in `script-src` and
+`connect-src`.
