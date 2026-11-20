@@ -232,7 +232,8 @@ jobs:
         if: steps.creds.outputs.ok && inputs.worker-name != ''
         env:
           NAME: ${{ inputs.worker-name }}
-        run: sed -i -E "0,/\"name\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/s//\"name\": \"$NAME\"/" wrangler.jsonc
+        run: |
+          sed -i -E "0,/\"name\"[[:space:]]*:[[:space:]]*\"[^\"]*\"/s//\"name\": \"$NAME\"/" wrangler.jsonc
 
       - name: Upload preview version
         id: preview
