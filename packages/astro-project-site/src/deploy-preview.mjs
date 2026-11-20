@@ -3,7 +3,8 @@
 //
 //   project-site deploy:preview [--alias pr-12] [--message "..."] [--dry-run] [-- <extra wrangler args>]
 //
-// wrangler is the project's own (devDependency), never this package's; without one, `npx wrangler` is used.
+// wrangler is the project's own (devDependency, pinned by its lockfile), never this package's, and never fetched
+// from the registry here: this runs with deploy credentials.
 //
 // The alias defaults to the current git branch. The same alias always maps to the same URL,
 // https://<alias>-<worker-name>.<your-subdomain>.workers.dev, and each upload moves it to the newest version.
@@ -39,9 +40,8 @@ export function deployPreview(/** @type {string[]} */ argv) {
   args.push(...positionals);
 
   console.log(`Uploading a preview version of "${workerName}" with alias "${alias}"…`);
-  const run = wrangler
-    ? spawnSync(process.execPath, [wrangler, ...args], { stdio: 'inherit', env: { ...process.env, WRANGLER_OUTPUT_FILE_PATH: outFile } })
-    : spawnSync('npx', ['--yes', 'wrangler@4', ...args], { stdio: 'inherit', shell: process.platform === 'win32', env: { ...process.env, WRANGLER_OUTPUT_FILE_PATH: outFile } });
+  if (!wrangler) fail('wrangler is not installed in this project. Add it as a devDependency: npm i -D wrangler');
+  const run = spawnSync(process.execPath, [wrangler, ...args], { stdio: 'inherit', env: { ...process.env, WRANGLER_OUTPUT_FILE_PATH: outFile } });
   if (run.status !== 0) fail(`wrangler exited with ${run.status ?? run.signal}.`);
   if (values['dry-run']) return;
 

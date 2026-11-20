@@ -218,8 +218,8 @@ project-site deploy:preview [--alias pr-12] [--message "…"] [--dry-run] [-- <w
   `docs-gen.config.mjs` (`export default { files: [...], generators: { name: async ({ args, file, relFile, root, current }) => string } }`).
   `--check` changes nothing and exits 1 with a diff when a block is stale.
 - **deploy:preview** uploads `dist/` as a Cloudflare Worker version under a stable preview alias (default: the git
-  branch). It uses the project's own `wrangler` (a devDependency), or `npx wrangler@4`; this package does not depend
-  on wrangler.
+  branch). It uses the project's own `wrangler` (a devDependency) and fails if there is none; this package does not
+  depend on wrangler.
 
 ## Deploys and CI
 
@@ -227,14 +227,20 @@ The starter deploys as a static-assets Worker (`wrangler.jsonc`, `public/_header
 
 ```yaml
 on: [pull_request, push, workflow_dispatch]
-jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@main, permissions: { contents: read, pull-requests: write }, secrets: inherit } }
+jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0, permissions: { contents: read, pull-requests: write }, secrets: { CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" } } }
 ```
 
+`init` pins the workflow to the release it came from (`@v<version>`); a full commit SHA is the stricter option.
+Pass only the secrets the workflow declares, never `secrets: inherit`.
+
 The reusable workflow type-checks, builds, runs `docs:check`, and deploys: a preview per PR (sticky comment),
-`next` for `main`, production for `v*` tags. Inputs: `working-directory`, `install-directory`, `worker-name`,
-`source-repo`/`source-ref` (a second repo checked out beside this one, for mirrors or docs that live there),
-`node-version`, `production`, `deploy`. Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
-`SOURCE_REPO_TOKEN`. Without the Cloudflare secrets it builds and skips the deploy.
+`next` for `main`, production for `v*` tags. Fork PRs never reach the deploy job. Everything that runs with the
+Cloudflare secrets (wrangler, `project-site deploy:preview`) is the lockfile-pinned copy from the project's
+`node_modules` (`npx --no-install`); a project without wrangler in its devDependencies fails with a clear message
+instead of downloading one. Inputs: `working-directory`, `install-directory`, `worker-name`, `source-repo`/`source-ref`
+(a second repo checked out beside this one, for mirrors or docs that live there), `node-version`, `production`,
+`deploy`. Secrets (all optional): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SOURCE_REPO_TOKEN`. Without the
+Cloudflare secrets it builds and skips the deploy.
 
 ## Licences
 

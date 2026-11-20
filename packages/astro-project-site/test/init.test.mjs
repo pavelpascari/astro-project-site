@@ -30,6 +30,10 @@ test('init copies the starter and names it', async () => {
   assert.match(readFileSync(path.join(dir, 'wrangler.jsonc'), 'utf8'), /"name": "pixel-docs"/);
   assert.match(readFileSync(path.join(dir, 'astro.config.mjs'), 'utf8'), /name: 'Pixel Docs',/);
   assert.ok(existsSync(path.join(dir, '.gitignore')));
+  const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+  const workflow = readFileSync(path.join(dir, '.github/workflows/site.yml'), 'utf8');
+  assert.match(workflow, new RegExp(`/deploy\\.yml@v${version.replace(/\./g, '\\.')},`));
+  assert.ok(!workflow.includes('inherit'));
   assert.ok(existsSync(path.join(dir, 'src/content/gallery/hello.png')));
 });
 

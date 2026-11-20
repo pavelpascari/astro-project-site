@@ -57,6 +57,8 @@ export function namers({ slug, title, packageSpec }) {
       return `${JSON.stringify(json, null, 2)}\n`;
     },
     'wrangler.jsonc': (text) => text.replace(/"name":\s*"[^"]*"/, `"name": "${slug}"`),
+    // The CI workflow calls this release's reusable workflow.
+    '.github/workflows/site.yml': (text) => text.replace(/(astro-project-site\/\.github\/workflows\/deploy\.yml)@[\w.-]+/, `$1@v${pkg.version}`),
     'astro.config.mjs': (text) => text.replace(/name: '[^']*'/, () => `name: '${title.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`),
   };
 }
