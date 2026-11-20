@@ -83,7 +83,7 @@ const config = {
       <noscript><p class="live-ex__noscript">This example runs in the browser and needs JavaScript.</p></noscript>
     </div>
     <div class="live-ex__bar not-content" hidden>
-      <p class="live-ex__status" role="status" aria-live="polite"></p>
+      <div class="live-ex__status" role="status" aria-live="polite"></div>
       {editable && <button type="button" class="live-ex__reset" disabled>Reset</button>}
     </div>
     <div class="live-ex__code">
@@ -251,6 +251,24 @@ const config = {
     font-family: var(--__sl-font-mono, var(--sl-font-mono, ui-monospace, monospace));
     font-size: var(--sl-text-xs, 0.8125rem);
     line-height: 1.5;
+  }
+  .live-ex__detail {
+    display: inline;
+  }
+  .live-ex__detail summary {
+    display: inline;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .live-ex__detail[open] code {
+    display: block;
+    margin-top: 0.25rem;
+  }
+  .live-ex__retry + .live-ex__reset {
+    margin-left: 0.5rem;
+  }
+  .live-ex__reset[hidden] {
+    display: none;
   }
   .live-ex__status[data-level='ok'] {
     color: var(--sl-color-green-high, var(--sl-color-gray-2, GrayText));
