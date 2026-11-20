@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest a new option, component, CLI command or improvement.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        astro-project-site is maintained by one person, so the most helpful requests start from a concrete problem on a real project site.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What are you trying to do on your project's site, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: How you would like it to work, for example the option or component API you have in mind.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and workarounds
+      description: What you tried, or how you work around it now (a slot override, your own page, plain Astro or Starlight).
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you open a pull request for it?
+      options:
+        - "Yes"
+        - "Maybe, with some guidance"
+        - "No"
+    validations:
+      required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/pavelpascari/astro-project-site/security/advisories/new
+    about: Please report security problems privately, never in a public issue. See SECURITY.md for the policy.
+  - name: Documentation
+    url: https://github.com/pavelpascari/astro-project-site/tree/main/packages/astro-project-site#readme
+    about: Options, exports, the CLI and the deploy workflow are documented in the package README.
