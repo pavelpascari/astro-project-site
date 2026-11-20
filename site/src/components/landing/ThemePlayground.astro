@@ -45,19 +45,15 @@ const presets = Object.fromEntries(Object.entries(palettes).map(([k, p]) => [k, 
 </theme-playground>
 
 <script>
-  // The controls edit the playground's code, which the Live example re-runs. The editor is the <textarea> that
-  // <Live editable> creates; editing it and firing `input` is the same path as typing.
+  // The controls edit the playground's code through the <live-example> element's public getSource()/setSource(),
+  // which re-runs it the same way typing does.
+  import type { LiveExampleElement } from 'astro-project-site';
   class ThemePlayground extends HTMLElement {
     connectedCallback() {
       const presets = JSON.parse(this.dataset.presets ?? '{}') as Record<string, string>;
-      const live = this.querySelector('live-example')!;
-      const editor = () => live.querySelector<HTMLTextAreaElement>('.live-ex__editor');
-      const setCode = (code: string) => {
-        const ta = editor();
-        if (!ta) return;
-        ta.value = code;
-        ta.dispatchEvent(new Event('input', { bubbles: true }));
-      };
+      const live = this.querySelector('live-example') as LiveExampleElement;
+      const getCode = () => live.getSource?.() ?? '';
+      const setCode = (code: string) => live.setSource?.(code);
       const theme = () => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark');
 
       const presetButtons = [...this.querySelectorAll<HTMLButtonElement>('[data-preset]')];
@@ -75,19 +71,18 @@ const presets = Object.fromEntries(Object.entries(palettes).map(([k, p]) => [k, 
       const accentRe = /--site-accent\s*:\s*([^;]*);/;
       const picker = this.querySelector<HTMLInputElement>('[data-accent]')!;
       const syncPicker = () => {
-        const body = blockRe().exec(editor()?.value ?? '')?.[2] ?? '';
+        const body = blockRe().exec(getCode())?.[2] ?? '';
         const v = accentRe.exec(body)?.[1]?.trim();
         if (v && /^#[0-9a-f]{6}$/i.test(v)) picker.value = v.toLowerCase();
       };
       picker.addEventListener('focus', syncPicker);
       picker.addEventListener('input', () => {
-        const ta = editor();
-        if (!ta) return;
+        const current = getCode();
         const v = picker.value;
-        const next = ta.value.replace(blockRe(), (_all, open: string, body: string) =>
+        const next = current.replace(blockRe(), (_all, open: string, body: string) =>
           `${open}${accentRe.test(body) ? body.replace(accentRe, `--site-accent: ${v};`) : `\n  --site-accent: ${v};${body}`}}`,
         );
-        if (next === ta.value) return;
+        if (next === current) return;
         setCode(next);
         for (const o of presetButtons) o.setAttribute('aria-pressed', 'false');
       });

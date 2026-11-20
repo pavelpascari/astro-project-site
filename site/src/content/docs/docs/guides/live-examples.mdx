@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-import { Live } from 'astro-project-site/components';
+import Live from 'astro-project-site/live';
 import { Aside } from '@astrojs/starlight/components';
 
 `<Live>` turns one piece of code into a code block **and** its running result. The component reads the source back
@@ -19,7 +19,7 @@ In MDX, put a fenced code block inside `<Live>`, with a blank line after the ope
 one. MDX never touches the inside of a fence, so `<script>`, `{braces}` and template literals are safe.
 
 ````mdx title="src/content/docs/docs/usage.mdx"
-import { Live } from 'astro-project-site/components';
+import Live from 'astro-project-site/live';
 
 <Live caption="A custom element from a module">
 
@@ -47,7 +47,7 @@ In `.astro` files, or for code kept in a file, pass `code` instead (with `lang` 
 
 ```astro
 ---
-import { Live } from 'astro-project-site/components';
+import Live from 'astro-project-site/live';
 import demo from '../demos/pill.html?raw';
 ---
 <Live code={demo} title="pill.html" caption="Straight from a file" />

@@ -29,6 +29,7 @@ Types and descriptions come from `src/index.d.ts`, defaults and required fields 
 | `mirrors` | `Mirror[]` | `[]` | Static HTML/JS folders copied into the build byte for byte (and served from disk in dev). |
 | `install` | `string` |  | Install command shown on the landing page. |
 | `favicon` | `string` | `"/favicon.svg"` | Favicon path under public/. Default `/favicon.svg`. |
+| `head` | `HeadTag[]` | `[]` | Tags added to the `<head>` of every page: landing, gallery, your BaseLayout pages and docs. |
 | `ogImage` | `string` |  | Default social image: a path under public/ (1200×630) or an absolute URL. |
 | `ogImageFor` | `string` |  | Module (relative to the project root) whose default export is an `OgImageHook`, for per-page images. |
 | `theme` | `object` | `{}` | Accent colour overrides. For more, override the `--site-*` tokens in `customCss`. |

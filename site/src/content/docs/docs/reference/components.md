@@ -25,7 +25,7 @@ Each component is shown rendered, with usage, in the guides:
 ### Live examples
 #### Live
 
-A live example: the code is written once, shown with Expressive Code and executed. Docs: the "Live examples" page of the astro-project-site docs.
+A live example: the code is written once, shown with Expressive Code and executed. Docs: the "Live examples" page of the astro-project-site docs. Expressive Code's &lt;Code>, imported without Starlight's component barrel and its stylesheet (see virtual.mjs).
 
 | Prop | Type | Default | Description |
 |---|---|---|---|

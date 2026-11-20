@@ -7,10 +7,12 @@ interface Props {
   label?: string;
 }
 const { command, label = 'Install command' } = Astro.props;
+// Each word stays whole, so narrow screens wrap between words (never inside `my-site`). textContent is unchanged.
+const words = command.split(' ');
 ---
 
 <div class="install" role="group" aria-label={label}>
-  <code><span class="prompt" aria-hidden="true">$</span> <span data-command>{command}</span></code>
+  <code><span class="prompt" aria-hidden="true">$</span> <span data-command>{words.map((w, i) => <>{i > 0 && ' '}<span class="word">{w}</span></>)}</span></code>
   <button type="button" class="copy" data-copy hidden>
     <span data-copy-label>Copy</span>
   </button>
@@ -57,9 +59,13 @@ const { command, label = 'Install command' } = Astro.props;
   }
   code {
     font-size: 0.9375rem;
-    white-space: nowrap;
-    overflow-x: auto;
+    /* Wrap at spaces on narrow screens instead of hiding the end of the command in a scroll box. */
+    white-space: normal;
+    overflow-wrap: anywhere;
     min-width: 0;
+  }
+  .word {
+    white-space: nowrap;
   }
   .prompt {
     opacity: 0.55;

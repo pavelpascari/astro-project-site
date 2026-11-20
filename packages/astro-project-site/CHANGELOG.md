@@ -5,6 +5,7 @@
 Responsive design and accessibility pass, checked in Chromium, Firefox and WebKit from 320px phones to 2560px
 screens, at 200%/400% zoom and with a large default font.
 
+- `InstallCommand` wraps between words on narrow screens instead of cutting the command off in a scroll box.
 - Landing and gallery pages no longer load Starlight's base stylesheet (~64 KB): `<Live>` imports Expressive
   Code's `<Code>` directly (new internal virtual module `virtual:astro-project-site/code`).
 - Small-screen site menu: closes when focus leaves it, announces `aria-expanded` immediately, and scrolls inside
