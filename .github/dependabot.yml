@@ -1,0 +1,38 @@
+# Dependabot: weekly, grouped updates for the SHA-pinned actions and the npm workspace.
+#
+# github-actions covers .github/workflows/ only. starters/default/.github/workflows/site.yml is left out on
+# purpose: its `deploy.yml@v<version>` pin is rewritten by `project-site init` to the release it came from.
+# Projects created with `init` can enable Dependabot themselves to bump that pin.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Let new releases settle before they are proposed (a hijacked release is usually caught within days).
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
+
+  # The root package-lock.json covers every workspace member (packages/*, site, starters/*).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: deps
+    # Minor and patch updates in one PR; each major update gets its own.
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]

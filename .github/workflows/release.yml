@@ -1,43 +1,48 @@
 # Release: push a signed tag `v<version>` matching packages/astro-project-site/package.json.
 #
-#   1. checks the tag against the package version, runs the tests and the full build
-#   2. packs the package and writes its SHA-256
-#   3. creates the GitHub release (pre-release for versions with a `-`), with the tarball, the checksum and the
-#      version's CHANGELOG section as notes
-#   4. publishes the same tarball to npm through trusted publishing (OIDC: no token, no one-time code), `--tag beta`
-#      for pre-releases and `latest` otherwise. npm adds provenance on its own once the repository is public.
-#      One-time setup on npmjs.com: astro-project-site → Settings → Trusted publishing → GitHub Actions,
-#      user `pavelpascari`, repository `astro-project-site`, workflow `release.yml`.
+#   build (read-only token, no OIDC):
+#     1. checks the tag against the package version, runs the tests and the full build
+#     2. packs the package, writes its SHA-256 and extracts the version's CHANGELOG section
+#   publish (needs build; runs no project or dependency code: no checkout, no npm install):
+#     3. creates the GitHub release (pre-release for versions with a `-`), with the tarball, the checksum and the
+#        version's CHANGELOG section as notes
+#     4. publishes the same tarball to npm through trusted publishing (OIDC: no token, no one-time code), `--tag beta`
+#        for pre-releases and `latest` otherwise. npm adds provenance on its own once the repository is public.
+#        One-time setup on npmjs.com: astro-project-site → Settings → Trusted publishing → GitHub Actions,
+#        user `pavelpascari`, repository `astro-project-site`, workflow `release.yml` (keep this file name).
+# No dependency cache anywhere in this workflow (cache poisoning would reach the published tarball).
 name: Release
 
 on:
   push:
     tags: ['v*']
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  release:
+  build:
+    name: build # = the job id, so check names stay "build"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write   # create the release and upload assets
-      id-token: write   # npm trusted publishing (OIDC) and provenance
+      contents: read # check out the repository
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      dist_tag: ${{ steps.version.outputs.dist_tag }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      # Trusted publishing needs npm 11.5.1+ (Node 24 ships it). No dependency cache in release builds.
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
 
       - name: Tag matches the package version
         id: version
@@ -60,7 +65,6 @@ jobs:
         run: npm run build
 
       - name: Pack
-        id: pack
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -70,7 +74,6 @@ jobs:
           file="astro-project-site-$VERSION.tgz"
           test -f "$file"
           sha256sum "$file" > "$file.sha256"
-          echo "file=$RUNNER_TEMP/release/$file" >> "$GITHUB_OUTPUT"
 
       - name: Release notes from the CHANGELOG
         env:
@@ -80,18 +83,59 @@ jobs:
             $0 ~ "^## " v "( |$)" { on = 1; next }
             on && /^## / { exit }
             on { print }
-          ' packages/astro-project-site/CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-          if [ ! -s "$RUNNER_TEMP/notes.md" ]; then
+          ' packages/astro-project-site/CHANGELOG.md > "$RUNNER_TEMP/release/notes.md"
+          if [ ! -s "$RUNNER_TEMP/release/notes.md" ]; then
             echo "::error title=No changelog section::packages/astro-project-site/CHANGELOG.md has no '## $VERSION' section"
             exit 1
           fi
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: publish # = the job id, so check names stay "publish"
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Optional, recommended: a `release` environment with required reviewers and a v* deployment-tag rule. If you
+    # enable it, also enter `release` as the environment on npm's trusted publisher, or publishing is refused.
+    # environment: release
+    permissions:
+      contents: write # create the GitHub release and upload its assets
+      id-token: write # npm trusted publishing (OIDC) and provenance
+    steps:
+      # Trusted publishing needs npm 11.5.1+ (Node 24 ships it).
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: ${{ runner.temp }}/release
+
+      - name: Verify the tarball
+        id: file
+        working-directory: ${{ runner.temp }}/release
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          file="astro-project-site-$VERSION.tgz"
+          sha256sum --check "$file.sha256"
+          echo "file=$PWD/$file" >> "$GITHUB_OUTPUT"
 
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
-          FILE: ${{ steps.pack.outputs.file }}
-          PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          FILE: ${{ steps.file.outputs.file }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
         run: |
           flags=()
           [ "$PRERELEASE" = true ] && flags+=(--prerelease)
@@ -99,14 +143,14 @@ jobs:
             gh release upload "$TAG" "$FILE" "$FILE.sha256" --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" "$FILE" "$FILE.sha256" --repo "$GITHUB_REPOSITORY" \
-              --title "astro-project-site $TAG" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag "${flags[@]}"
+              --title "astro-project-site $TAG" --notes-file "$RUNNER_TEMP/release/notes.md" --verify-tag "${flags[@]}"
           fi
 
       - name: Publish to npm (trusted publishing)
         env:
-          FILE: ${{ steps.pack.outputs.file }}
-          DIST_TAG: ${{ steps.version.outputs.dist_tag }}
-          VERSION: ${{ steps.version.outputs.version }}
+          FILE: ${{ steps.file.outputs.file }}
+          DIST_TAG: ${{ needs.build.outputs.dist_tag }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
           npm --version
           if npm view "astro-project-site@$VERSION" version > /dev/null 2>&1; then

@@ -6,6 +6,7 @@
 #   jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.0,
 #                   permissions: { contents: read, pull-requests: write },
 #                   secrets: { CLOUDFLARE_API_TOKEN: ..., CLOUDFLARE_ACCOUNT_ID: ... } } }
+#   permissions: {}
 #
 # Pin it to a release tag (or, stricter, a full commit SHA), and pass only the secrets below, never `inherit`.
 # Every tool that runs with the Cloudflare secrets (wrangler, project-site) is the lockfile-pinned copy from the
@@ -17,6 +18,14 @@
 #   manual run     → production if `production` is true, otherwise a preview aliased to the branch name
 #   other pushes   → checks and build only
 # Deploys are skipped (not failed) for fork PRs and when CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set.
+#
+# Security model:
+#   - build runs the project's code (npm ci, astro) with a read-only token and no secrets.
+#   - deploy holds the Cloudflare secrets; it never runs for fork PRs, and the secrets are only in the
+#     environment of the steps that talk to Cloudflare (not of `npm ci`). Its npm install uses no cache.
+#   - pull_request_target and workflow_run callers are refused: they would run with secrets on untrusted input.
+#   - inputs are validated before use: folders must stay inside the repository, the worker name is a slug,
+#     source-repo is owner/name.
 name: Site
 
 on:
@@ -66,8 +75,7 @@ on:
         description: The preview or production URL, when deployed
         value: ${{ jobs.deploy.outputs.url }}
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: site-${{ github.workflow }}-${{ github.ref }}
@@ -75,8 +83,11 @@ concurrency:
 
 jobs:
   build:
+    name: build # = the job id, so check names stay "build"
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read # check out the repository
     outputs:
       target: ${{ steps.target.outputs.target }}
       alias: ${{ steps.target.outputs.alias }}
@@ -85,7 +96,45 @@ jobs:
         # The repository is checked out into a folder named after it, so source-repo can sit beside it.
         working-directory: ${{ github.event.repository.name }}/${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v7
+      # Before anything reads an input: every later step (and the deploy job) relies on these checks.
+      - name: Validate the trigger and inputs
+        working-directory: .
+        env:
+          EVENT: ${{ github.event_name }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          WORKING_DIR: ${{ inputs.working-directory }}
+          INSTALL_DIR: ${{ inputs.install-directory }}
+          WORKER_NAME: ${{ inputs.worker-name }}
+          SOURCE_REPO: ${{ inputs.source-repo }}
+          SOURCE_REF: ${{ inputs.source-ref }}
+        run: |
+          fail() { echo "::error title=Invalid input::$1"; exit 1; }
+          case "$EVENT" in
+            pull_request_target|workflow_run)
+              fail "this workflow does not run on $EVENT: it would build untrusted code with secrets. Call it from pull_request." ;;
+          esac
+          # A folder relative to the repository root that stays inside it.
+          inside_repo() {
+            case "$2" in /*|\~*) fail "$1 must be relative to the repository root, got '$2'" ;; esac
+            [[ "$2" =~ ^[A-Za-z0-9._/@+-]*$ ]] || fail "$1 may only contain letters, digits and . _ / @ + -, got '$2'"
+            local resolved
+            resolved=$(realpath -m --relative-to="$PWD/repo" "$PWD/repo/$2")
+            case "$resolved" in ..|../*) fail "$1 must stay inside the repository, got '$2'" ;; esac
+          }
+          inside_repo working-directory "$WORKING_DIR"
+          inside_repo install-directory "$INSTALL_DIR"
+          if [ -n "$WORKER_NAME" ] && ! [[ "$WORKER_NAME" =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]]; then
+            fail "worker-name must be lowercase letters, digits and dashes (max 63, no leading or trailing dash), got '$WORKER_NAME'"
+          fi
+          if [ -n "$SOURCE_REPO" ]; then
+            [[ "$SOURCE_REPO" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$ ]] || fail "source-repo must be owner/name, got '$SOURCE_REPO'"
+            name=${SOURCE_REPO#*/}
+            case "$name" in .|..) fail "source-repo has an invalid name: '$SOURCE_REPO'" ;; esac
+            [ "$name" != "$REPO_NAME" ] || fail "source-repo '$SOURCE_REPO' has the same name as this repository; both are checked out by name side by side"
+            [[ "$SOURCE_REF" =~ ^[A-Za-z0-9._/@+-]+$ && "$SOURCE_REF" != -* ]] || fail "source-ref is not a valid branch, tag or SHA: '$SOURCE_REF'"
+          fi
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ${{ github.event.repository.name }}
           persist-credentials: false
@@ -100,7 +149,7 @@ jobs:
 
       - name: Check out ${{ inputs.source-repo }}
         if: inputs.source-repo != ''
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ inputs.source-repo }}
           ref: ${{ inputs.source-ref }}
@@ -117,7 +166,9 @@ jobs:
           INSTALL_DIR: ${{ inputs.install-directory || inputs.working-directory }}
         run: echo "install=$(realpath -m --relative-to=. "$REPO_DIR/$INSTALL_DIR")" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v7
+      # The npm cache is fine here: this job holds no secrets and deploys nothing, and npm ci checks every package
+      # against package-lock.json's integrity hashes.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ inputs.node-version }}
           cache: npm
@@ -159,7 +210,7 @@ jobs:
             echo "target=none" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: dist
           path: ${{ github.event.repository.name }}/${{ inputs.working-directory }}/dist
@@ -168,6 +219,7 @@ jobs:
           retention-days: 7
 
   deploy:
+    name: deploy # = the job id, so check names stay "deploy"
     needs: build
     # Fork PRs get no secrets; don't even try.
     if: >-
@@ -179,24 +231,26 @@ jobs:
     concurrency:
       group: deploy-${{ github.repository }}-${{ needs.build.outputs.target == 'production' && 'production' || needs.build.outputs.alias }}
       cancel-in-progress: ${{ needs.build.outputs.target != 'production' }}
+    # `production` or `preview`: add protection rules (required reviewers, deployment tags v*) and environment
+    # secrets in the repository's Settings → Environments.
     environment:
       name: ${{ needs.build.outputs.target }}
       url: ${{ steps.preview.outputs.url || steps.production.outputs.url }}
     permissions:
-      contents: read
+      contents: read       # check out the repository
       pull-requests: write # the sticky preview comment
     outputs:
       url: ${{ steps.preview.outputs.url || steps.production.outputs.url }}
     defaults:
       run:
         working-directory: ${{ github.event.repository.name }}/${{ inputs.working-directory }}
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Check credentials
         id: creds
         working-directory: .
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "ok=true" >> "$GITHUB_OUTPUT"
@@ -204,7 +258,7 @@ jobs:
             echo "::notice title=Deploy skipped::CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID are not available to this run (fork PR, Dependabot, or not configured yet)."
           fi
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.creds.outputs.ok
         with:
           path: ${{ github.event.repository.name }}
@@ -219,14 +273,15 @@ jobs:
           INSTALL_DIR: ${{ inputs.install-directory || inputs.working-directory }}
         run: echo "install=$(realpath -m --relative-to=. "$REPO_DIR/$INSTALL_DIR")" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v7
+      # No dependency cache in the job that holds the deploy secrets.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         if: steps.creds.outputs.ok
         with:
           node-version: ${{ inputs.node-version }}
-          cache: npm
-          cache-dependency-path: ${{ steps.paths.outputs.install }}/package-lock.json
+          package-manager-cache: false
 
-      # For wrangler and the project-site CLI, at the versions package-lock.json pins.
+      # For wrangler and the project-site CLI, at the versions package-lock.json pins. The Cloudflare secrets are not
+      # in this step's environment.
       - name: Install
         if: steps.creds.outputs.ok
         working-directory: ${{ steps.paths.outputs.install }}
@@ -240,12 +295,13 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         if: steps.creds.outputs.ok
         with:
           name: dist
           path: ${{ github.event.repository.name }}/${{ inputs.working-directory }}/dist
 
+      # worker-name was checked to be a slug in the build job, so it is safe inside the sed expression.
       - name: Worker name
         if: steps.creds.outputs.ok && inputs.worker-name != ''
         env:
@@ -257,6 +313,8 @@ jobs:
         id: preview
         if: steps.creds.outputs.ok && needs.build.outputs.target == 'preview'
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ALIAS: ${{ needs.build.outputs.alias }}
           MESSAGE: "${{ github.event_name == 'pull_request' && format('PR #{0}', github.event.pull_request.number) || github.ref_name }} @ ${{ github.sha }}"
         run: npx --no-install project-site deploy:preview --alias "$ALIAS" --message "$MESSAGE"
@@ -265,10 +323,13 @@ jobs:
         id: production
         if: steps.creds.outputs.ok && needs.build.outputs.target == 'production'
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-deploy.ndjson
         run: |
           npx --no-install wrangler deploy --message "${GITHUB_REF_NAME} @ ${GITHUB_SHA}"
           # First route wrangler reports (workers.dev or custom domain), for the environment link.
+          # shellcheck disable=SC2016 # the single-quoted program is JavaScript, its ${...} are template literals
           url=$(node -e '
             const lines = require("fs").readFileSync(process.env.WRANGLER_OUTPUT_FILE_PATH, "utf8").split("\n").filter(Boolean);
             const target = lines.map(JSON.parse).findLast((e) => e.type === "deploy")?.targets?.[0] ?? "";
@@ -292,7 +353,7 @@ jobs:
 
       - name: Comment on the PR
         if: steps.preview.outputs.url && github.event_name == 'pull_request'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           URL: ${{ steps.preview.outputs.url }}
           VERSION_URL: ${{ steps.preview.outputs.version_url }}
