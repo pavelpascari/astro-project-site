@@ -62,12 +62,3 @@ h2 {
 ::selection {
   background: color-mix(in oklab, var(--site-accent) 35%, transparent);
 }
-
-/*
- * Workaround for a package issue: a docs page that imports 'astro-project-site/components' also gets base.css, whose
- * unlayered `a { color }` beats Starlight's layered sidebar styles and made the current page's link invisible
- * (text colour = its background). Restores that one rule; remove once base.css is layered or scoped upstream.
- */
-.sidebar-content a[aria-current='page'] {
-  color: var(--sl-color-text-invert);
-}
