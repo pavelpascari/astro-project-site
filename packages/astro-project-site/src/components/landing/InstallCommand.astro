@@ -64,8 +64,12 @@ const words = command.split(' ');
     overflow-wrap: anywhere;
     min-width: 0;
   }
+  /* A word moves to the next line whole when it fits there (never "my-" / "site"); one longer than the line
+     (a URL, a github: spec) wraps inside itself instead of pushing the page sideways. */
   .word {
-    white-space: nowrap;
+    display: inline-block;
+    max-width: 100%;
+    overflow-wrap: anywhere;
   }
   .prompt {
     opacity: 0.55;

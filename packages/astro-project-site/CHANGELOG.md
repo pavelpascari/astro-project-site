@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `InstallCommand`: a word longer than the line (a URL or a `github:` spec) wraps inside itself instead of making
+  the page scroll sideways on phones; shorter words still move to the next line whole.
+
 - Peer dependency `astro` raised to `^7.4.7` (fixes GHSA-mh32-jxcr-mh9f and GHSA-r3h5-4585-7x3w in earlier 7.x), which
   needs Node.js 22.23.4 or newer (or Node 24); `engines.node` says so.
 
