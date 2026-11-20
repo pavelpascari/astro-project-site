@@ -23,7 +23,7 @@ cd website && npm install && npm run dev
 it found and what it will write, asks, and then writes a complete site into `website/` that builds as it is: the
 config, a landing page, your docs mounted under `/docs/`, a gallery, and a GitHub Actions workflow for Cloudflare
 deploys. Anything it could not work out is marked `TODO`; `--dry-run` shows the plan without writing. In an empty
-folder you get the plain starter. Requires Node.js 22 or newer.
+folder you get the plain starter. Requires Node.js 22.23.4 or newer (or Node 24).
 
 ## Documentation
 

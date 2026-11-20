@@ -22,7 +22,7 @@ npm workspaces:
 
 ## Development setup
 
-You need Node.js 22 or newer (CI and releases use Node 24) and npm.
+You need Node.js 22.23.4 or newer (Astro 7.4 requires it; CI and releases use Node 24) and npm.
 
 ```bash
 git clone https://github.com/pavelpascari/astro-project-site.git

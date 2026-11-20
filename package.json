@@ -21,6 +21,6 @@
     "release:prepare": "node scripts/release-prepare.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.23.4"
   }
 }

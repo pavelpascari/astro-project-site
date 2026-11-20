@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Peer dependency `astro` raised to `^7.4.7` (fixes GHSA-mh32-jxcr-mh9f and GHSA-r3h5-4585-7x3w in earlier 7.x), which
+  needs Node.js 22.23.4 or newer (or Node 24); `engines.node` says so.
+
 ## 0.1.0-beta.0 - 2026-11-20
 
 The first published release: on npm under the `beta` tag (`npx astro-project-site@beta init website`), and as a

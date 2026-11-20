@@ -62,11 +62,11 @@
     "postpack": "node scripts/pack-starter.mjs --clean"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.23.4"
   },
   "peerDependencies": {
     "@astrojs/starlight": "^0.43.1",
-    "astro": "^7.3.0",
+    "astro": "^7.4.7",
     "mermaid": "^12.3.0"
   },
   "dependencies": {
@@ -82,7 +82,7 @@
   },
   "devDependencies": {
     "@astrojs/starlight": "^0.43.1",
-    "astro": "^7.3.8",
+    "astro": "^7.4.13",
     "typescript": "^6.0.3"
   },
   "peerDependenciesMeta": {
