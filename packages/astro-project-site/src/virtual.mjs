@@ -37,6 +37,9 @@ const DEFAULT_COMPONENTS = {
   Landing: 'components/landing/Landing.astro',
   GalleryCard: 'components/gallery/GalleryCard.astro',
   Gallery: 'components/gallery/GalleryPage.astro',
+  BlogIndex: 'components/blog/BlogIndex.astro',
+  BlogPost: 'components/blog/BlogPost.astro',
+  BlogCard: 'components/blog/BlogCard.astro',
 };
 
 /** The JSON the config module exports: everything components need, nothing that only matters at setup. */

@@ -18,11 +18,16 @@ export default defineConfig({
       nav: [
         { label: 'Docs', href: '/docs/' },
         { label: 'Gallery', href: '/gallery/' },
+        { label: 'Blog', href: '/blog/' },
       ],
       mirrors: [{ from: '../starters/default/example/apps', to: 'apps' }],
       theme: { accent: '#b93b0e', accentDark: '#ff7a4d' },
       customCss: ['./src/styles/brand.css'],
       gallery: { title: 'Gallery', description: 'The parts of this site, each one running.' },
+      blog: {
+        description: 'Notes on building astro-project-site: why it works the way it does, and what changed.',
+        authors: { pavel: { name: 'Pavel Pascari', url: 'https://github.com/pavelpascari' } },
+      },
       ogImage: '/og.png',
       footer: { note: 'MIT licence. This site is built with itself.' },
     }),

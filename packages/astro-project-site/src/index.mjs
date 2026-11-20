@@ -11,6 +11,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AstroError } from 'astro/errors';
+import { blogHeadTags } from './blog/options.mjs';
+import { editBaseUrl, resolveProject } from './docs/mount.mjs';
 import { mirror } from './mirror.mjs';
 import { own } from './own.mjs';
 import { parseOptions, ProjectSiteOptionsError, resolveOptionPaths } from './options.mjs';
@@ -24,6 +26,8 @@ import { vitePluginProjectSite } from './virtual.mjs';
  */
 export default function projectSite(userOptions) {
   const options = withReadableErrors(() => parseOptions(userOptions));
+  // The blog's feed is announced on every page (docs included) through the `head` option.
+  options.head = [...blogHeadTags(options.blog, options.name), ...options.head];
 
   return {
     name: 'astro-project-site',
@@ -37,12 +41,23 @@ export default function projectSite(userOptions) {
         const version = readVersion(paths.versionFrom, options.versionFrom, logger);
         if (paths.versionFrom) addWatchFile(paths.versionFrom);
 
+        // The blog's "edit this post" links need the site's place in its repo.
+        const blog = options.blog;
+        if (blog) blog.editBase = editBaseUrl(resolveProject(options, root));
+
         // Routes: each can be switched off, and a page of the project's own at the same URL always wins.
         const routes = [
           { on: options.landing !== false, pattern: '/', entry: 'routes/index.astro', files: ['index.astro', 'index.md', 'index.mdx', 'index.html'] },
           { on: options.gallery !== false, pattern: '/gallery', entry: 'routes/gallery.astro', files: ['gallery.astro', 'gallery/index.astro', 'gallery/index.md', 'gallery/index.mdx'] },
           { on: options.llms, pattern: '/llms.txt', entry: 'routes/llms.txt.ts', files: ['llms.txt.ts', 'llms.txt.js'] },
           { on: options.llms, pattern: '/llms-full.txt', entry: 'routes/llms-full.txt.ts', files: ['llms-full.txt.ts', 'llms-full.txt.js'] },
+          // One route for the post list, its pages, the posts and the tag pages (see routes/blog/[...path].astro).
+          ...(blog
+            ? [
+                { on: true, pattern: `/${blog.route}/[...path]`, entry: 'routes/blog/[...path].astro', files: [`${blog.route}/[...path].astro`, `${blog.route}/[...slug].astro`] },
+                { on: blog.rss, pattern: `/${blog.route}/rss.xml`, entry: 'routes/blog/rss.xml.ts', files: [`${blog.route}/rss.xml.ts`, `${blog.route}/rss.xml.js`] },
+              ]
+            : []),
         ];
         for (const route of routes) {
           if (!route.on) continue;

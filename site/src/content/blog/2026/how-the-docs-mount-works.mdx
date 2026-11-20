@@ -1,0 +1,99 @@
+---
+title: How the docs mount works
+description: A markdown folder written for GitHub becomes Starlight pages without moving a file. What happens to each page on the way, and why.
+date: 2026-11-18
+authors: [pavel]
+tags: [docs, starlight, internals]
+---
+
+import { MarginNote } from 'astro-project-site/components';
+
+The promise of `externalDocs` is that the docs a project already has, a folder of plain markdown next to the code,
+become part of the site as they are. No frontmatter, no copying, no second source of truth. This post follows one
+file through the pipeline to show what that takes.
+
+```js title="astro.config.mjs"
+projectSite({
+  // ...
+  externalDocs: [{ dir: '../docs', route: 'reference', label: 'Reference', order: ['getting-started.md'] }],
+});
+```
+
+## One collection, several loaders
+
+Starlight renders whatever is in the `docs` content collection. Normally that collection has one loader, reading
+`src/content/docs/`. The mount gives it more: `projectDocsLoader()` runs Starlight's own loader for the local pages,
+then one Astro `glob()` loader per `externalDocs` entry, each with `**/*.md` as its pattern and the entry's `exclude`
+globs subtracted.
+
+There is a catch. A content loader cleans up after itself: any entry in the store that it did not see on this run is
+deleted, on the assumption that its file was removed. With several loaders sharing one store, each would delete the
+others' pages.<MarginNote kind="field" numbered>Without the filter, whichever loader ran last would decide which pages exist: the local pages or one mounted folder, never all of them.</MarginNote>
+So each loader gets a view of the store whose `keys()` only lists entries from its own folder. The store itself is
+shared; the view is a `Proxy` that filters one method.
+
+## What happens to a file
+
+Take `docs/getting-started.md`, mounted with `route: 'reference'`. On its way into the collection:
+
+1. **It gets an id from its path.** `getting-started.md` becomes `docs/reference/getting-started`, and so the URL
+   `/docs/reference/getting-started/`. A `README.md` or `index.md` takes its folder's id, the way GitHub shows a
+   folder's README.
+2. **It gets a title from its first heading.** Files written for GitHub start with `# Getting started`, not with
+   frontmatter. The first H1 outside a code block becomes the title and is removed from the body, so it is not shown
+   twice.<MarginNote>When the file does have frontmatter with a title, the H1 is only removed if it is the first thing in the body.</MarginNote>
+3. **It gets a description** from the first sentence of its first paragraph, for search results and link previews.
+4. **Its links are rewritten.** This is the part that makes a GitHub folder work as a website, and it has its own
+   section below.
+5. **It gets an edit link** to the file in the repository, not to where it would be in `src/content/docs/`.
+
+## Links
+
+A link in a markdown file on GitHub is relative to the file: `[API](api.md#exports)`, `[the source](../src/index.js)`.
+On the site those would point at nothing. Every relative link is resolved against the file it is written in, and then:
+
+- if the target is a `.md` file inside any mounted folder, the link becomes that page's URL:
+  `/docs/reference/api/#exports`. An anchor that points at the target's own H1 is dropped, since that heading is now
+  the page title;
+- if the target is a folder with a `README.md`, it links to that page;
+- anything else inside the repository (source files, folders, docs that are not mounted) links to the file on
+  GitHub, `<repo>/blob/<branch>/...` or `tree` for a folder;
+- absolute URLs, root-relative paths, pure `#anchors`, images and anything inside code are left alone.
+
+| Written in docs/guides/deploy.md | Becomes |
+|---|---|
+| `../api.md#exports` | `/docs/reference/api/#exports` |
+| `./` (a folder with a README) | `/docs/reference/guides/` |
+| `../../src/index.js` | `https://github.com/me/lib/blob/main/src/index.js` |
+| `https://example.com` | unchanged |
+
+After that, [starlight-links-validator](https://github.com/HiDeoo/starlight-links-validator) checks every internal
+link and anchor, and the build fails on a broken one.<MarginNote kind="warning">The validator only knows docs pages. The landing page, the gallery, the blog, `llms.txt` and mirrored folders are added to its list of known paths, so linking to them from a docs page is fine.</MarginNote>
+A link to a `.md` file that does not exist is still rewritten to the URL it would have had, precisely so the validator
+reports it.
+
+## Edit links need the git root
+
+"Edit this page" should open the file on GitHub. That needs the file's path from the root of the repository, which
+is not the project root when the site lives in a `site/` folder of a monorepo, and the docs in `../docs`. The
+integration walks up from the project root until it finds `.git` and computes every path from there.
+
+Right after `project-site init` there is no `.git` yet. In that case the project root is assumed to become the
+repository root, which is what a fresh project usually turns into.
+
+## The sidebar comes from the folder
+
+Starlight's sidebar is generated from the same folders: local pages first (by `sidebar.order`, then name), one
+group per mount, each subfolder a collapsed group titled by its README's heading. Within a mount, the README leads,
+then the files listed in `order`, then the rest by name.
+
+The sidebar is built from the file system when the dev server starts. Editing a page reloads it; adding or removing
+a page needs a restart to show up in the sidebar.<MarginNote kind="field">Starlight's sidebar is part of its configuration, which is read once. The content collection is live; the config is not.</MarginNote>
+
+## The same order everywhere
+
+`/llms.txt` lists the docs grouped and ordered like the sidebar: local pages, then one section per mount. `/llms-full.txt`
+is every page as markdown, in that order, with root-relative links made absolute so they work outside the site. This
+blog's posts follow, after the docs.
+
+None of this is visible when it works, which is the point: you write markdown for GitHub, and the site keeps up.

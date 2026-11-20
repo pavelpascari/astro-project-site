@@ -37,6 +37,7 @@ Types and descriptions come from `src/index.d.ts`, defaults and required fields 
 | `theme.accentDark` | `string` |  |  |
 | `landing` | `false \| LandingContent` | `{}` | Content of the built-in landing page at `/`, or `false` for none (or add your own src/pages/index.astro). |
 | `gallery` | `false \| { title?: string; description?: string }` | `{}` | The built-in /gallery/ page, or `false` for none. |
+| `blog` | `boolean \| BlogOptions` | `false` | Posts from src/content/blog/ at /blog/ (list, posts, tags, RSS), or `true` for the defaults. Off unless set. |
 | `footer` | `object` | `{}` | Extra footer text, e.g. a licence line. |
 | `footer.note` | `string` |  |  |
 | `llms` | `boolean` | `true` | Serve /llms.txt and /llms-full.txt. Default `true`. |
@@ -174,6 +175,9 @@ See [Overriding components](/docs/guides/overriding-components/).
 | `Landing` | `string` |  | The whole landing page body (inside BaseLayout). |
 | `GalleryCard` | `string` |  | One gallery card. Receives `item: GalleryEntry` and `headingLevel`. |
 | `Gallery` | `string` |  | The whole /gallery/ page body (inside BaseLayout). Receives `items`, `title`, `description`. |
+| `BlogIndex` | `string` |  | The post list body (inside BaseLayout): /blog/, /blog/2/, and each /blog/tags/&lt;tag>/. Receives `BlogIndexProps`. |
+| `BlogPost` | `string` |  | One post page body (inside BaseLayout). Receives `BlogPostProps`; the rendered post is its default slot. |
+| `BlogCard` | `string` |  | One post in a list (blog index, tag pages, landing "Latest posts"). Receives `post: BlogEntry`, `headingLevel`. |
 <!-- /gen -->
 
 ## OgImageRequest

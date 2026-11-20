@@ -16,12 +16,14 @@ interface Props {
   type?: 'website' | 'article';
   /** Ask search engines not to index this page (e.g. 404). */
   noindex?: boolean;
+  /** Canonical URL when it is not this page's own (e.g. a blog post first published elsewhere). */
+  canonical?: string;
 }
 
 const { title, description = site.tagline, type = 'website', noindex = false } = Astro.props;
 const fullTitle = title ? `${title} | ${site.name}` : `${site.name} — ${site.tagline}`;
 const base = Astro.site ?? new URL(site.url);
-const canonical = new URL(Astro.url.pathname, base).href;
+const canonical = Astro.props.canonical ? new URL(Astro.props.canonical, base).href : new URL(Astro.url.pathname, base).href;
 const imagePath = Astro.props.image ?? ogImageFor({ path: Astro.url.pathname, title: title ?? site.name, description });
 const image = imagePath ? new URL(imagePath, base).href : undefined;
 const themeCss = themeOverrideCss();

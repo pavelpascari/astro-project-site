@@ -1,0 +1,79 @@
+---
+title: Introducing astro-project-site
+description: One Astro integration that gives an open-source project a landing page, docs mounted from its own markdown, live examples, a gallery, a blog and preview deploys.
+date: 2026-11-10
+authors: [pavel]
+tags: [announcement, astro, starlight]
+---
+
+import Live from 'astro-project-site/live';
+import { MarginNote } from 'astro-project-site/components';
+
+Every open-source project ends up needing the same website. A front page that says what the thing is and how to
+install it. Docs that stay in step with the code. A few examples that actually run. Somewhere to say what changed.
+And every project builds that website from scratch, usually on a weekend, usually twice.
+
+astro-project-site is that website as one Astro integration. You add `projectSite({ name, tagline, url, repo })` to
+`astro.config.mjs` and get a landing page, [Starlight](https://starlight.astro.build) docs, a gallery, `llms.txt`,
+this blog, and a shared header and footer that make all of it feel like one site.
+
+## The docs live where the code lives
+
+Most projects already have documentation: a `docs/` folder of plain markdown, written for GitHub, linked with
+relative `.md` links. The usual advice is to move it into the site's content folder and add frontmatter to every
+file. That splits the docs from the code, and the copy in the repo quietly goes stale.
+
+Here the folder stays where it is. `externalDocs` mounts it under `/docs/<route>/`: titles come from each file's
+first heading, links are rewritten for the site, and the sidebar is generated from the folder.<MarginNote kind="field" numbered>This site mounts the starter's example folder under /docs/example/. Those files have no frontmatter at all; open one on GitHub and on the site side by side.</MarginNote>
+The next post goes through [how the mount works](/blog/2026/how-the-docs-mount-works/), line by line.
+
+## Examples that run
+
+A code sample that has never been executed is a guess. `<Live>` takes one piece of code and shows it twice: as a
+highlighted code block, and running. The component reads the source back from the rendered block, so what runs is
+exactly what is shown. Edit this one:
+
+<Live caption="A custom element, edited in place" editable>
+
+```html title="pill.html"
+<script type="module" src="/docs-assets/status-pill.js"></script>
+<status-pill label="written in a blog post"></status-pill>
+<status-pill label="also running" tone="green"></status-pill>
+```
+
+</Live>
+
+It works in docs pages, on the landing page and, as you can see, in blog posts.<MarginNote>Inline mode runs the code in the page; `mode="iframe"` gives it a document of its own, and a `runner` module can execute anything else (JSON configs, a DSL, a canvas sketch).</MarginNote>
+
+## One theme, everywhere
+
+Starlight has its own design system, and project sites usually bolt a landing page onto it that looks almost, but
+not quite, the same. Here every colour derives from a handful of `--site-*` tokens: the landing page, the gallery,
+this blog and Starlight's `--sl-*` palette all read them. Change `--site-accent` and the whole site follows, in
+light and dark.
+
+| Part | What you write | What you get |
+|---|---|---|
+| Landing | the `landing` option, or your own page | hero, features, steps, gallery strip, latest posts |
+| Docs | a markdown folder, anywhere in the repo | Starlight pages, sidebar, search, edit links |
+| Gallery | one YAML or Markdown file per item | a filterable grid of demos |
+| Blog | Markdown or MDX in `src/content/blog/` | list, tags, RSS, `llms.txt` |
+
+## What you don't have to build
+
+- **Deploys.** The starter deploys to Cloudflare Workers with a preview per pull request, from one reusable
+  workflow.
+- **Static apps.** `mirrors` copies folders of HTML and JavaScript into the build byte for byte, so demos that
+  were never meant to be bundled keep working.
+- **Machine-readable docs.** `/llms.txt` and `/llms-full.txt` are generated from the same pages.
+- **A broken-link check.** The build fails on a dead internal link in the docs.
+
+## Start
+
+```bash
+npx astro-project-site init my-site
+cd my-site && npm install && npm run dev
+```
+
+The [quick start](/docs/quick-start/) takes it from there. If you already have a repository with a `docs/` folder,
+[add a site to an existing repo](/docs/existing-repo/) instead.

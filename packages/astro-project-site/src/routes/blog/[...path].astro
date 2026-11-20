@@ -1,0 +1,103 @@
+---
+// Injected at /<blog.route>/[...path] when the `blog` option is on. One route builds every blog page (see
+// blogPages() in blog/posts.mjs): the post list and its pages (/blog/, /blog/2/), each post (/blog/<id>/), the
+// tag index (/blog/tags/) and each tag (/blog/tags/<tag>/). The bodies are the BlogIndex and BlogPost slots.
+import type { GetStaticPaths } from 'astro';
+import { render } from 'astro:content';
+import site from 'virtual:astro-project-site/config';
+import BlogIndex from 'virtual:astro-project-site/components/BlogIndex';
+import BlogPost from 'virtual:astro-project-site/components/BlogPost';
+import BaseLayout from '../../components/layouts/BaseLayout.astro';
+import BlogTags from '../../components/blog/BlogTags.astro';
+import { blogOptions, blogPosts, postInfo } from '../../blog/data';
+import { blogPages, collectTags, editUrl, listUrl, type BlogPage } from '../../blog/posts.mjs';
+import type { BlogEntry, BlogIndexProps } from '../../index';
+
+export const getStaticPaths = (async () => {
+  return blogPages(await blogPosts(), blogOptions());
+}) satisfies GetStaticPaths;
+
+const page = Astro.props as BlogPage;
+const blog = blogOptions();
+
+let Content: Awaited<ReturnType<typeof render>>['Content'] | undefined;
+let indexProps: BlogIndexProps | undefined;
+let post: BlogEntry | undefined;
+let allTags: ReturnType<typeof collectTags> = [];
+
+if (page.kind === 'post') {
+  post = page.post as BlogEntry;
+  ({ Content } = await render(post as any));
+} else if (page.kind === 'list' || page.kind === 'tag') {
+  allTags = collectTags(await blogPosts());
+  indexProps =
+    page.kind === 'list'
+      ? {
+          posts: page.posts as BlogEntry[],
+          title: blog.title,
+          description: blog.description,
+          tags: allTags,
+          page: {
+            current: page.current,
+            last: page.last,
+            total: page.total,
+            prev: page.current > 1 ? listUrl(blog.route, page.current - 1) : undefined,
+            next: page.current < page.last ? listUrl(blog.route, page.current + 1) : undefined,
+          },
+        }
+      : {
+          posts: page.posts as BlogEntry[],
+          title: `Posts tagged “${page.tag.tag}”`,
+          description: `${page.tag.count} ${page.tag.count === 1 ? 'post' : 'posts'} about ${page.tag.tag}.`,
+          tag: page.tag,
+          tags: allTags,
+          page: { current: 1, last: 1, total: page.posts.length },
+        };
+}
+
+const pageTitle =
+  page.kind === 'post'
+    ? post!.data.title
+    : page.kind === 'tags'
+      ? `Tags · ${blog.title}`
+      : indexProps!.page.current > 1
+        ? `${indexProps!.title} · Page ${indexProps!.page.current}`
+        : indexProps!.title;
+const iso = (d: Date) => d.toISOString();
+const postProps = (p: BlogEntry) => {
+  const { readingTime, authors } = postInfo(p);
+  return { post: p, readingTime, authors };
+};
+---
+
+{
+  page.kind === 'post' && post && Content ? (
+    <BaseLayout
+      title={pageTitle}
+      description={post.data.description}
+      image={post.data.image?.src}
+      type="article"
+      canonical={post.data.canonical}
+      noindex={post.data.draft}
+    >
+      <Fragment slot="head">
+        <meta property="article:published_time" content={iso(post.data.date)} />
+        {post.data.updated && <meta property="article:modified_time" content={iso(post.data.updated)} />}
+        {post.data.tags.map((tag) => <meta property="article:tag" content={tag} />)}
+      </Fragment>
+      <BlogPost {...postProps(post)} editUrl={editUrl(blog.editBase, post.filePath)} newer={page.newer} older={page.older}>
+        <Content />
+      </BlogPost>
+    </BaseLayout>
+  ) : page.kind === 'tags' ? (
+    <BaseLayout title={pageTitle} description={`Every topic on the ${site.name} ${blog.title.toLowerCase()}.`}>
+      <BlogTags tags={page.tags} title="Tags" />
+    </BaseLayout>
+  ) : (
+    indexProps && (
+      <BaseLayout title={pageTitle} description={indexProps.description}>
+        <BlogIndex {...indexProps} />
+      </BaseLayout>
+    )
+  )
+}

@@ -11,11 +11,13 @@ import Features from './Features.astro';
 import Steps from './Steps.astro';
 import GalleryStrip from './GalleryStrip.astro';
 import CallToAction from './CallToAction.astro';
+import LatestPosts from '../blog/LatestPosts.astro';
 
 const landing = site.landing || {};
 const hero = landing.hero ?? {};
 const demo = hero.demo;
 const showGallery = site.gallery !== false && landing.gallery?.limit !== 0;
+const latest = site.blog && site.blog.landing && site.blog.landing.limit > 0 ? site.blog.landing : undefined;
 ---
 
 <Hero
@@ -51,6 +53,8 @@ const showGallery = site.gallery !== false && landing.gallery?.limit !== 0;
     </Section>
   )
 }
+
+{latest && <LatestPosts title={latest.title} limit={latest.limit} />}
 
 {landing.cta && <CallToAction {...landing.cta} />}
 

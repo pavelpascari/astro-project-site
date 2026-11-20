@@ -1,0 +1,64 @@
+---
+// "Latest posts": the newest few posts and a link to the rest. The built-in landing page shows it when the blog is
+// on (option `blog.landing`); a custom landing can use it too:
+//   import { LatestPosts } from 'astro-project-site/components';
+//   <LatestPosts limit={3} />
+import site from 'virtual:astro-project-site/config';
+import BlogCard from 'virtual:astro-project-site/components/BlogCard';
+import Section from '../landing/Section.astro';
+import { blogPosts } from '../../blog/data';
+import { listUrl } from '../../blog/posts.mjs';
+
+interface Props {
+  title?: string;
+  intro?: string;
+  /** How many posts. Default 3. */
+  limit?: number;
+  /** Section background. */
+  tone?: 'plain' | 'surface';
+}
+const { title = 'Latest posts', intro, limit = 3, tone = 'plain' } = Astro.props;
+const posts = site.blog ? (await blogPosts()).slice(0, limit) : [];
+const blog = site.blog;
+---
+
+{
+  blog && posts.length > 0 && (
+    <Section id="latest-posts" title={title} intro={intro} tone={tone}>
+      <ul class="latest">
+        {posts.map((post) => (
+          <li>
+            <BlogCard post={post} headingLevel={3} variant="tile" />
+          </li>
+        ))}
+      </ul>
+      <p class="more">
+        <a href={listUrl(blog.route)}>
+          All posts <span aria-hidden="true">→</span>
+        </a>
+      </p>
+    </Section>
+  )
+}
+
+<style>
+  .latest {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+    gap: calc(var(--site-space) * 1.25);
+    margin: 0;
+    padding: 0;
+  }
+  .more {
+    margin: calc(var(--site-space) * 1.5) 0 0;
+    font-weight: 600;
+  }
+  @media (pointer: coarse) {
+    .more a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+  }
+</style>

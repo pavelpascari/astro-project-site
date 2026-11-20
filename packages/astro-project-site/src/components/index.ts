@@ -27,9 +27,35 @@ export { default as GalleryGrid } from './gallery/GalleryGrid.astro';
 export { default as GalleryCard } from './gallery/GalleryCard.astro';
 export { default as GalleryFilters } from './gallery/GalleryFilters.astro';
 
+// Blog
+export { default as BlogIndex } from './blog/BlogIndex.astro';
+export { default as BlogPost } from './blog/BlogPost.astro';
+export { default as BlogCard } from './blog/BlogCard.astro';
+export { default as BlogTags } from './blog/BlogTags.astro';
+export { default as PostMeta } from './blog/PostMeta.astro';
+export { default as TagList } from './blog/TagList.astro';
+export { default as LatestPosts } from './blog/LatestPosts.astro';
+
+// Writing: side notes for posts and docs pages
+export { default as MarginNote } from './blog/MarginNote.astro';
+
 // Helpers
 export { galleryItems, distinct } from '../lib/gallery';
+export { blogPosts, postInfo } from '../blog/data';
+export { readingTime, tagSlug, formatDate } from '../blog/posts.mjs';
 export { isActive, isExternal } from '../lib/nav';
 
 export type * from './live/types';
-export type { GalleryEntry, GalleryData, LinkAction, Feature, Step } from '../index';
+export type {
+  GalleryEntry,
+  GalleryData,
+  LinkAction,
+  Feature,
+  Step,
+  BlogEntry,
+  BlogPostData,
+  BlogAuthor,
+  BlogIndexProps,
+  BlogPostProps,
+  BlogPostInfo,
+} from '../index';

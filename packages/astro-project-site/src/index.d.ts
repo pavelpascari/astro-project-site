@@ -102,6 +102,114 @@ export interface ComponentOverrides {
   GalleryCard?: string;
   /** The whole /gallery/ page body (inside BaseLayout). Receives `items`, `title`, `description`. */
   Gallery?: string;
+  /** The post list body (inside BaseLayout): /blog/, /blog/2/, and each /blog/tags/<tag>/. Receives `BlogIndexProps`. */
+  BlogIndex?: string;
+  /** One post page body (inside BaseLayout). Receives `BlogPostProps`; the rendered post is its default slot. */
+  BlogPost?: string;
+  /** One post in a list (blog index, tag pages, landing "Latest posts"). Receives `post: BlogEntry`, `headingLevel`. */
+  BlogCard?: string;
+}
+
+/** Someone who writes posts: the values of the `blog.authors` option. */
+export interface BlogAuthor {
+  name: string;
+  /** Their site or profile: the name becomes a link. */
+  url?: string;
+  /** Picture: a path under public/ or a full URL. */
+  avatar?: string;
+}
+
+/** The `blog` option in object form. */
+export interface BlogOptions {
+  /** URL segment of the blog. Default `blog` (→ /blog/). */
+  route?: string;
+  /** Heading of the post list and its nav label. Default `Blog`. */
+  title?: string;
+  /** Text under the heading and the feed description. Default: `tagline`. */
+  description?: string;
+  /** People posts can name in `authors` frontmatter, by key. Names not listed here are shown as written. */
+  authors?: Record<string, BlogAuthor>;
+  /** Posts per list page; more pages at /blog/2/, /blog/3/, ... Default 10. */
+  postsPerPage?: number;
+  /** /blog/rss.xml, linked from every page with `<link rel="alternate">`. Default `true`. */
+  rss?: boolean;
+  /** "Latest posts" section on the built-in landing page, or `false`. Default `{ title: 'Latest posts', limit: 3 }`. */
+  landing?: false | { title?: string; limit?: number };
+}
+
+/** The blog option after defaults. */
+export interface ResolvedBlog {
+  route: string;
+  title: string;
+  description: string;
+  authors: Record<string, BlogAuthor>;
+  postsPerPage: number;
+  rss: boolean;
+  landing: false | { title: string; limit: number };
+  /** "Edit" link base for files under the site folder (set by the integration when the repo layout is known). */
+  editBase?: string;
+}
+
+/** Frontmatter of a post (src/content/blog/**\/*.{md,mdx}). */
+export interface BlogPostData {
+  title: string;
+  description: string;
+  date: Date;
+  updated?: Date;
+  /** Keys of `blog.authors`, or plain names. */
+  authors: string[];
+  tags: string[];
+  /** Built only in dev, where it carries a "Draft" badge. */
+  draft: boolean;
+  /** Image next to the post file, optimised at build time; also the post's social image. */
+  image?: import('astro').ImageMetadata;
+  imageAlt?: string;
+  /** Canonical URL when the post was first published elsewhere. */
+  canonical?: string;
+}
+
+/** One post, as `getCollection('blog')` returns it. `id` is its path under src/content/blog/ without extension. */
+export interface BlogEntry {
+  id: string;
+  collection: 'blog';
+  data: BlogPostData;
+  body?: string;
+  filePath?: string;
+}
+
+/** A post with what the blog pages compute for it. */
+export interface BlogPostInfo {
+  post: BlogEntry;
+  /** /blog/<id>/ */
+  href: string;
+  /** Minutes, computed from the body at build time. */
+  readingTime: number;
+  authors: BlogAuthor[];
+}
+
+/** Props of the `BlogIndex` slot. */
+export interface BlogIndexProps {
+  /** The posts on this page, newest first. */
+  posts: BlogEntry[];
+  title: string;
+  description: string;
+  /** Set on tag pages. */
+  tag?: { tag: string; slug: string; count: number };
+  /** Every tag, most used first. */
+  tags: { tag: string; slug: string; count: number }[];
+  /** Pagination (1-based). Tag pages are a single page. */
+  page: { current: number; last: number; total: number; prev?: string; next?: string };
+}
+
+/** Props of the `BlogPost` slot. */
+export interface BlogPostProps {
+  post: BlogEntry;
+  readingTime: number;
+  authors: BlogAuthor[];
+  /** "Edit this post" link, when the repository layout is known. */
+  editUrl?: string;
+  newer?: BlogEntry;
+  older?: BlogEntry;
 }
 
 export interface ProjectSiteOptions {
@@ -139,6 +247,10 @@ export interface ProjectSiteOptions {
   landing?: false | LandingContent;
   /** The built-in /gallery/ page, or `false` for none. */
   gallery?: false | { title?: string; description?: string };
+  /**
+   * Posts from src/content/blog/ at /blog/ (list, posts, tags, RSS), or `true` for the defaults. Off unless set.
+   */
+  blog?: boolean | BlogOptions;
   /** Extra footer text, e.g. a licence line. */
   footer?: { note?: string };
   /** Serve /llms.txt and /llms-full.txt. Default `true`. */
@@ -162,7 +274,7 @@ export interface ProjectSiteOptions {
 }
 
 /** The options after validation and defaults (what projectSite() works with internally). */
-export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'externalDocs' | 'mirrors'> {
+export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'externalDocs' | 'mirrors' | 'blog'> {
   repoBranch: string;
   nav: LinkAction[];
   externalDocs: ExternalDocs[];
@@ -171,6 +283,7 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   theme: { accent?: string; accentDark?: string };
   landing: false | ResolvedLanding;
   gallery: false | { title?: string; description?: string };
+  blog: false | ResolvedBlog;
   footer: { note?: string };
   llms: boolean;
   customCss: string[];
