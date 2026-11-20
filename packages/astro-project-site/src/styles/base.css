@@ -2,23 +2,28 @@
  * Base styles for pages outside Starlight (BaseLayout: landing, gallery). Starlight pages get their own reset; the
  * shared look comes from the tokens in theme.css. Utility classes here are prefixed `site-` and are
  * available to any page that uses BaseLayout.
+ *
+ * This file also ends up on docs pages whenever an MDX page imports from 'astro-project-site/components' (the
+ * barrel includes BaseLayout). Element rules are therefore scoped to BaseLayout's <html data-site-page>, with
+ * :where() so they keep the specificity of a plain element selector and never beat Starlight's styles.
  */
 
-*,
-*::before,
-*::after {
+:where([data-site-page]) *,
+:where([data-site-page]) *::before,
+:where([data-site-page]) *::after {
   box-sizing: border-box;
 }
 
-html {
+html:where([data-site-page]) {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   scroll-padding-top: calc(var(--site-header-height) + 1rem);
 }
 
-body {
+:where([data-site-page]) body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   font-family: var(--site-font-body);
@@ -28,39 +33,33 @@ body {
   background: var(--site-bg);
 }
 
-main {
+:where([data-site-page]) main {
   flex: 1;
 }
-main:focus {
+:where([data-site-page]) main:focus {
   outline: none;
 }
 
-h1,
-h2,
-h3,
-h4 {
+:where([data-site-page]) :is(h1, h2, h3, h4) {
   font-family: var(--site-font-heading);
   line-height: 1.2;
   margin: 0 0 0.5em;
   text-wrap: balance;
 }
-p {
+:where([data-site-page]) p {
   margin: 0 0 1em;
 }
-a {
+:where([data-site-page]) a {
   color: var(--site-link);
 }
-img,
-svg {
+:where([data-site-page]) :is(img, svg) {
   max-width: 100%;
 }
-code,
-kbd,
-pre {
+:where([data-site-page]) :is(code, kbd, pre) {
   font-family: var(--site-font-mono);
   font-size: 0.9em;
 }
-:focus-visible {
+:where([data-site-page]) :focus-visible {
   outline: 2px solid var(--site-focus);
   outline-offset: 2px;
 }
@@ -94,77 +93,11 @@ pre {
   top: 0.5rem;
 }
 
-/* ── Utilities ── */
-
-.site-container {
-  width: 100%;
-  max-width: var(--site-max-width);
-  margin-inline: auto;
-  padding-inline: var(--site-space);
-}
-
-.site-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 2.75rem;
-  padding: 0.6rem 1.25rem;
-  border: 1px solid var(--site-border);
-  border-radius: var(--site-radius-sm);
-  font: inherit;
-  font-weight: 600;
-  line-height: 1.2;
-  text-decoration: none;
-  color: var(--site-text);
-  background: var(--site-bg);
-  cursor: pointer;
-}
-.site-btn:hover {
-  border-color: var(--site-muted);
-}
-.site-btn--primary {
-  border-color: var(--site-accent);
-  background: var(--site-accent);
-  color: var(--site-on-accent);
-}
-.site-btn--primary:hover {
-  border-color: var(--site-accent-strong);
-  background: var(--site-accent-strong);
-}
-
-.site-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-/* Build-time highlighted code (Astro <Code>, dual light/dark themes). */
-.astro-code {
-  margin: 0;
-  padding: 1rem 1.125rem;
-  border-radius: var(--site-radius-sm);
-  font-size: 0.875rem;
-  line-height: 1.6;
-  overflow-x: auto;
-  border: 1px solid var(--site-border);
-}
-:root[data-theme='dark'] .astro-code,
-:root[data-theme='dark'] .astro-code span {
-  color: var(--shiki-dark);
-  background-color: var(--shiki-dark-bg);
-}
-:root[data-theme='light'] .astro-code,
-:root[data-theme='light'] .astro-code span {
-  color: var(--shiki-light);
-  background-color: var(--shiki-light-bg);
-}
+/* The `site-*` utility classes and build-time code styles live in components.css: components import it
+   themselves so they look the same on docs pages. */
 
 @media (prefers-reduced-motion: no-preference) {
-  html {
+  html:where([data-site-page]) {
     scroll-behavior: smooth;
   }
 }

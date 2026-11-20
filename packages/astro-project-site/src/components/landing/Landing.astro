@@ -2,8 +2,9 @@
 // The built-in landing page body, composed from the section components and the `landing` option. To change the
 // layout, set `components.Landing` to your own component (it renders inside BaseLayout), or set `landing: false`
 // and write src/pages/index.astro. The section components are exported from 'astro-project-site/components'.
+import '../../styles/components.css';
 import site from 'virtual:astro-project-site/config';
-import { Hero } from 'virtual:astro-project-site/components';
+import Hero from 'virtual:astro-project-site/components/Hero';
 import Live from '../live/Live.astro';
 import Section from './Section.astro';
 import Features from './Features.astro';
