@@ -21,6 +21,9 @@ export { default as GalleryStrip } from './landing/GalleryStrip.astro';
 export { default as CallToAction } from './landing/CallToAction.astro';
 export { default as InstallCommand } from './landing/InstallCommand.astro';
 
+// Docs
+export { default as ChildCards } from './docs/ChildCards.astro';
+
 // Gallery
 export { default as GalleryPage } from './gallery/GalleryPage.astro';
 export { default as GalleryGrid } from './gallery/GalleryGrid.astro';

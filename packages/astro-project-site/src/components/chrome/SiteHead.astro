@@ -4,6 +4,7 @@
 // hook unless the page passes `image` (docs pages get the same through route-middleware.ts).
 import site from 'virtual:astro-project-site/config';
 import ogImageFor from 'virtual:astro-project-site/og';
+import { LAYER_ORDER } from '../../lib/layers.mjs';
 import { themeOverrideCss } from '../../lib/theme';
 
 interface Props {
@@ -28,6 +29,7 @@ const themeCss = themeOverrideCss();
 ---
 
 <meta charset="utf-8" />
+<style is:inline set:html={LAYER_ORDER} />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>{fullTitle}</title>
 <meta name="description" content={description} />

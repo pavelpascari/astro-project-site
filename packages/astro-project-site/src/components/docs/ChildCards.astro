@@ -1,0 +1,135 @@
+---
+// A grid of cards for the pages and subfolders of a docs folder: title, description, and for a folder the number
+// of pages in it. Folders without an index page get such a page automatically; put `<ChildCards />` in a folder's
+// own index page to show the same grid there, or pass `dir` to list any folder. On a docs page the cards follow
+// the sidebar order; elsewhere `sidebar.order`, then title.
+import { childCards } from '../../lib/docs-tree';
+
+interface Props {
+  /** Folder to list, as a collection id (`docs/guides`) or path (`/docs/guides/`). Default: the current docs page. */
+  dir?: string;
+  /** Collection ids or paths to leave out. */
+  exclude?: string[];
+  /** Accessible name of the list. */
+  label?: string;
+}
+
+type Entry = { type: 'link'; href: string } | { type: 'group'; entries: Entry[] };
+const flatten = (entries: Entry[]): string[] => entries.flatMap((e) => (e.type === 'link' ? [e.href] : flatten(e.entries)));
+const strip = (s: string) => s.replace(/^\/+|\/+$/g, '');
+
+// Outside a docs page (or before Starlight has set up the page) there is no route data: reading it throws.
+let route: { id: string; sidebar: Entry[] } | undefined;
+try {
+  route = (Astro.locals as any).starlightRoute;
+} catch {
+  route = undefined;
+}
+const dir = strip(Astro.props.dir ?? route?.id ?? 'docs');
+const exclude = new Set((Astro.props.exclude ?? []).map(strip));
+const order = route ? flatten(route.sidebar) : [];
+const cards = (await childCards(dir, order)).filter((c) => !exclude.has(c.id) && !exclude.has(strip(c.href)));
+---
+
+{
+  cards.length > 0 && (
+    <ul class="child-cards not-content" role="list" aria-label={Astro.props.label}>
+      {cards.map((card) => (
+        <li class="child-card" data-folder={card.folder ? '' : undefined}>
+          <a href={card.href}>
+            <span class="title">{card.title}</span>
+          </a>
+          {card.description && <p class="description">{card.description}</p>}
+          {card.folder && card.count ? (
+            <p class="meta">
+              {card.count} {card.count === 1 ? 'page' : 'pages'}
+            </p>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+<style>
+  .child-cards {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+    gap: 0.75rem;
+  }
+  :global(.sl-markdown-content) .child-cards {
+    margin-block: 1.5rem;
+  }
+  .child-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin: 0;
+    padding: 1rem 1.125rem;
+    border: 1px solid var(--site-border);
+    border-radius: var(--site-radius);
+    background: var(--site-bg);
+    transition: border-color 0.15s ease;
+  }
+  .child-card:hover {
+    border-color: color-mix(in oklab, var(--site-accent) 55%, var(--site-border));
+  }
+  .child-card:has(a:focus-visible) {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+  a {
+    color: var(--site-text);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  a:focus-visible {
+    outline: none;
+  }
+  /* The whole card is the link's hit area. */
+  a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .title::after {
+    content: ' →';
+    color: var(--site-muted);
+    transition: color 0.15s ease;
+  }
+  .child-card:hover .title::after {
+    color: var(--site-accent-strong);
+  }
+  :global([dir='rtl']) .title::after {
+    content: ' ←';
+  }
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--site-muted);
+  }
+  .meta {
+    margin-top: auto;
+    padding-top: 0.25rem;
+    font-size: 0.8125rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .child-card,
+    .title::after {
+      transition: none;
+    }
+  }
+  @media (forced-colors: active) {
+    .child-card {
+      border-color: CanvasText;
+    }
+  }
+</style>
