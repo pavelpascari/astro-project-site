@@ -74,3 +74,11 @@ export interface LiveProps {
   /** Extra class on the root element. */
   class?: string;
 }
+
+/** The `<live-example>` element a `<Live>` renders (`document.querySelector<LiveExampleElement>('live-example#id')`). */
+export interface LiveExampleElement extends HTMLElement {
+  /** The code the example runs now (the editor's text for an editable example). */
+  getSource(): string;
+  /** Replace the code and re-run the example. Editable examples show it in the editor; Reset restores the original. */
+  setSource(code: string): void;
+}

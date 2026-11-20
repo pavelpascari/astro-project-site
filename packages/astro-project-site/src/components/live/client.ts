@@ -20,7 +20,7 @@ type FrameMessage =
   | { type: 'ready' }
   | { type: 'done' }
   | { type: 'status'; message: string; level: LiveStatusLevel }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string; detail?: string; load?: boolean };
 
 const MARK = '__liveExample';
 const reducedMotionQuery = () => matchMedia('(prefers-reduced-motion: reduce)');
@@ -100,10 +100,42 @@ function renderHtml(mount: HTMLElement, html: string, onError: (message: string)
   }
 }
 
-const loadModule = (url: string) => import(/* @vite-ignore */ absolute(url));
+// A module that could not be fetched (network error, 404, server gone): shown as a plain sentence, with the
+// browser's own message kept as the detail.
+const loadFailureText = (kind: 'runner' | 'module', url: string) =>
+  `Couldn't load the ${kind} ${url} (network error or 404). Check the path, or that the site is still being served.`;
 
-async function loadRunner(url: string): Promise<LiveRunner> {
-  const mod = await loadModule(url);
+class ModuleLoadError extends Error {
+  constructor(
+    readonly url: string,
+    readonly kind: 'runner' | 'module',
+    readonly detail: string,
+  ) {
+    super(loadFailureText(kind, url));
+  }
+}
+
+// Browsers cache a failed dynamic import per URL for the life of the page: a retry needs a different URL.
+function bust(url: string, attempt: number): string {
+  if (!attempt) return url;
+  const u = new URL(url);
+  u.searchParams.set('live-retry', String(attempt));
+  return u.href;
+}
+
+async function loadModule(url: string, kind: 'runner' | 'module' = 'module', attempt = 0) {
+  try {
+    return await import(/* @vite-ignore */ bust(absolute(url), attempt));
+  } catch (err) {
+    // Fetch failures are TypeErrors in every engine; errors thrown while the module runs are passed on as they are.
+    if (err instanceof TypeError && /fetch|import|load|module script/i.test(err.message))
+      throw new ModuleLoadError(url, kind, describeError(err));
+    throw err;
+  }
+}
+
+async function loadRunner(url: string, attempt = 0): Promise<LiveRunner> {
+  const mod = await loadModule(url, 'runner', attempt);
   if (typeof mod.run !== 'function') throw new Error(`${url} does not export run(source, mount, ctx)`);
   return mod.run as LiveRunner;
 }
@@ -173,33 +205,48 @@ const BOOT = `(function (cfg) {
       if (typeof m.run !== 'function') throw new Error(cfg.runner + ' does not export run(source, mount, ctx)');
       mod = m;
       post({ type: 'ready' });
-    }).catch(function (err) { post({ type: 'error', message: 'Could not load the runner: ' + fmt(err) }); });
+    }).catch(function (err) {
+      var fetchFailed = err instanceof TypeError && /fetch|import|load|module script/i.test(err.message);
+      post(fetchFailed
+        ? { type: 'error', load: true, detail: fmt(err), message: "Couldn't load the runner " + cfg.runnerLabel + ' (network error or 404). Check the path, or that the site is still being served.' }
+        : { type: 'error', message: 'Could not load the runner: ' + fmt(err) });
+    });
   } else {
     post({ type: 'ready' });
   }
 })`;
 
-function frameDocument(cfg: Config, id: string, source: string): string {
+// Firefox's preloader resolves <script src> and <link href> in a srcdoc document against the page's URL, ignoring
+// the <base> (each example then logs a failed load and a 404 before the right request). Resolve those URLs up front
+// when there is a base; what runs is the same code.
+function resolveAgainst(html: string, base: string): string {
+  return html.replace(/(<(?:script|link)\b[^>]*?\s(?:src|href)\s*=\s*)(["'])([^"']*)\2/gi, (match, pre, q, url) =>
+    !url || /^(?:[a-z][\w+.-]*:|\/\/|#)/i.test(url) ? match : `${pre}${q}${new URL(url, base).href}${q}`,
+  );
+}
+
+function frameDocument(cfg: Config, id: string, source: string, attempt = 0): string {
   const t = themeSnapshot();
   const vars = Object.entries(t.vars).map(([k, v]) => `${k}:${v};`).join('');
   const boot = {
     id,
-    runner: cfg.runner ? absolute(cfg.runner) : undefined,
+    runner: cfg.runner ? bust(absolute(cfg.runner), attempt) : undefined,
+    runnerLabel: cfg.runner,
     options: cfg.options,
     base: cfg.base ? absolute(cfg.base) : document.baseURI,
   };
   return [
-    `<!doctype html><html lang="${escAttr(document.documentElement.lang || 'en')}" data-theme="${t.theme}"><head><meta charset="utf-8">`,
-    `<meta name="viewport" content="width=device-width, initial-scale=1">`,
+    `<!doctype html><html lang="${escAttr(document.documentElement.lang || 'en')}" data-theme="${t.theme}"><head>`,
     cfg.base ? `<base href="${escAttr(absolute(cfg.base))}">` : '',
+    `<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">`,
     `<style>:root{color-scheme:${t.scheme};${vars}}html,body{margin:0}body{padding:1rem;font-family:var(--sl-font,system-ui,sans-serif);`,
     `line-height:1.5;color:var(--sl-color-text,CanvasText);background:transparent}</style>`,
     // </script> cannot appear inside a JSON literal in a script; escape "<".
     `<script>${BOOT}(${JSON.stringify(boot).replace(/</g, '\\u003c')})</script>`,
     ...cfg.modules.map((u) => `<script type="module" src="${escAttr(absolute(u))}"></script>`),
-    cfg.head,
+    cfg.base ? resolveAgainst(cfg.head, absolute(cfg.base)) : cfg.head,
     `</head><body>`,
-    cfg.runner ? '<div id="live-root"></div>' : source,
+    cfg.runner ? '<div id="live-root"></div>' : cfg.base ? resolveAgainst(source, absolute(cfg.base)) : source,
     `</body></html>`,
   ].join('');
 }
@@ -251,6 +298,33 @@ class LiveExample extends HTMLElement {
   private io: IntersectionObserver | null = null;
   private timer = 0;
   private lastTheme = '';
+  /** A runner or module failed to load: the next run retries with a fresh URL. */
+  private loadFailed = false;
+  private attempt = 0;
+  private retryBtn: HTMLButtonElement | null = null;
+
+  /** The code the example runs now: what is in the editor for an editable example. Public API. */
+  getSource(): string {
+    return this.editor?.value ?? this.source;
+  }
+
+  /**
+   * Replaces the example's code and runs it (if it has started; a lazy example runs it when it scrolls into view).
+   * An editable example shows it in the editor and Reset brings back the original; otherwise the code block keeps
+   * showing the original while the copy button copies the new code. Public API: call it after
+   * `customElements.whenDefined('live-example')`.
+   */
+  setSource(code: string): void {
+    if (!this.mount) throw new Error('<live-example> is not connected yet');
+    if (this.editor) {
+      this.editor.value = code;
+      this.onEdit(true);
+      return;
+    }
+    this.source = code;
+    if (this.copyBtn) this.copyBtn.dataset.code = code.replace(/\n/g, '\u007f');
+    if (this.started) void this.run();
+  }
 
   connectedCallback() {
     if (this.mount) {
@@ -322,15 +396,45 @@ class LiveExample extends HTMLElement {
     }
   }
 
-  private setStatus(message: string, level: LiveStatusLevel = 'info') {
-    this.statusEl.textContent = message;
+  private setStatus(message: string, level: LiveStatusLevel = 'info', detail?: string) {
+    this.statusEl.replaceChildren(message);
+    if (detail) {
+      // The browser's own message, one click away (and in the tooltip).
+      const more = document.createElement('details');
+      more.className = 'live-ex__detail';
+      const summary = document.createElement('summary');
+      summary.textContent = 'Details';
+      const code = document.createElement('code');
+      code.textContent = detail;
+      more.append(summary, code);
+      this.statusEl.append(' ', more);
+    }
+    this.statusEl.title = detail ?? '';
     this.statusEl.dataset.level = level;
     if (level === 'error') this.dataset.state = 'error';
     this.bar.hidden = !this.cfg.editable && !message;
   }
 
-  private showError(message: string) {
-    this.setStatus(message, 'error');
+  private showError(message: string, detail?: string) {
+    this.setStatus(message, 'error', detail);
+  }
+
+  /** A module could not be fetched: say so plainly and offer to try again (Retry, or Reset when editable). */
+  private showLoadError(message: string, detail: string) {
+    this.loadFailed = true;
+    this.showError(message, detail);
+    if (!this.retryBtn) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'live-ex__reset live-ex__retry';
+      b.textContent = 'Retry';
+      b.addEventListener('click', () => void this.run());
+      if (this.resetBtn) this.resetBtn.before(b);
+      else this.bar.append(b);
+      this.retryBtn = b;
+    }
+    this.retryBtn.hidden = false;
+    if (this.resetBtn) this.resetBtn.disabled = false;
   }
 
   private clearStatus() {
@@ -340,25 +444,34 @@ class LiveExample extends HTMLElement {
   async run() {
     this.stop();
     const seq = this.seq;
+    const retry = this.loadFailed;
+    if (retry) {
+      this.loadFailed = false;
+      this.attempt++;
+    }
+    if (this.retryBtn) this.retryBtn.hidden = true;
+    if (this.resetBtn && this.editor) this.resetBtn.disabled = this.editor.value === this.original;
     this.dataset.state = 'running';
     this.clearStatus();
     try {
-      if (this.cfg.mode === 'iframe') this.runInFrame();
+      if (this.cfg.mode === 'iframe') this.runInFrame(retry);
       else if (this.cfg.runner) await this.runInlineRunner(seq);
       else {
-        await Promise.all(this.cfg.modules.map(loadModule));
+        await Promise.all(this.cfg.modules.map((u) => loadModule(u, 'module', this.attempt)));
         if (seq !== this.seq) return;
         renderHtml(this.mount, this.source, (m) => this.showError(m));
       }
       if (seq === this.seq && this.dataset.state === 'running') this.dataset.state = 'ok';
     } catch (err) {
-      if (seq === this.seq) this.showError(describeError(err));
+      if (seq !== this.seq) return;
+      if (err instanceof ModuleLoadError) this.showLoadError(err.message, err.detail);
+      else this.showError(describeError(err));
     }
   }
 
   private async runInlineRunner(seq: number) {
-    await Promise.all(this.cfg.modules.map(loadModule));
-    const run = await loadRunner(this.cfg.runner!);
+    await Promise.all(this.cfg.modules.map((u) => loadModule(u, 'module', this.attempt)));
+    const run = await loadRunner(this.cfg.runner!, this.attempt);
     if (seq !== this.seq) return;
     this.ac = new AbortController();
     // Render into a fresh box; if the run fails, the last good render stays on screen (stopped).
@@ -399,7 +512,12 @@ class LiveExample extends HTMLElement {
     }
   }
 
-  private runInFrame() {
+  private runInFrame(retry = false) {
+    if (retry && this.frame) {
+      // The runner never loaded in this frame: start over with a fresh document.
+      frames.delete(this.frame.contentWindow!);
+      this.frame = null;
+    }
     if (this.cfg.runner && this.frame) {
       // The runner stays loaded in its iframe; just hand it the new source.
       this.postToFrame({ type: 'run', source: this.source });
@@ -417,7 +535,7 @@ class LiveExample extends HTMLElement {
     }
     this.frameReady = false;
     this.frameTheme = pageTheme();
-    this.frame.srcdoc = frameDocument(this.cfg, this.id, this.source);
+    this.frame.srcdoc = frameDocument(this.cfg, this.id, this.source, this.attempt);
   }
 
   private postToFrame(message: Record<string, unknown>) {
@@ -439,7 +557,8 @@ class LiveExample extends HTMLElement {
         this.setStatus(m.message, m.level);
         break;
       case 'error':
-        this.showError(m.message);
+        if (m.load) this.showLoadError(m.message, m.detail ?? '');
+        else this.showError(m.message, m.detail);
         break;
       case 'done':
         if (this.dataset.state === 'running') this.dataset.state = 'ok';

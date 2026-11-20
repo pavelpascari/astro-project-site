@@ -70,6 +70,12 @@ const year = new Date().getFullYear();
     flex-wrap: wrap;
     gap: 0.25rem 1.25rem;
   }
+  /* Comfortable targets (at least 24px, 44px on touch screens) without changing the line spacing much. */
+  nav a,
+  .name {
+    display: inline-block;
+    padding-block: 0.2rem;
+  }
   a {
     color: inherit;
   }
@@ -93,6 +99,31 @@ const year = new Date().getFullYear();
   @media (max-width: 40rem) {
     .inner {
       grid-template-columns: 1fr;
+    }
+  }
+  @media (pointer: coarse) {
+    ul {
+      gap: 0 0.5rem;
+    }
+    nav a,
+    .name {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+    nav a {
+      padding-inline: 0.5rem;
+    }
+    li:first-child a {
+      margin-inline-start: -0.5rem;
+    }
+  }
+  @media print {
+    nav {
+      display: none;
+    }
+    .site-footer {
+      background: none;
     }
   }
 

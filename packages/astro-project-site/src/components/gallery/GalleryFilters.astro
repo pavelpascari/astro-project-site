@@ -146,6 +146,24 @@ const showTags = tags.length > 0;
     background: var(--site-accent);
     color: var(--site-on-accent);
   }
+  button:focus-visible {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+  @media (pointer: coarse) {
+    button {
+      min-height: 2.75rem;
+    }
+  }
+  /* Windows high contrast drops the filled background: keep the pressed state visible. */
+  @media (forced-colors: active) {
+    button[aria-pressed='true'] {
+      forced-color-adjust: none;
+      border-color: Highlight;
+      background: Highlight;
+      color: HighlightText;
+    }
+  }
   .status {
     margin: 0;
     margin-inline-start: auto;

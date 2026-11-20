@@ -17,6 +17,7 @@
 //   a `/` is tried against every path segment, so `*.map` or `test` match at any depth.
 // Always skipped: dotfiles and dot-folders (.git, .env, ...), node_modules, and the site's own folder when
 // `from` contains it (so `from: '../'` from a `website/` subfolder does not mirror the site into itself).
+import { globToRegex } from './glob.mjs';
 import { cp, mkdir, readdir, readFile, stat } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path';
@@ -270,37 +271,6 @@ export function compileGlob(pattern) {
       return true;
     },
   };
-}
-
-/** @returns {string} */
-function globToRegex(/** @type {string} */ glob) {
-  let re = '';
-  for (let i = 0; i < glob.length; i++) {
-    const c = glob[i];
-    if (c === '*') {
-      if (glob[i + 1] === '*') {
-        const slash = glob[i + 2] === '/';
-        re += slash ? '(?:.*/)?' : '.*';
-        i += slash ? 2 : 1;
-      } else re += '[^/]*';
-    } else if (c === '?') re += '[^/]';
-    else if (c === '{') {
-      const end = glob.indexOf('}', i);
-      if (end === -1) re += '\\{';
-      else {
-        re += `(?:${glob.slice(i + 1, end).split(',').map(globToRegex).join('|')})`;
-        i = end;
-      }
-    } else if (c === '[') {
-      const end = glob.indexOf(']', i + 1);
-      if (end === -1) re += '\\[';
-      else {
-        re += `[${glob.slice(i + 1, end).replace(/^!/, '^').replace(/\\/g, '\\\\')}]`;
-        i = end;
-      }
-    } else re += c.replace(/[.+^$()|\\]/g, '\\$&');
-  }
-  return re;
 }
 
 function isInside(/** @type {string} */ child, /** @type {string} */ parent) {

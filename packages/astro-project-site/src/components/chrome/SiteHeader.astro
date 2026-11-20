@@ -40,7 +40,7 @@ const hasSearch = Astro.slots.has('search');
     }
   </div>
 
-  <nav class="nav" aria-label="Main">
+  <nav class="nav" aria-label="Site">
     <ul>
       {
         links.map((link) => (
@@ -93,7 +93,7 @@ const hasSearch = Astro.slots.has('search');
       <span class="visually-hidden">Site menu</span>
     </summary>
     <div class="menu-panel">
-      <nav aria-label="Main (menu)">
+      <nav aria-label="Site (menu)">
         <ul>
           {
             links.map((link) => (
@@ -121,17 +121,52 @@ const hasSearch = Astro.slots.has('search');
 </div>
 
 <script>
-  // Progressive enhancement for the small-screen menu (it works as a plain <details> without this):
-  // close on Escape, on a click outside, and after following a link.
+  // When the bar is too narrow for the nav (a long project name, many nav items, search, on a tablet), the nav moves
+  // into the menu instead of squeezing the project name to nothing. Measured with the nav shown, so it comes back
+  // as soon as there is room.
+  for (const header of document.querySelectorAll<HTMLElement>('.site-header')) {
+    const brand = header.querySelector<HTMLElement>('.brand');
+    const list = header.querySelector<HTMLElement>('.nav ul');
+    const search = header.querySelector<HTMLElement>('.search');
+    if (!brand || !list) continue;
+    const squeezed = (el: HTMLElement | null, min = Infinity) => !!el && el.clientWidth + 1 < Math.min(el.scrollWidth, min);
+    const fit = () => {
+      header.removeAttribute('data-collapsed');
+      header.removeAttribute('data-tight');
+      // On small screens the menu already holds the nav.
+      if (getComputedStyle(list.parentElement!).display !== 'none' && (squeezed(brand, 160) || squeezed(list) || squeezed(search)))
+        header.setAttribute('data-collapsed', '');
+      // Still no room for the name (a phone with a large default font): the version badge goes; the footer has it.
+      if (squeezed(brand, 96)) header.setAttribute('data-tight', '');
+    };
+    // Re-measure when the bar's width changes or its contents do (not on the list's own size: hiding it would loop).
+    new ResizeObserver(fit).observe(header);
+    const contents = new MutationObserver(fit);
+    for (const el of [brand, list]) contents.observe(el, { childList: true, characterData: true, subtree: true });
+    document.fonts?.ready.then(fit);
+  }
+
+  // Progressive enhancement for the small-screen menu (it works as a plain <details> without this): a disclosure
+  // that closes on Escape (focus back on the button), on a click outside, when focus moves out of it, and after
+  // following a link. It is not modal, so there is no focus trap or scroll lock; the panel scrolls on its own when
+  // the screen is short.
   for (const menu of document.querySelectorAll<HTMLDetailsElement>('.site-header details.menu')) {
     const summary = menu.querySelector('summary');
-    summary?.setAttribute('aria-expanded', String(menu.open));
-    menu.addEventListener('toggle', () => summary?.setAttribute('aria-expanded', String(menu.open)));
+    const sync = () => summary?.setAttribute('aria-expanded', String(menu.open));
+    sync();
+    menu.addEventListener('toggle', sync);
+    // `toggle` fires asynchronously: update the state as soon as the button is used, so it is announced at once.
+    summary?.addEventListener('click', () => queueMicrotask(sync));
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && menu.open) {
         menu.open = false;
+        sync();
         summary?.focus();
       }
+    });
+    menu.addEventListener('focusout', (e) => {
+      const next = e.relatedTarget as Node | null;
+      if (menu.open && next && !menu.contains(next)) menu.open = false;
     });
     document.addEventListener('click', (e) => {
       if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
@@ -185,6 +220,11 @@ const hasSearch = Astro.slots.has('search');
     color: var(--site-text);
     border-color: var(--site-muted);
   }
+  .brand,
+  .version,
+  .repo {
+    position: relative;
+  }
 
   .nav ul,
   .menu ul {
@@ -195,6 +235,9 @@ const hasSearch = Astro.slots.has('search');
   .nav ul {
     display: flex;
     gap: 0.25rem;
+  }
+  .nav a {
+    white-space: nowrap;
   }
   .nav a,
   .menu-panel a {
@@ -278,6 +321,11 @@ const hasSearch = Astro.slots.has('search');
     top: calc(100% + 0.5rem);
     z-index: 30;
     min-width: 14rem;
+    max-width: calc(100vw - 2rem);
+    /* Short screens (phones in landscape): the panel scrolls instead of running off the bottom. */
+    max-height: calc(100dvh - var(--site-header-height) - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
     padding: 0.5rem;
     border: 1px solid var(--site-border);
     border-radius: var(--site-radius);
@@ -291,6 +339,17 @@ const hasSearch = Astro.slots.has('search');
     margin-top: 0.5rem;
     padding: 0.5rem 0.25rem 0.25rem;
     border-top: 1px solid var(--site-border);
+  }
+
+  /* Not enough room for the nav (set by the script above): it moves into the menu. */
+  [data-collapsed] .nav {
+    display: none;
+  }
+  [data-collapsed] .menu {
+    display: block;
+  }
+  [data-tight] .version {
+    display: none;
   }
 
   @media (max-width: 49.99rem) {
@@ -319,11 +378,57 @@ const hasSearch = Astro.slots.has('search');
     white-space: nowrap;
   }
 
+  /* Touch screens: every control at least 44×44 (WCAG 2.5.5), without changing the look of the bar. */
+  @media (pointer: coarse) {
+    .brand {
+      /* A block (flex item) with the ellipsis: grow the line, not the box model. */
+      line-height: 2.75rem;
+    }
+    .nav a,
+    .repo,
+    .menu summary {
+      display: inline-flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+    .repo,
+    .menu summary {
+      justify-content: center;
+      min-width: 2.75rem;
+    }
+    .menu-panel a {
+      display: flex;
+      align-items: center;
+      min-height: 2.75rem;
+    }
+    /* The version pill stays small; an invisible hit area makes it easy to tap. */
+    .version::after {
+      content: '';
+      position: absolute;
+      inset: -0.75rem -0.25rem;
+    }
+  }
+
+  /* Windows high contrast: backgrounds are dropped, so mark the current page another way. */
+  @media (forced-colors: active) {
+    .nav a[aria-current],
+    .menu-panel a[aria-current] {
+      text-decoration: underline;
+      text-underline-offset: 0.3em;
+      text-decoration-thickness: 2px;
+    }
+  }
+
   @media print {
+    .nav,
     .search,
     .actions,
-    .menu {
+    .menu,
+    [data-collapsed] .menu {
       display: none;
+    }
+    .version {
+      border: 0;
     }
   }
 </style>

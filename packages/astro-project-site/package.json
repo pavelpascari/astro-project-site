@@ -24,6 +24,7 @@
       "default": "./src/index.mjs"
     },
     "./components": "./src/components/index.ts",
+    "./live": "./src/components/live/Live.astro",
     "./content": "./src/content.ts",
     "./config": "./src/config.ts",
     "./theme.css": "./src/styles/theme.css",

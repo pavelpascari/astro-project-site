@@ -1,7 +1,8 @@
 ---
 // A live example: the code is written once, shown with Expressive Code and executed.
 // Docs: the "Live examples" page of the astro-project-site docs.
-import { Code } from '@astrojs/starlight/components';
+// Expressive Code's <Code>, imported without Starlight's component barrel and its stylesheet (see virtual.mjs).
+import { Code } from 'virtual:astro-project-site/code';
 import type { LiveProps } from './types';
 
 type Props = LiveProps;
@@ -68,6 +69,7 @@ const config = {
   id={id}
   class:list={['live-ex', `live-ex--${preview}`, className]}
   data-mode={mode}
+  data-editable={editable ? '' : undefined}
   data-config={JSON.stringify(config)}
 >
   <figure class="live-ex__figure">
@@ -81,7 +83,7 @@ const config = {
       <noscript><p class="live-ex__noscript">This example runs in the browser and needs JavaScript.</p></noscript>
     </div>
     <div class="live-ex__bar not-content" hidden>
-      <p class="live-ex__status" role="status" aria-live="polite"></p>
+      <div class="live-ex__status" role="status" aria-live="polite"></div>
       {editable && <button type="button" class="live-ex__reset" disabled>Reset</button>}
     </div>
     <div class="live-ex__code">
@@ -232,6 +234,13 @@ const config = {
   .live-ex__bar[hidden] {
     display: none;
   }
+  /* An editable example always shows its bar once the script runs: keep its place so the code does not jump. */
+  @media (scripting: enabled) {
+    .live-ex[data-editable] .live-ex__bar[hidden] {
+      display: flex;
+      visibility: hidden;
+    }
+  }
   .live-ex__status {
     flex: 1;
     min-width: 0;
@@ -242,6 +251,24 @@ const config = {
     font-family: var(--__sl-font-mono, var(--sl-font-mono, ui-monospace, monospace));
     font-size: var(--sl-text-xs, 0.8125rem);
     line-height: 1.5;
+  }
+  .live-ex__detail {
+    display: inline;
+  }
+  .live-ex__detail summary {
+    display: inline;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .live-ex__detail[open] code {
+    display: block;
+    margin-top: 0.25rem;
+  }
+  .live-ex__retry + .live-ex__reset {
+    margin-left: 0.5rem;
+  }
+  .live-ex__reset[hidden] {
+    display: none;
   }
   .live-ex__status[data-level='ok'] {
     color: var(--sl-color-green-high, var(--sl-color-gray-2, GrayText));
@@ -335,5 +362,37 @@ const config = {
   live-example:target .live-ex__preview {
     outline: 2px solid var(--sl-color-accent, Highlight);
     outline-offset: 2px;
+  }
+
+  /* Touch screens have no hover: the anchor is always shown, and the Reset button is a full-size target. */
+  @media (hover: none) {
+    .live-ex__anchor {
+      opacity: 1;
+    }
+  }
+  /* Print the code as written (the editor is a scrolling textarea) and drop the controls. */
+  @media print {
+    .live-ex__bar,
+    .live-ex__editor,
+    .live-ex__anchor {
+      display: none !important;
+    }
+    .live-ex__code .frame:has(.live-ex__editor) pre {
+      display: block;
+    }
+  }
+  @media (pointer: coarse) {
+    .live-ex__reset {
+      min-height: 2.75rem;
+      padding-inline: 1rem;
+    }
+    .live-ex__anchor {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+      vertical-align: middle;
+    }
   }
 </style>

@@ -1,5 +1,6 @@
 ---
 // A shell command with a copy button. The button appears only when the Clipboard API is available.
+import '../../styles/components.css';
 interface Props {
   command: string;
   /** Accessible name for the command, read before it. */
@@ -78,6 +79,19 @@ const { command, label = 'Install command' } = Astro.props;
   }
   .copy[hidden] {
     display: none;
+  }
+  /* With JavaScript on, the button is about to appear: keep its place so nothing shifts when it does. */
+  @media (scripting: enabled) {
+    .copy[hidden] {
+      display: inline-flex;
+      visibility: hidden;
+    }
+  }
+  @media (pointer: coarse) {
+    .copy {
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+    }
   }
   .copy:hover {
     background: color-mix(in oklab, var(--site-code-text) 12%, transparent);

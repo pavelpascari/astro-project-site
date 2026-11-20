@@ -2,6 +2,7 @@
 // The built-in /gallery/ page body: every published item, with kind and tag filters. Without JavaScript all items
 // are shown; with it, the filters appear (and are reflected in the URL: ?kind=demo&tag=canvas).
 // Replace it with `components.Gallery` (same props; it renders inside BaseLayout).
+import '../../styles/components.css';
 import type { GalleryEntry } from '../../index';
 import GalleryGrid from './GalleryGrid.astro';
 import GalleryFilters from './GalleryFilters.astro';

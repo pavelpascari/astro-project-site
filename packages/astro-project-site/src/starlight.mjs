@@ -54,6 +54,7 @@ export function starlightOptions(options, paths, root) {
     sidebar = [],
     plugins = [],
     routeMiddleware,
+    head = [],
     markdown = {},
     social,
     ...rest
@@ -77,6 +78,8 @@ export function starlightOptions(options, paths, root) {
     // theme.css first, then the project's site-wide CSS, then docs-only CSS.
     customCss: [own('styles/theme.css'), ...paths.customCss, ...asArray(customCss).map(resolve)],
     sidebar: [...buildSidebar(project), ...asArray(sidebar)],
+    // The site-wide `head` option first, then docs-only `starlight.head`.
+    head: [...options.head, ...asArray(head)],
     // Starlight's markdown features (heading anchors, asides, ...) only run on folders it knows about.
     markdown: { ...markdown, processedDirs: [...project.mounts.map((m) => m.dir), ...asArray(markdown.processedDirs).map(resolve)] },
     // og:image (and a large Twitter card) on every docs page, from the same hook as the other pages.

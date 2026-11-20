@@ -5,6 +5,9 @@
 // src/content that is served under /docs/<route>/.
 import fs from 'node:fs';
 import path from 'node:path';
+import { globToRegExp } from '../glob.mjs';
+
+export { globToRegExp };
 
 const posix = path.posix;
 const MD_EXT = /\.md$/i;
@@ -124,20 +127,6 @@ function walk(/** @type {string} */ dir, prefix = '') {
   return out;
 }
 
-/** Minimal glob: `**` any path, `*` any segment chars, `?` one char. Matches whole posix paths. */
-export function globToRegExp(/** @type {string} */ glob) {
-  let re = '';
-  for (let i = 0; i < glob.length; i++) {
-    const c = glob[i];
-    if (c === '*' && glob[i + 1] === '*') {
-      i++;
-      if (glob[i + 1] === '/') { i++; re += '(?:.*/)?'; } else re += '.*';
-    } else if (c === '*') re += '[^/]*';
-    else if (c === '?') re += '[^/]';
-    else re += c.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  }
-  return new RegExp(`^${re}$`);
-}
 
 // ---------- sidebar ----------
 

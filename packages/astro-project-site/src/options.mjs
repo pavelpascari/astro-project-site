@@ -108,9 +108,22 @@ export const optionsSchema = z.strictObject({
   llms: z.boolean().default(true),
   linksValidator: z.union([z.literal(false), z.record(z.string(), z.unknown())]).optional(),
   customCss: z.array(z.string()).default([]),
+  // Tags added to the <head> of every page, docs included (same shape as Starlight's `head`).
+  head: z
+    .array(
+      z.strictObject({
+        tag: z.enum(['title', 'base', 'link', 'style', 'meta', 'script', 'noscript', 'template']),
+        attrs: z.record(z.string(), z.union([z.string(), z.boolean(), z.undefined()])).optional(),
+        content: z.string().optional(),
+      }),
+    )
+    .default([]),
   components: z.strictObject(Object.fromEntries(COMPONENT_NAMES.map((n) => [n, z.string().min(1).optional()]))).default({}),
   starlight: z.record(z.string(), z.unknown()).default({}),
 });
+
+/** Every top-level option projectSite() accepts, for tools that check a config without hardcoding the list. */
+export const OPTION_NAMES = /** @type {readonly string[]} */ (Object.freeze(Object.keys(optionsSchema.shape)));
 
 export class ProjectSiteOptionsError extends Error {
   /** @param {string[]} problems */
