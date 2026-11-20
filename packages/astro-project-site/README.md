@@ -5,17 +5,40 @@ markdown folder, live examples, a gallery, static HTML/JS apps served as they ar
 with a preview per pull request. Astro 7 + Starlight 0.43. MIT.
 
 ```bash
-npx astro-project-site init my-site
-cd my-site && npm install && npm run dev
+cd my-lib                                # your project's repository
+npx astro-project-site init website      # the package's only bin is `project-site`
+cd website && npm install && npm run dev
 ```
 
 ## Start a project
 
-`project-site init [dir]` copies the starter (a complete, building site) into `dir` and names it after the folder.
-It never overwrites a file unless you pass `--force`.
+Run `project-site init <dir>` in your repository. It reads the repository and writes a ready site into `dir`:
+
+| it reads | and makes |
+|---|---|
+| `package.json`, `Cargo.toml`, `pyproject.toml`, `go.mod`, `composer.json` or `*.gemspec` | name, tagline, version badge (`versionFrom`), install command, licence, blog author |
+| the git `origin` remote and default branch | `repo`, `repoBranch` (edit links, links to source files) |
+| `README.md`: first H1, first paragraph, bullets under Features/Highlights/Why, code under Install/Usage/Getting started | the landing page: hero, feature cards, steps |
+| `docs/` (or `doc/`, `documentation/`) | mounted under `/docs/reference/` |
+| `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md` | mounted under `/docs/project/` (`externalDocs` with `include`) |
+| `LICENSE` | the footer note ("Released under the MIT licence.") |
+| `examples/`, `demo/`, `demos/`, `playground/` (and other top-level folders with an `index.html`) holding HTML pages | mirrored under `/apps/` with the folders they load from (`../src/`), one gallery entry per page |
+| the README again | a first blog post, `src/content/blog/<date>-introducing-<name>.md`, as a draft (`draft: true`) to read through |
+
+`astro.config.mjs` comes out as commented config naming where each value came from; values it could not find are
+placeholders marked `TODO`. Also written: `src/content.config.ts`, `package.json` (scripts, this package as a
+dependency), `wrangler.jsonc` named after the project, the CI workflow pinned to this release (with
+`working-directory` when the site is a subfolder: move it to the repo root's `.github/workflows/`), `.gitignore`.
+
+It prints what it found and the files it will write, then asks (`--yes` skips the question; without a terminal,
+`--yes` or `--dry-run` is required). It only writes inside `dir` and never overwrites a file without `--force`.
+The repository read is `dir`'s parent when `dir` is inside a git repository, otherwise the current folder;
+`--from <dir>` picks another. In an empty folder you get placeholders and example docs and apps; `--blank` always
+copies that plain starter.
 
 ```bash
-npx astro-project-site init my-site --name "My Lib"   # the package's only bin is `project-site`
+npx astro-project-site init website --dry-run         # what it would do
+npx astro-project-site init website --yes --name "My Lib"
 ```
 
 A project is five small files plus content:
@@ -87,7 +110,7 @@ All paths are relative to the project root (the folder of `astro.config.mjs`) an
 | `repoBranch` | `string` | `'main'` | Branch for edit and source links. |
 | `versionFrom` | `string` | | A `package.json` whose `version` the header shows. |
 | `nav` | `{ label, href }[]` | Docs, Gallery | Top navigation on every page (and in the docs' mobile menu). |
-| `externalDocs` | `{ dir, route, label, order?, exclude? }[]` | `[]` | Markdown folders mounted under `/docs/<route>/`. `order`: file names listed first. `exclude`: globs. |
+| `externalDocs` | `{ dir, route, label, order?, exclude?, include? }[]` | `[]` | Markdown folders mounted under `/docs/<route>/`. `order`: file names listed first. `exclude`: globs. `include`: only these (globs matched against the whole path, a folder covers its contents), e.g. `{ dir: '..', route: 'project', label: 'Project', include: ['README.md', 'CHANGELOG.md'] }`. The site's own folder, dot-folders and `node_modules` are never mounted; a file belongs to the deepest mount that accepts it. |
 | `mirrors` | `{ from, to, include?, exclude? }[]` | `[]` | Folders served byte for byte under `/<to>/`. Globs (here, in `externalDocs.exclude` and docs-gen `files`): `*`, `?`, `**`, `{a,b}`, `[…]`. |
 | `install` | `string` | | Install command on the landing page. |
 | `favicon` | `string` | `'/favicon.svg'` | Under `public/`. |
@@ -231,7 +254,7 @@ with Starlight (`localStorage['starlight-theme']`, `<html data-theme>`).
 ## CLI
 
 ```
-project-site init [dir] [--name "My Lib"] [--force] [--package <npm spec>]
+project-site init [dir] [--from <repo>] [--yes] [--dry-run] [--force] [--blank] [--name "My Lib"] [--package <npm spec>]
 project-site docs:gen [--check] [--config docs-gen.config.mjs]
 project-site docs:check
 project-site deploy:preview [--alias pr-12] [--message "…"] [--dry-run] [-- <wrangler args>]

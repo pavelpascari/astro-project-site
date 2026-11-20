@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // project-site: the astro-project-site command line. Zero dependencies.
 //
-//   project-site init [dir] [--name "My Project"] [--force] [--package <npm spec>]
+//   project-site init [dir] [--from <repo>] [--yes] [--dry-run] [--force] [--blank] [--name "My Project"] [--package <npm spec>]
 //   project-site docs:gen [--check] [--config docs-gen.config.mjs]
 //   project-site docs:check [--config docs-gen.config.mjs]
 //   project-site deploy:preview [--alias pr-12] [--message "..."] [--dry-run] [-- <wrangler args>]
@@ -11,10 +11,15 @@ import { init } from '../src/init.mjs';
 const HELP = `Usage: project-site <command> [options]
 
 Commands:
-  init [dir]          Create a new project site from the starter (default dir: .)
-      --name <name>       Project name shown on the site (default: from the folder name)
-      --package <spec>    Version spec for the astro-project-site dependency (default: ^<this version>)
+  init [dir]          Create a project site in dir (default: .) from the repository it is for: landing page
+                      from the README, its markdown as docs, demo pages in a gallery, a blog with a draft post
+      --from <dir>        Repository to read (default: dir's parent inside a git repo, else the current folder)
+      --yes, -y           Write without asking (needed when not run in a terminal)
+      --dry-run           Print what was found and what would be written; write nothing
       --force             Overwrite files that already exist
+      --blank             Copy the plain starter instead (placeholders and example docs, no detection)
+      --name <name>       Project name shown on the site (default: README title, manifest or folder name)
+      --package <spec>    Version spec for the astro-project-site dependency (default: ^<this version>)
   docs:gen            Fill <!-- gen:... --> blocks in markdown (reads ./docs-gen.config.mjs)
       --check             Change nothing; exit 1 with a diff when a block is stale
       --config <file>     Another config file
@@ -31,10 +36,32 @@ switch (command) {
   case 'init': {
     const { values, positionals } = parseArgs({
       args: rest,
-      options: { name: { type: 'string' }, package: { type: 'string' }, force: { type: 'boolean', default: false } },
+      options: {
+        name: { type: 'string' },
+        package: { type: 'string' },
+        from: { type: 'string' },
+        force: { type: 'boolean', default: false },
+        yes: { type: 'boolean', short: 'y', default: false },
+        'dry-run': { type: 'boolean', default: false },
+        blank: { type: 'boolean', default: false },
+      },
       allowPositionals: true,
     });
-    process.exitCode = await init({ dir: positionals[0] ?? '.', name: values.name, packageSpec: values.package, force: values.force });
+    if (positionals.length > 1) {
+      console.error(`project-site init: one folder only (got ${positionals.join(', ')}).\n\n${HELP}`);
+      process.exitCode = 1;
+      break;
+    }
+    process.exitCode = await init({
+      dir: positionals[0] ?? '.',
+      from: values.from,
+      name: values.name,
+      packageSpec: values.package,
+      force: values.force,
+      yes: values.yes,
+      dryRun: values['dry-run'],
+      blank: values.blank,
+    });
     break;
   }
   case 'docs:gen':
