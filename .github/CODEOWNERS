@@ -1,0 +1,6 @@
+# Every change needs a review from the maintainer.
+*                       @pavelpascari
+
+# Called out explicitly: workflows, repository settings files, and the published package.
+/.github/               @pavelpascari
+/packages/              @pavelpascari
