@@ -1,0 +1,236 @@
+---
+// Starlight's PageTitle override: the page header of every docs page.
+//   breadcrumbs   the docs home and the sidebar groups above the page (nav-middleware.ts)
+//   title         the page title (id="_top", as Starlight's own)
+//   description   frontmatter `description`, for pages written in src/content/docs (a mounted page's description
+//                 is its first paragraph, which is right below)
+//   actions       "Copy page" (the page's markdown, from <page>.md) and Starlight's edit link
+import EditLink from 'virtual:starlight/components/EditLink';
+import type { NavData } from '../nav-middleware';
+
+const route = Astro.locals.starlightRoute;
+const nav = (Astro.locals as any).projectSiteNav as NavData | undefined;
+const crumbs = nav?.breadcrumbs ?? [];
+const { title, description } = route.entry.data;
+const filePath = route.entry.filePath ?? '';
+const local = /(^|\/)src\/content\/docs\//.test(filePath);
+const showDescription = !!description && local;
+// Pages that come from the collection have a markdown twin; generated pages (overviews, 404) do not.
+const markdownHref = nav?.hasMarkdown ? Astro.url.pathname.replace(/\/?$/, '') + '.md' : undefined;
+const hasActions = !!markdownHref || !!route.editUrl;
+---
+
+<header class="page-header">
+  {
+    crumbs.length > 0 && (
+      <nav class="crumbs print:hidden" aria-label="Breadcrumbs">
+        <ol>
+          {crumbs.map((c) => (
+            <li>{c.href ? <a href={c.href}>{c.label}</a> : <span>{c.label}</span>}</li>
+          ))}
+        </ol>
+      </nav>
+    )
+  }
+  <h1 id="_top">{title}</h1>
+  {showDescription && <p class="page-description">{description}</p>}
+  {
+    hasActions && (
+      <div class="page-actions print:hidden">
+        {markdownHref && (
+          <copy-page data-src={markdownHref}>
+            <button type="button" class="page-action" disabled>
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M8 8h11v13H8zM5 16H4V3h11v1"
+                />
+              </svg>
+              <span class="label">Copy page</span>
+            </button>
+            <span class="site-sr-status" role="status" aria-live="polite" />
+          </copy-page>
+        )}
+        {markdownHref && (
+          <a class="page-action" href={markdownHref}>
+            <span>Markdown</span>
+          </a>
+        )}
+        <div class="edit">
+          <EditLink />
+        </div>
+      </div>
+    )
+  }
+</header>
+
+<script>
+  // "Copy page": fetches the page's markdown twin and puts it on the clipboard; the result is announced.
+  class CopyPage extends HTMLElement {
+    connectedCallback() {
+      const button = this.querySelector('button');
+      const label = this.querySelector('.label');
+      const status = this.querySelector('[role="status"]');
+      if (!button || !label || !status || !navigator.clipboard) return;
+      button.disabled = false;
+      const text = label.textContent;
+      let timer: number | undefined;
+      button.addEventListener('click', async () => {
+        let message;
+        try {
+          const res = await fetch(this.dataset.src!);
+          if (!res.ok) throw new Error(String(res.status));
+          await navigator.clipboard.writeText(await res.text());
+          message = 'Copied';
+        } catch {
+          message = 'Could not copy';
+        }
+        label.textContent = message;
+        status.textContent = message === 'Copied' ? 'Page copied to the clipboard as markdown' : 'Could not copy the page';
+        clearTimeout(timer);
+        timer = window.setTimeout(() => {
+          label.textContent = text;
+          status.textContent = '';
+        }, 2000);
+      });
+    }
+  }
+  if (!customElements.get('copy-page')) customElements.define('copy-page', CopyPage);
+</script>
+
+<style>
+  @layer starlight.core {
+    .page-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    h1 {
+      margin: 0;
+      font-size: var(--sl-text-h1);
+      line-height: var(--sl-line-height-headings);
+      font-weight: 650;
+      letter-spacing: -0.015em;
+      color: var(--sl-color-white);
+      text-wrap: balance;
+    }
+  }
+
+  .crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.125rem 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--sl-text-sm);
+    line-height: 1.5;
+    color: var(--sl-color-gray-3);
+  }
+  .crumbs li {
+    display: inline-flex;
+    align-items: center;
+  }
+  .crumbs li + li::before {
+    content: '/';
+    margin-inline: 0.5rem;
+    color: var(--sl-color-gray-4);
+  }
+  .crumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.5rem;
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+    border-radius: 0.125rem;
+  }
+  .crumbs a:hover {
+    color: var(--sl-color-white);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .page-description {
+    margin: 0;
+    max-width: 42rem;
+    font-size: var(--sl-text-lg);
+    line-height: 1.55;
+    color: var(--sl-color-gray-2);
+  }
+
+  .page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+  copy-page {
+    display: contents;
+  }
+  .page-action,
+  .edit :global(a) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.7rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: var(--site-radius-sm);
+    background: transparent;
+    color: var(--sl-color-gray-2);
+    font: inherit;
+    font-size: var(--sl-text-sm);
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .page-action:hover,
+  .edit :global(a:hover) {
+    color: var(--sl-color-white);
+    border-color: var(--sl-color-gray-3);
+  }
+  .page-action:disabled {
+    display: none;
+  }
+  .page-action:focus-visible,
+  .crumbs a:focus-visible {
+    outline: 2px solid var(--site-focus);
+    outline-offset: 2px;
+  }
+  .edit {
+    display: contents;
+  }
+  .edit :global(svg) {
+    width: 1rem;
+    height: 1rem;
+  }
+  .site-sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  @media (pointer: coarse) {
+    .page-action,
+    .edit :global(a) {
+      min-height: 2.75rem;
+      padding-inline: 0.9rem;
+    }
+    .crumbs a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+    }
+  }
+</style>

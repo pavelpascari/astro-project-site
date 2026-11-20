@@ -51,7 +51,7 @@ A live example: the code is written once, shown with Expressive Code and execute
 ### Page frame and chrome
 #### BaseLayout
 
-Page frame for everything outside the docs: head metadata, the shared header and footer, theme and base styles. The header bar matches Starlight's so moving between the landing page and the docs feels like one site. Use it for a project's own pages too: import { BaseLayout } from 'astro-project-site/components';
+Page frame for everything outside the docs: head metadata, the shared header and footer, theme and base styles. The header bar matches Starlight's so moving between the landing page and the docs feels like one site. The docs search (Starlight's Search, whatever it resolved to) is in the header here too, so search is one keystroke away on every page. Use it for a project's own pages too: import { BaseLayout } from 'astro-project-site/components';
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
@@ -123,6 +123,7 @@ The top of the landing page: heading, lead paragraph, actions, install command, 
 | `primary` | `LinkAction` |  |  |
 | `secondary` | `LinkAction` |  |  |
 | `install` | `string` |  |  |
+| `headingLevel` | `1 \| 2` | `1` | Level of the title heading: 1 on a landing page (default); 2 when the hero is shown inside another page. |
 
 Slots: `default`, `live`.
 
@@ -188,6 +189,17 @@ A shell command with a copy button. The button appears only when the Clipboard A
 |---|---|---|---|
 | `command` (required) | `string` |  |  |
 | `label` | `string` | `'Install command'` | Accessible name for the command, read before it. |
+
+### Docs
+#### ChildCards
+
+A grid of cards for the pages and subfolders of a docs folder: title, description, and for a folder the number of pages in it. Folders without an index page get such a page automatically; put `<ChildCards />` in a folder's own index page to show the same grid there, or pass `dir` to list any folder. On a docs page the cards follow the sidebar order; elsewhere `sidebar.order`, then title.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `dir` | `string` |  | Folder to list, as a collection id (`docs/guides`) or path (`/docs/guides/`). Default: the current docs page. |
+| `exclude` | `string[]` |  | Collection ids or paths to leave out. |
+| `label` | `string` |  | Accessible name of the list. |
 
 ### Gallery
 #### GalleryPage

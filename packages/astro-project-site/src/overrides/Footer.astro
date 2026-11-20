@@ -1,14 +1,47 @@
 ---
-// Starlight's Footer override: Starlight's own page footer (edit link, last updated, pagination), then the
-// shared site footer (or the project's `components.Footer`), so docs pages end like every other page.
-import Default from '@astrojs/starlight/components/Footer.astro';
+// Starlight's Footer override: the end of a docs page (last updated, then prev/next), then the shared site footer
+// (or the project's `components.Footer`), so docs pages end like every other page. The edit link is in the page
+// header (overrides/PageTitle.astro). Starlight's own pieces come from its virtual modules, so component
+// overrides of LastUpdated and Pagination still apply.
+import LastUpdated from 'virtual:starlight/components/LastUpdated';
+import Pagination from 'virtual:starlight/components/Pagination';
 import Footer from 'virtual:astro-project-site/components/Footer';
+
+const { lastUpdated, pagination } = Astro.locals.starlightRoute;
+const hasPagination = !!(pagination.prev || pagination.next);
 ---
 
-<Default />
+{
+  (lastUpdated || hasPagination) && (
+    <footer class="doc-footer">
+      {lastUpdated && (
+        <div class="meta">
+          <LastUpdated />
+        </div>
+      )}
+      <Pagination />
+    </footer>
+  )
+}
 <Footer variant="docs" />
 
 <script>
   import { enhanceScrollRegions } from '../lib/scroll-regions';
   enhanceScrollRegions();
 </script>
+
+<style>
+  .doc-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 3rem;
+  }
+  .meta {
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+  }
+  .meta :global(p) {
+    margin: 0;
+  }
+</style>

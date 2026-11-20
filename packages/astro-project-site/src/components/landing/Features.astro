@@ -37,13 +37,14 @@ const { items } = Astro.props;
   .card {
     position: relative;
     height: 100%;
-    padding: calc(var(--site-space) * 1.5);
+    padding: calc(var(--site-space) * 1.25) calc(var(--site-space) * 1.375);
     border: 1px solid var(--site-border);
     border-radius: var(--site-radius);
     background: var(--site-bg);
   }
   h3 {
-    font-size: 1.125rem;
+    font-size: 1.0625rem;
+    font-weight: 650;
     margin-bottom: 0.4rem;
   }
   h3 a {
@@ -57,7 +58,7 @@ const { items } = Astro.props;
     border-radius: inherit;
   }
   [data-linked]:hover {
-    border-color: var(--site-accent);
+    border-color: color-mix(in oklab, var(--site-accent) 55%, var(--site-border));
   }
   [data-linked]:has(a:focus-visible) {
     outline: 2px solid var(--site-focus);

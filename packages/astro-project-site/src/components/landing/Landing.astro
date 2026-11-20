@@ -12,12 +12,18 @@ import Steps from './Steps.astro';
 import GalleryStrip from './GalleryStrip.astro';
 import CallToAction from './CallToAction.astro';
 import LatestPosts from '../blog/LatestPosts.astro';
+import ChildCards from '../docs/ChildCards.astro';
+import { childCards } from '../../lib/docs-tree';
 
 const landing = site.landing || {};
 const hero = landing.hero ?? {};
 const demo = hero.demo;
 const showGallery = site.gallery !== false && landing.gallery?.limit !== 0;
 const latest = site.blog && site.blog.landing && site.blog.landing.limit > 0 ? site.blog.landing : undefined;
+// No features configured: the top-level docs sections fill that place, so an unconfigured landing page still
+// points somewhere useful (only when there are at least two to show).
+const hasFeatures = !!landing.features && landing.features.items.length > 0;
+const showDocs = !hasFeatures && (await childCards('docs')).length >= 2;
 ---
 
 <Hero
@@ -40,6 +46,14 @@ const latest = site.blog && site.blog.landing && site.blog.landing.limit > 0 ? s
   landing.features && landing.features.items.length > 0 && (
     <Section id="features" title={landing.features.title} intro={landing.features.intro}>
       <Features items={landing.features.items} />
+    </Section>
+  )
+}
+
+{
+  showDocs && (
+    <Section id="docs" title="Documentation">
+      <ChildCards dir="docs" label="Documentation" />
     </Section>
   )
 }

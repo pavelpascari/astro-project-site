@@ -1,0 +1,18 @@
+---
+// Automatic overview page for every docs folder that has pages but no index page of its own (e.g. /docs/guides/
+// when there is no guides/index.md): the docs layout with a card grid of the folder's pages and subfolders.
+// Adding an index page to the folder replaces it.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import ChildCards from '../components/docs/ChildCards.astro';
+import { foldersWithoutIndex } from '../lib/docs-tree';
+
+export async function getStaticPaths() {
+  return (await foldersWithoutIndex()).map((f) => ({ params: { section: f.id }, props: { id: f.id, title: f.title } }));
+}
+
+const { id, title } = Astro.props as { id: string; title: string };
+---
+
+<StarlightPage frontmatter={{ title, tableOfContents: false, editUrl: false }}>
+  <ChildCards dir={id} label={title} />
+</StarlightPage>

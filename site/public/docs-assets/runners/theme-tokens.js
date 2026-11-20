@@ -54,7 +54,7 @@ export function run(source, mount, ctx) {
         color: var(--site-on-accent); font-weight: 600; }
       .soft { padding: .4rem .9rem; border-radius: var(--site-radius-sm); background: var(--site-accent-soft);
         color: var(--site-accent-strong); }
-      a { color: var(--site-link); }
+      .link { color: var(--site-link); text-decoration: underline; }
       code { padding: .1rem .4rem; border-radius: var(--site-radius-sm); background: var(--site-code-bg);
         color: var(--site-code-text); font-family: var(--site-font-mono, monospace); font-size: .85em; }
     </style>
@@ -63,7 +63,7 @@ export function run(source, mount, ctx) {
       <main>
         <div class="card"><h3>A feature card</h3><p>Muted body text on the surface colour.</p></div>
         <div class="row"><span class="btn">Get started</span><span class="soft">Secondary</span>
-          <a href="#theme-preview">A link</a> <code>npm i my-lib</code></div>
+          <span class="link">A link</span> <code>npm i my-lib</code></div>
       </main>
     </div>`;
   mount.append(host);

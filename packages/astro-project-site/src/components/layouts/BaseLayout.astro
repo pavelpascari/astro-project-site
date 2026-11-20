@@ -1,6 +1,8 @@
 ---
 // Page frame for everything outside the docs: head metadata, the shared header and footer, theme and base styles.
 // The header bar matches Starlight's so moving between the landing page and the docs feels like one site.
+// The docs search (Starlight's Search, whatever it resolved to) is in the header here too, so search is one
+// keystroke away on every page.
 // Use it for a project's own pages too:  import { BaseLayout } from 'astro-project-site/components';
 import '../../styles/theme.css';
 import '../../styles/base.css';
@@ -9,6 +11,7 @@ import 'virtual:astro-project-site/user-css';
 import site from 'virtual:astro-project-site/config';
 import Footer from 'virtual:astro-project-site/components/Footer';
 import Header from 'virtual:astro-project-site/components/Header';
+import { Search, showSearch } from 'virtual:astro-project-site/starlight';
 import SiteHead from '../chrome/SiteHead.astro';
 import ThemeSelect from '../chrome/ThemeSelect.astro';
 
@@ -36,6 +39,7 @@ const props = Astro.props;
     <header class="site-bar">
       <div class="site-bar-inner">
         <Header>
+          {showSearch && <Search slot="search" />}
           <ThemeSelect slot="theme" id="site-theme" />
           <ThemeSelect slot="theme-menu" id="site-theme-menu" />
         </Header>

@@ -42,6 +42,7 @@ html:where([data-site-page]) {
 
 :where([data-site-page]) :is(h1, h2, h3, h4) {
   font-family: var(--site-font-heading);
+  font-weight: 650;
   line-height: 1.2;
   margin: 0 0 0.5em;
   text-wrap: balance;
@@ -74,6 +75,12 @@ html:where([data-site-page]) {
   border-bottom: 1px solid var(--site-border);
   background: var(--site-bg);
 }
+/* Same inset as Starlight's header, so the bar does not shift between the landing page and the docs. */
+@media (min-width: 50rem) {
+  .site-bar {
+    padding-inline: 1.5rem;
+  }
+}
 .site-bar-inner {
   height: 100%;
 }
@@ -93,11 +100,27 @@ html:where([data-site-page]) {
   top: 0.5rem;
 }
 
+/* Starlight's display utilities, used by its Search component (in the header of these pages too). */
+:where([data-site-page]) .sl-hidden {
+  display: none;
+}
+:where([data-site-page]) .sl-flex {
+  display: flex;
+}
+@media (min-width: 50rem) {
+  :where([data-site-page]) .md\:sl-hidden {
+    display: none;
+  }
+  :where([data-site-page]) .md\:sl-flex {
+    display: flex;
+  }
+  :where([data-site-page]) .md\:sl-block {
+    display: block;
+  }
+}
+
 /* The `site-*` utility classes and build-time code styles live in components.css: components import it
    themselves so they look the same on docs pages. */
 
-@media (prefers-reduced-motion: no-preference) {
-  html:where([data-site-page]) {
-    scroll-behavior: smooth;
-  }
-}
+/* No smooth scrolling, as on the docs pages: with it, the scroll that brings a focused element into view is animated,
+   and for a moment the element can sit under the sticky header. Keyboard users get there at once. */

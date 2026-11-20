@@ -67,6 +67,14 @@ export default function projectSite(userOptions) {
           else injectRoute({ pattern: route.pattern, entrypoint: own(route.entry), prerender: true });
         }
 
+        // Docs navigation pages: an overview (card grid) for each docs folder without an index page, and the
+        // markdown source of each docs page at <page>.md (the page header's "Copy page"). Both only produce URLs
+        // that no docs page uses. No favicon in public/: a generated monogram, so there is never a 404 for it.
+        injectRoute({ pattern: '/[...section]', entrypoint: own('routes/section.astro'), prerender: true });
+        injectRoute({ pattern: '/[...slug].md', entrypoint: own('routes/markdown.ts'), prerender: true });
+        if (/^\/[^/]+\.svg$/.test(options.favicon) && !existsSync(path.join(fileURLToPath(config.publicDir), options.favicon)))
+          injectRoute({ pattern: options.favicon, entrypoint: own('routes/favicon.svg.ts'), prerender: true });
+
         const starlight = starlightIntegration(options, paths, root);
         // These are set from `name`, `tagline` and `favicon`; a value under `starlight` wins on docs pages only.
         const shadowed = { title: 'name', description: 'tagline', favicon: 'favicon' };

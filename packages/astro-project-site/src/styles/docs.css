@@ -1,0 +1,398 @@
+/*
+ * astro-project-site/docs.css: the look of the docs pages (Starlight), loaded after theme.css on docs pages only.
+ * Unlayered, so it wins over Starlight's layered styles; a project's `customCss` comes after it and wins over it.
+ * Everything derives from the `--site-*` tokens in theme.css.
+ *
+ *   layout      content width, sidebar width, spacing between the title and the body
+ *   type        heading scale and rhythm, links, inline code
+ *   sidebar     section headers, nested groups, current page
+ *   toc         "On this page", desktop column and the mobile bar
+ *   content     code frames, tables, asides, pagination
+ */
+
+/* ── Layout ──────────────────────────────────────────────────────────────────────────────── */
+:root {
+  --sl-sidebar-width: 17.5rem;
+  /* About 70 characters a line; a little more on very wide screens. */
+  --sl-content-width: 45rem;
+  /* A flat scale: weight and space carry the hierarchy, not size. */
+  --sl-text-h1: 1.875rem;
+  --sl-text-h2: 1.375rem;
+  --sl-text-h3: 1.125rem;
+  --sl-text-h4: 1rem;
+  --sl-text-h5: 1rem;
+  --sl-line-height: 1.75;
+  --sl-line-height-headings: 1.3;
+}
+@media (min-width: 50rem) {
+  :root {
+    --sl-text-h1: 2.125rem;
+    --sl-text-h2: 1.4375rem;
+    --sl-text-h3: 1.1875rem;
+    --sl-text-h4: 1.0625rem;
+  }
+}
+@media (min-width: 96rem) {
+  :root {
+    --sl-content-width: 50rem;
+  }
+}
+/* Pages without a sidebar (splash) keep Starlight's wide column. */
+html:not([data-has-sidebar]) {
+  --sl-content-width: 67.5rem;
+}
+
+/* Title and body read as one column: no rule between them, the body starts right under the header. */
+.main-pane .content-panel + .content-panel {
+  border-top: 0;
+  padding-top: 0;
+}
+.main-pane .content-panel:first-child {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+.main-pane .content-panel:has(.page-header) + .content-panel {
+  padding-top: 0.25rem;
+}
+
+/* ── Type ────────────────────────────────────────────────────────────────────────────────── */
+.sl-markdown-content {
+  font-size: var(--sl-text-base);
+  color: var(--sl-color-text);
+}
+.sl-markdown-content :is(h1, h2, h3, h4, h5, h6):not(:where(.not-content *)) {
+  font-weight: 650;
+  color: var(--sl-color-white);
+  text-wrap: balance;
+}
+.sl-markdown-content :is(h2, .sl-heading-wrapper.level-h2):not(:where(.not-content *)) {
+  margin-top: 3rem;
+}
+.sl-markdown-content :is(h3, .sl-heading-wrapper.level-h3):not(:where(.not-content *)) {
+  margin-top: 2rem;
+}
+.sl-markdown-content :is(h4, h5, h6, .sl-heading-wrapper:is(.level-h4, .level-h5, .level-h6)):not(:where(.not-content *)) {
+  margin-top: 1.5rem;
+}
+/* A heading right after another heading sits close to it. */
+.sl-markdown-content :is(h2, h3, .sl-heading-wrapper) + :is(h3, h4, .sl-heading-wrapper):not(:where(.not-content *)) {
+  margin-top: 1rem;
+}
+.sl-markdown-content a:not(:where(.not-content *)) {
+  color: var(--site-link);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: color-mix(in oklab, var(--site-link) 45%, transparent);
+}
+.sl-markdown-content a:not(:where(.not-content *)):hover {
+  text-decoration-color: currentColor;
+}
+.sl-markdown-content :not(pre) > code:not(:where(.not-content *)) {
+  padding: 0.125em 0.375em;
+  border: 1px solid color-mix(in oklab, var(--site-border) 70%, transparent);
+  border-radius: 0.3125rem;
+  background: var(--site-surface);
+  font-size: 0.875em;
+  /* Long identifiers may break, but never narrow a table column into mid-word breaks. */
+  overflow-wrap: break-word;
+}
+.sl-markdown-content :is(ul, ol):not(:where(.not-content *)) li + li {
+  margin-top: 0.375rem;
+}
+.sl-markdown-content hr:not(:where(.not-content *)) {
+  border: 0;
+  border-top: 1px solid var(--site-border);
+  margin-block: 2.5rem;
+}
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+  border-inline-start: 3px solid var(--site-border);
+  color: var(--sl-color-gray-2);
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────────────────────── */
+.sidebar-content {
+  --sl-sidebar-item-padding-inline: 0.625rem;
+  /* Phones (the sidebar is the menu): a size easy to read and tap. From 50rem it is a column beside the page. */
+  --site-sidebar-text: var(--sl-text-base);
+}
+@media (min-width: 50rem) {
+  .sidebar-content {
+    --site-sidebar-text: var(--sl-text-sm);
+  }
+}
+.sidebar-content ul,
+.sidebar-content a,
+.sidebar-content .top-level > li > a.large,
+.sidebar-content details > summary .large {
+  font-size: var(--site-sidebar-text);
+}
+/* Top-level pages: plain links, the same size as everything else. */
+.sidebar-content .top-level > li > a.large {
+  font-weight: 500;
+  color: var(--sl-color-gray-2);
+}
+.sidebar-content .top-level > li + li {
+  margin-top: 0.125rem;
+}
+/* Top-level groups: section headers, with air above. */
+.sidebar-content .top-level > li:has(> details) {
+  margin-top: 1.25rem;
+}
+.sidebar-content .top-level > li:has(> details) > details > summary {
+  padding-block: 0.375rem;
+}
+.sidebar-content .top-level > li > details > summary .large {
+  font-weight: 650;
+  letter-spacing: 0.005em;
+  color: var(--sl-color-white);
+}
+/* Nested groups: like links, with a caret. */
+.sidebar-content ul ul details > summary .large {
+  font-weight: 500;
+  color: var(--sl-color-gray-2);
+}
+.sidebar-content summary {
+  border-radius: var(--site-radius-sm);
+}
+.sidebar-content summary:hover {
+  background: var(--sl-color-gray-7);
+}
+.sidebar-content summary:hover .large {
+  color: var(--sl-color-white);
+}
+.sidebar-content .caret {
+  color: var(--sl-color-gray-3);
+  width: 1rem;
+  height: 1rem;
+}
+.sidebar-content ul ul {
+  margin-top: 0.125rem;
+}
+.sidebar-content ul ul li {
+  border-inline-start-color: var(--site-border);
+}
+.sidebar-content a {
+  border-radius: var(--site-radius-sm);
+  padding-block: 0.3125rem;
+  color: var(--sl-color-gray-2);
+}
+.sidebar-content a:hover {
+  color: var(--sl-color-white);
+  background: var(--sl-color-gray-7);
+}
+/* Current page: tinted, accent text, a bar on the guide line. Not a solid block. */
+.sidebar-content a[aria-current='page'],
+.sidebar-content a[aria-current='page']:hover,
+.sidebar-content a[aria-current='page']:focus {
+  position: relative;
+  font-weight: 600;
+  color: var(--site-accent-strong);
+  background: var(--site-accent-soft);
+}
+.sidebar-content ul ul a[aria-current='page']::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.25rem;
+  inset-inline-start: calc(-1 * var(--sl-sidebar-item-padding-inline) - 1px);
+  width: 2px;
+  border-radius: 1px;
+  background: var(--site-accent);
+}
+.sidebar-content a:focus-visible,
+.sidebar-content summary:focus-visible {
+  outline: 2px solid var(--site-focus);
+  outline-offset: -2px;
+}
+@media (min-width: 50rem) {
+  .sidebar-pane {
+    border-inline-end-color: var(--site-border);
+  }
+  .sidebar-content {
+    padding-top: 1.25rem;
+  }
+}
+@media (forced-colors: active) {
+  .sidebar-content a[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.3em;
+  }
+  .sidebar-content ul ul a[aria-current='page']::before {
+    background: Highlight;
+  }
+}
+
+/* ── On this page ────────────────────────────────────────────────────────────────────────── */
+.right-sidebar {
+  border-inline-start-color: transparent;
+}
+.right-sidebar-panel {
+  padding-top: 2rem;
+}
+starlight-toc h2 {
+  margin-bottom: 0.5rem;
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sl-color-gray-3);
+}
+starlight-toc nav > ul {
+  border-inline-start: 1px solid var(--site-border);
+}
+starlight-toc a {
+  position: relative;
+  font-size: var(--sl-text-xs);
+  line-height: 1.4;
+  color: var(--sl-color-gray-3);
+  text-decoration: none;
+}
+starlight-toc a:hover {
+  color: var(--sl-color-white);
+}
+starlight-toc a[aria-current='true'] {
+  color: var(--site-accent-strong);
+  font-weight: 500;
+}
+starlight-toc a[aria-current='true']::before {
+  content: '';
+  position: absolute;
+  inset-block: 0.2rem;
+  inset-inline-start: -1px;
+  width: 2px;
+  background: var(--site-accent);
+}
+@media (forced-colors: active) {
+  starlight-toc a[aria-current='true'] {
+    text-decoration: underline;
+  }
+}
+/* The mobile "On this page" bar. */
+mobile-starlight-toc nav {
+  border-bottom-color: var(--site-border);
+  background: color-mix(in oklab, var(--site-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+mobile-starlight-toc .toggle {
+  border-color: var(--site-border);
+  border-radius: var(--site-radius-sm);
+}
+mobile-starlight-toc .dropdown {
+  border-color: var(--site-border);
+  border-radius: var(--site-radius-sm);
+  box-shadow: var(--site-shadow);
+}
+
+/* ── Code ────────────────────────────────────────────────────────────────────────────────── */
+:root .expressive-code {
+  --ec-brdRad: var(--site-radius-sm);
+  --ec-brdCol: var(--site-border);
+  --ec-frm-edTabBrdRad: var(--site-radius-sm);
+  --ec-frm-edTabBarBrdBtmCol: var(--site-border);
+  --ec-frm-edTabBarBrdCol: var(--site-border);
+}
+.sl-markdown-content .expressive-code {
+  margin-block: 1.25rem;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────────────────────── */
+.sl-markdown-content table:not(:where(.not-content *)) {
+  border: 1px solid var(--site-border);
+  border-radius: var(--site-radius-sm);
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--sl-text-sm);
+  line-height: 1.55;
+}
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+  padding: 0.5rem 0.875rem;
+  border: 0;
+  border-bottom: 1px solid var(--site-border);
+  vertical-align: top;
+}
+.sl-markdown-content tr:last-child > td:not(:where(.not-content *)) {
+  border-bottom: 0;
+}
+.sl-markdown-content th:not(:where(.not-content *)) {
+  background: var(--site-surface);
+  color: var(--sl-color-white);
+  font-size: var(--sl-text-xs);
+  font-weight: 600;
+  text-align: start;
+}
+.sl-markdown-content thead tr:first-child th:first-child {
+  border-start-start-radius: calc(var(--site-radius-sm) - 1px);
+}
+.sl-markdown-content thead tr:first-child th:last-child {
+  border-start-end-radius: calc(var(--site-radius-sm) - 1px);
+}
+
+/* ── Asides (:::note, :::tip, :::caution, :::danger) ───────────────────────────────────────── */
+.starlight-aside {
+  --aside-tint: var(--sl-color-asides-border);
+  padding: 0.875rem 1rem;
+  border: 1px solid color-mix(in oklab, var(--aside-tint) 30%, var(--site-border));
+  border-inline-start: 3px solid var(--aside-tint);
+  border-radius: var(--site-radius-sm);
+  background: color-mix(in oklab, var(--aside-tint) 7%, var(--site-bg));
+  color: var(--sl-color-text);
+}
+.starlight-aside--note {
+  --sl-color-asides-border: var(--site-accent);
+  --sl-color-asides-text-accent: var(--site-accent-strong);
+}
+.starlight-aside__title {
+  font-size: var(--sl-text-sm);
+  font-weight: 650;
+}
+.starlight-aside__icon {
+  font-size: 1.25em;
+}
+.starlight-aside__title + .starlight-aside__content {
+  margin-top: 0.375rem;
+}
+.starlight-aside__content {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+.starlight-aside__content a {
+  color: inherit;
+  text-decoration-color: var(--aside-tint);
+}
+
+/* ── Prev / next ─────────────────────────────────────────────────────────────────────────── */
+.pagination-links {
+  gap: 0.75rem;
+}
+.pagination-links > a {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--site-border);
+  border-radius: var(--site-radius-sm);
+  box-shadow: none;
+  font-size: var(--sl-text-sm);
+  color: var(--sl-color-gray-3);
+  transition: border-color 0.15s ease;
+}
+.pagination-links > a:hover {
+  border-color: color-mix(in oklab, var(--site-accent) 55%, var(--site-border));
+}
+.pagination-links .link-title {
+  font-size: var(--sl-text-base);
+  font-weight: 600;
+  color: var(--sl-color-white);
+}
+.pagination-links svg {
+  color: var(--sl-color-gray-3);
+  width: 1.125rem;
+  height: 1.125rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pagination-links > a {
+    transition: none;
+  }
+}
+
+/* ── Header bar ──────────────────────────────────────────────────────────────────────────── */
+.header {
+  border-bottom-color: var(--site-border);
+}
