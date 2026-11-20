@@ -1,0 +1,10 @@
+{
+  "name": "@acme/tiny-queue",
+  "version": "2.1.0",
+  "description": "A tiny promise queue with concurrency limits.",
+  "license": "Apache-2.0",
+  "author": { "name": "Ada Lovelace", "email": "ada@example.com", "url": "https://ada.example.com" },
+  "homepage": "https://tiny-queue.dev",
+  "repository": { "type": "git", "url": "git+ssh://git@github.com/acme/tiny-queue.git" },
+  "type": "module"
+}
