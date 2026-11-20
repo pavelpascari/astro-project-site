@@ -5,6 +5,7 @@
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
 import { buildSidebar, editBaseUrl, resolveProject } from './docs/mount.mjs';
+import { expressiveCodeConfig } from './markdown/expressive-code.mjs';
 import { resolveModulePath } from './options.mjs';
 import { own } from './own.mjs';
 
@@ -69,6 +70,8 @@ export function starlightOptions(options, paths, root) {
     // Local pages: <repo>/edit/<branch>/<project folder>/src/content/docs/...; mounted pages carry their own editUrl.
     ...(editBase ? { editLink: { baseUrl: editBase } } : {}),
     ...rest,
+    // Code blocks: line numbers, collapsible sections, shell prompts, wrap toggle (src/markdown/expressive-code.mjs).
+    expressiveCode: expressiveCodeConfig(options, rest.expressiveCode),
     components: {
       Header: own('overrides/Header.astro'),
       Footer: own('overrides/Footer.astro'),

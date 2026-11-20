@@ -15,6 +15,7 @@ import { mirror } from './mirror.mjs';
 import { own } from './own.mjs';
 import { parseOptions, ProjectSiteOptionsError, resolveOptionPaths } from './options.mjs';
 import { starlightIntegration } from './starlight.mjs';
+import { markdownIntegration } from './markdown/index.mjs';
 import { vitePluginProjectSite } from './virtual.mjs';
 
 
@@ -60,7 +61,7 @@ export default function projectSite(userOptions) {
         }
         updateConfig({
           site: config.site ?? options.url,
-          integrations: [starlight.integration, mirror(options.mirrors)],
+          integrations: [starlight.integration, mirror(options.mirrors), markdownIntegration(options)],
           vite: {
             plugins: [vitePluginProjectSite({ options, paths, version, search: starlight.search })],
             // starlight-links-validator adds a route middleware by bare specifier, which Starlight imports from the
