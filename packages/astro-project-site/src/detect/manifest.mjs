@@ -215,7 +215,7 @@ export function detectManifest(/** @type {string} */ root) {
   const names = fs.existsSync(root) ? fs.readdirSync(root) : [];
   /** @type {[string, (text: string) => Omit<Manifest, 'file'>][]} */
   const candidates = [...PARSERS];
-  const gemspec = names.filter((n) => n.endsWith('.gemspec')).sort()[0];
+  const gemspec = names.filter((n) => /^[\w.-]+\.gemspec$/.test(n)).sort()[0];
   if (gemspec) candidates.push([gemspec, parseGemspec]);
   for (const [file, parse] of candidates) {
     if (!names.includes(file)) continue;

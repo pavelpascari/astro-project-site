@@ -16,7 +16,7 @@ import { plain, scanLines } from '../docs/mount.mjs';
 
 /** Markdown → a flat list of blocks (headings, code, paragraphs, list items). Good enough for READMEs. */
 export function blocks(/** @type {string} */ md) {
-  const lines = scanLines(md.replace(/^﻿/, '').replace(/^---\n[\s\S]*?\n---\n/, '').replace(/\r\n?/g, '\n'));
+  const lines = scanLines(md.replace(/^\uFEFF/, '').replace(/^---\n[\s\S]*?\n---\n/, '').replace(/\r\n?/g, '\n').replace(/[\u2028\u2029\u0085]/g, ' '));
   /** @type {Block[]} */
   const out = [];
   /** @type {string[]} */

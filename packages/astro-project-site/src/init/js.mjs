@@ -3,9 +3,20 @@
 
 const IDENT = /^[A-Za-z_$][\w$]*$/;
 
+/**
+ * Text that is safe inside a `//` line comment (or a block comment): every line terminator JavaScript knows
+ * (\n, \r, U+2028, U+2029) becomes a space, so repository-derived text can never end the comment and become
+ * code; `*\/` is broken up for block comments. Every comment the generator writes goes through this.
+ */
+export function comment(/** @type {string} */ s) {
+  return String(s).replace(/[\r\n\u2028\u2029]+/g, ' ').replace(/\*\//g, '* /');
+}
+
 /** A string literal: single-quoted, or a template literal when it spans lines. */
 export function str(/** @type {string} */ s) {
-  if (s.includes('\n')) return `\`${s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')}\``;
+  if (s.includes('\n')) {
+    return `\`${s.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${').replace(/\r/g, '\\r').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')}\``;
+  }
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, '\\r').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029')}'`;
 }
 
@@ -50,7 +61,7 @@ export function lit(/** @type {unknown} */ value, depth = 0, width = 112) {
     for (const [k, raw] of entries) {
       const n = isNoted(raw) ? /** @type {any} */ (raw)[NOTE] : {};
       const v = isNoted(raw) ? /** @type {any} */ (raw).value : raw;
-      for (const c of [n.comment ?? []].flat()) lines.push(`${pad}  // ${c}`);
+      for (const c of [n.comment ?? []].flat()) lines.push(`${pad}  // ${comment(c)}`);
       if (v === undefined) continue;
       /** @type {string} */
       const line = `${key(k)}: ${lit(v, depth + 1, width)},`;

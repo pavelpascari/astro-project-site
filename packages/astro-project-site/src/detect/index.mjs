@@ -22,6 +22,47 @@ export const slugify = (/** @type {string} */ s) =>
 export const titleFrom = (/** @type {string} */ s) =>
   s.replace(/^@[^/]+\//, '').replace(/[-_]+/g, ' ').trim().replace(/\b\w/g, (c) => c.toUpperCase()) || 'My Project';
 
+/** One line of plain text: every run of whitespace (line breaks, U+2028/U+2029 included) becomes one space. */
+export const oneLine = (/** @type {string | undefined} */ s) => s?.replace(/[\s\u0085]+/g, ' ').replace(/[\u0000-\u001f\u007f]/g, '').trim() || undefined;
+
+/** A version worth showing: `1.2.3`, `0.2.0-alpha.0`, `2.0.0+build.5`. Anything else is ignored. */
+const VERSION = /^[\w.+-]+$/;
+/** An SPDX-ish licence expression: `MIT`, `MIT OR Apache-2.0`, `(MIT AND BSD-3-Clause)`. */
+const SPDX = /^[\w.+() -]{1,80}$/;
+/** An absolute http(s) URL without spaces, quotes or angle brackets. */
+const SAFE_URL = /^https?:\/\/[^\s"'`<>\\]+$/;
+
+/** Manifest fields reduced to what is safe to show and write: one-line text, a plain version, http(s) URLs. */
+function sanitizeManifest(/** @type {import('./manifest.mjs').Manifest} */ m) {
+  return {
+    ...m,
+    name: oneLine(m.name),
+    description: oneLine(m.description),
+    version: m.version && VERSION.test(m.version) ? m.version : undefined,
+    license: m.license && SPDX.test(m.license) ? m.license : undefined,
+    homepage: m.homepage && SAFE_URL.test(m.homepage) ? m.homepage : undefined,
+    install: oneLine(m.install),
+    authors: m.authors
+      .map((a) => ({ name: oneLine(a.name), url: a.url && SAFE_URL.test(a.url) ? a.url : undefined }))
+      .filter((a) => a.name),
+  };
+}
+
+/** README facts with one-line titles and text (code blocks are kept as written; they are only ever quoted). */
+function sanitizeReadme(/** @type {import('./readme.mjs').ReadmeFacts} */ r) {
+  return {
+    ...r,
+    title: oneLine(r.title),
+    intro: oneLine(r.intro),
+    tagline: oneLine(r.tagline),
+    featuresHeading: oneLine(r.featuresHeading),
+    stepsHeading: oneLine(r.stepsHeading),
+    install: oneLine(r.install),
+    features: r.features.map((f) => ({ title: oneLine(f.title) ?? '', body: oneLine(f.body) ?? '' })).filter((f) => f.title),
+    steps: r.steps.map((st) => ({ ...st, title: oneLine(st.title) ?? 'Step', body: oneLine(st.body) ?? '' })),
+  };
+}
+
 /** A value and where it came from (`package.json`, `README.md`, `git origin`), or a placeholder (`todo`). */
 /** @template T @typedef {{ value: T, from?: string, todo?: boolean }} Fact */
 
@@ -54,19 +95,21 @@ export function detectProject({ root, site, name: nameOverride, gitUser }) {
   // The site's own folder is never part of what is read, mounted or mirrored.
   const skip = sameFolder ? [] : [site];
   const git = readGit(root);
-  const { manifest, errors } = detectManifest(root);
+  const { manifest: rawManifest, errors } = detectManifest(root);
+  const manifest = rawManifest && sanitizeManifest(rawManifest);
   const project = sameFolder ? { readme: undefined, changelog: undefined, contributing: undefined } : detectProjectFiles(root);
   const readmeFile = sameFolder ? undefined : project.readme;
-  const readme = readmeFile ? parseReadme(fs.readFileSync(path.join(root, readmeFile), 'utf8')) : undefined;
+  const readme = readmeFile ? sanitizeReadme(parseReadme(fs.readFileSync(path.join(root, readmeFile), 'utf8'))) : undefined;
   const docs = sameFolder ? undefined : detectDocs(root, skip);
   const license = detectLicense(root, manifest?.license);
+  if (license?.spdx && !SPDX.test(license.spdx)) license.spdx = undefined;
   const demos = sameFolder ? { dirs: [], needs: [] } : detectDemos(root, skip);
 
   // The site folder's name, unless it is a generic one (`website`): then the repository folder's.
   const folder = GENERIC.has(path.basename(site).toLowerCase()) ? path.basename(root) : path.basename(site);
   /** @type {Fact<string>} */
   const name = nameOverride
-    ? { value: nameOverride, from: '--name' }
+    ? { value: oneLine(nameOverride) ?? 'My Project', from: '--name' }
     : readme?.title && readme.title.length <= 40
       ? { value: readme.title, from: readmeFile }
       : manifest?.name
@@ -97,7 +140,7 @@ export function detectProject({ root, site, name: nameOverride, gitUser }) {
   const home = manifest?.homepage?.replace(/#.*$/, '').replace(/\/+$/, '');
   const homeIsRepo = !home || home.startsWith(repo.value) || /github\.com|gitlab\.com|npmjs\.com|crates\.io|pypi\.org/.test(home);
   /** @type {Fact<string>} */
-  const url = !homeIsRepo && home && /^https?:\/\//.test(home)
+  const url = !homeIsRepo && home && SAFE_URL.test(home)
     ? { value: home, from: `${manifest?.file} homepage` }
     : { value: `https://${slug}.example.workers.dev`, todo: true };
 
@@ -113,8 +156,8 @@ export function detectProject({ root, site, name: nameOverride, gitUser }) {
 
   const people = manifest?.authors?.length
     ? manifest.authors.map((a) => ({ ...a, from: manifest.file }))
-    : (git?.userName ?? gitUser)
-      ? [{ name: /** @type {string} */ (git?.userName ?? gitUser), url: undefined, from: 'git user.name' }]
+    : oneLine(git?.userName ?? gitUser)
+      ? [{ name: /** @type {string} */ (oneLine(git?.userName ?? gitUser)), url: undefined, from: 'git user.name' }]
       : [];
   const authors = people
     .filter((p) => p.name)

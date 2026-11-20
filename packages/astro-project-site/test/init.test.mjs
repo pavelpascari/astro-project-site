@@ -35,6 +35,12 @@ function validate(/** @type {any} */ options) {
   return parseOptions(rest);
 }
 
+/** A top-level YAML scalar as written by the generator: plain, or a double-quoted (JSON) string. */
+function yamlValue(/** @type {string} */ text, /** @type {string} */ key) {
+  const raw = new RegExp(`^${key}: (.*)$`, 'm').exec(text)?.[1];
+  return raw?.startsWith('"') ? JSON.parse(raw) : raw;
+}
+
 /** Frontmatter of a blog post as key → raw value. */
 function frontmatter(/** @type {string} */ text) {
   const fm = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? '';
@@ -138,10 +144,10 @@ test('a repository: config, docs mounts, gallery, blog post, CI, all from its fi
   const gallery = readdirSync(path.join(site, 'src/content/gallery')).sort();
   assert.deepEqual(gallery, ['examples-basic-index.yaml', 'examples-race.yaml']);
   const basic = readFileSync(path.join(site, 'src/content/gallery/examples-basic-index.yaml'), 'utf8');
-  assert.match(basic, /^title: Basic queue & workers$/m);
-  assert.match(basic, /^description: Five tasks, two at a time\.$/m);
-  assert.match(basic, /^href: \/apps\/examples\/basic\/$/m);
-  assert.match(readFileSync(path.join(site, 'src/content/gallery/examples-race.yaml'), 'utf8'), /^href: \/apps\/examples\/race\.html$/m);
+  assert.equal(yamlValue(basic, 'title'), 'Basic queue & workers');
+  assert.equal(yamlValue(basic, 'description'), 'Five tasks, two at a time.');
+  assert.equal(yamlValue(basic, 'href'), '/apps/examples/basic/');
+  assert.equal(yamlValue(readFileSync(path.join(site, 'src/content/gallery/examples-race.yaml'), 'utf8'), 'href'), '/apps/examples/race.html');
 
   const postFile = path.join(site, 'src/content/blog/2026-11-20-introducing-tiny-queue.md');
   const post = readFileSync(postFile, 'utf8');

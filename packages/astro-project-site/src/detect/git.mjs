@@ -64,8 +64,9 @@ export function normalizeRepoUrl(/** @type {string | undefined} */ url) {
   const scp = /^(?:[\w.-]+@)?([\w.-]+):(?!\/\/)(.+)$/.exec(u); // git@host:owner/repo
   if (scp && !/^[a-z]+:\/\//i.test(u)) u = `https://${scp[1]}/${scp[2]}`;
   u = u.replace(/^(?:ssh|git|http|https):\/\/(?:[^@/]+@)?/i, 'https://');
-  if (!/^https:\/\/[^/]+\/.+/.test(u)) return undefined;
-  return u.replace(/#.*$/, '').replace(/\.git\/?$/, '').replace(/\/+$/, '');
+  u = u.replace(/#.*$/, '').replace(/\.git\/?$/, '').replace(/\/+$/, '');
+  // Only a plain URL: it ends up in config, markdown links and edit URLs.
+  return /^https:\/\/[\w.-]+(?::\d+)?\/[\w.~%+@/-]+$/.test(u) ? u : undefined;
 }
 
 /**

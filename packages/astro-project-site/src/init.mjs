@@ -245,7 +245,8 @@ function foundLines(d, m, /** @type {string} */ root, /** @type {string} */ cwd)
   if (missing.length) rows.push(['not found', missing.join(', ')]);
   const width = Math.max(...rows.map(([k]) => k.length));
   lines.push('Found:');
-  for (const [k, v] of rows) lines.push(`  ${k.padEnd(width)}  ${v}`);
+  // One line each, no control characters: these are the repository's words, printed to a terminal.
+  for (const [k, v] of rows) lines.push(`  ${k.padEnd(width)}  ${v.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, ' ')}`);
   lines.push('');
   return lines;
 }

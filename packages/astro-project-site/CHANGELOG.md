@@ -13,6 +13,9 @@
 - Prints a "Found" summary and the files it will write, then asks; `--yes` skips the question (required without a
   terminal, unless `--dry-run`), `--dry-run` writes nothing, `--from <dir>` reads another folder. Never writes
   outside the target folder, never overwrites without `--force`.
+- Repository text is data, never code: every comment in generated files is one line (line terminators, U+2028/
+  U+2029 become spaces), strings are escaped JS literals or quoted YAML, versions/licences/URLs that do not look
+  like one are dropped, the Worker name is a slug, and only plainly named `*.gemspec` files are read.
 - An empty folder still gets the starter's placeholders and example docs/apps; `--blank` always copies the plain
   starter (the previous behaviour).
 - `externalDocs[].include`: globs picking the files of a mount, so a repo-root mount
