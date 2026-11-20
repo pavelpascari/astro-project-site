@@ -57,13 +57,20 @@ plus `package.json`, `tsconfig.json` (`astro/tsconfigs/strict`), `wrangler.jsonc
   "edit this page" links computed from where the site sits in its git repo, `markdown.processedDirs`,
   [starlight-links-validator](https://github.com/HiDeoo/starlight-links-validator), Pagefind search and the sitemap;
 - adds the **mirror** integration for `mirrors` (served from disk in dev, copied into `dist/` at build);
-- overrides Starlight's `Header` (the shared site header), `Footer` (Starlight's footer, then the shared site footer),
-  and `MobileMenuFooter` (the site nav inside Starlight's mobile menu, so small screens have one menu button);
+- overrides Starlight's `Header` (the shared site header), `Footer` (last updated and prev/next, then the shared site
+  footer), `PageTitle` (the page header below), `Sidebar` (a filter box above long sidebars) and `MobileMenuFooter`
+  (the site nav inside Starlight's mobile menu, so small screens have one menu button);
 - adds a Starlight route middleware that gives docs pages the same `og:image` as every other page;
-- loads `theme.css` everywhere, then your `customCss`;
+- loads `theme.css` everywhere and `docs.css` (the docs look: type scale, sidebar, TOC, code frames, tables, asides,
+  prev/next) on docs pages, then your `customCss`;
 - injects pages: `/` (landing), `/gallery/`, `/llms.txt`, `/llms-full.txt`. A page of your own at the same path
   (e.g. `src/pages/index.astro`) always wins, and each can be switched off (`landing: false`, `gallery: false`,
   `llms: false`);
+- injects an overview page for every docs folder that has pages but no index page (`/docs/guides/` when there is no
+  `guides/index.md`): the docs layout with a card per page and subfolder (title, description). Adding an index page
+  replaces it;
+- serves the markdown of every docs page next to it (`/docs/guides/configure/` → `/docs/guides/configure.md`);
+- serves a monogram favicon (the first letter of `name` on the accent colour) when `public/` has none;
 - sets Astro's `site` from `url` unless you set it.
 
 Options are validated before Astro starts; a mistake names the field:
@@ -149,7 +156,7 @@ plugin). Everything else
 | import | what |
 |---|---|
 | `astro-project-site` | `default projectSite(options)`, `mirror(entries)`, `OPTION_NAMES` (every top-level option name), `COMPONENT_NAMES` (the `components` slots); types `ProjectSiteOptions`, `LandingContent`, `ComponentOverrides`, `SiteConfig`, `GalleryEntry`, `GalleryData`, `OgImageHook`, `LiveRunner`, `LiveContext`, `LiveProps`, … |
-| `astro-project-site/components` | `Live`, `BaseLayout`, `SiteHead`, `SiteHeader`, `SiteFooter`, `ThemeSelect`, `Landing`, `Hero`, `Section`, `Features`, `Steps`, `GalleryStrip`, `CallToAction`, `InstallCommand`, `GalleryPage`, `GalleryGrid`, `GalleryCard`, `GalleryFilters`; helpers `galleryItems()`, `distinct()`, `isActive()`, `isExternal()` |
+| `astro-project-site/components` | `Live`, `BaseLayout`, `SiteHead`, `SiteHeader`, `SiteFooter`, `ThemeSelect`, `Landing`, `Hero`, `Section`, `Features`, `Steps`, `GalleryStrip`, `CallToAction`, `InstallCommand`, `ChildCards`, `GalleryPage`, `GalleryGrid`, `GalleryCard`, `GalleryFilters`; helpers `galleryItems()`, `distinct()`, `isActive()`, `isExternal()` |
 | `astro-project-site/live` | the `<Live>` component alone (`import Live from 'astro-project-site/live'`): lighter than the barrel, which also brings the layout and landing components |
 | `astro-project-site/content` | `projectSiteCollections({ docsExtend?, galleryBase? })` → `{ docs, gallery, i18n }`; `gallerySchema`, `projectDocsLoader` |
 | `astro-project-site/config` | the validated options plus `version` (`SiteConfig`), for your own pages; also `OPTION_NAMES`, `COMPONENT_NAMES` |
@@ -157,6 +164,35 @@ plugin). Everything else
 
 Types for the virtual modules behind these (`virtual:astro-project-site/*`) are injected into `.astro/` by the
 integration, so `astro check` passes without setup.
+
+## Docs navigation and page chrome
+
+Everything here comes from the folder structure and frontmatter; there is nothing to configure.
+
+- **Sidebar.** Generated groups have section headers; nested folders are collapsible groups. In a small docs site
+  (up to 15 pages) every group is open; above that every group starts collapsed and the current page's branch opens,
+  and a filter box (`/` focuses it) narrows the tree. A group whose folder has no index page starts with an
+  "Overview" link to the automatic overview page. Groups you add under `starlight.sidebar` are left as given.
+- **Page header.** Breadcrumbs (the docs home, then each group above the page, linked to its index or overview
+  page), the title, the frontmatter `description` (pages in `src/content/docs/`; a mounted page's description is its
+  first paragraph, already on the page), and actions: *Copy page* (the page's markdown, for pasting into an LLM),
+  *Markdown* (the `.md` twin) and Starlight's edit link.
+- **End of page.** Last updated (when `starlight.lastUpdated` is on), then prev/next following the sidebar
+  (including the overview links; frontmatter `prev`/`next` still win).
+- **Search** is in the header of every page, docs or not.
+
+`<ChildCards>` puts the same card grid on any docs page, e.g. a folder's own index page:
+
+```mdx
+import { ChildCards } from 'astro-project-site/components';
+
+<ChildCards />                          {/* the children of this page's folder */}
+<ChildCards dir="docs/guides" exclude={['docs/guides/upgrading']} />
+```
+
+Props: `dir` (collection id or path; default the current page), `exclude` (ids or paths), `label` (accessible name).
+On a docs page the cards follow the sidebar order, elsewhere `sidebar.order` then title. The built-in landing page
+uses it too: with no `landing.features`, the top-level docs sections fill that place (when there are two or more).
 
 ## Your own pages
 
