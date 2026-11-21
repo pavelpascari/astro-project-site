@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.4 - 2026-11-21
+
 ### Fixes
 
 - The header and the phone menu mark one nav link as current, the most specific: with Docs (`/docs/`) and Guide
