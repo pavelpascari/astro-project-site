@@ -21,8 +21,8 @@ import { fileURLToPath } from 'node:url';
 export const PACKAGE = 'astro-project-site';
 const PACKAGE_DIR = 'packages/astro-project-site';
 const CHANGELOG = `${PACKAGE_DIR}/CHANGELOG.md`;
-/** Files whose `deploy.yml@v…` mentions are examples of an upgrade, not pins to move. */
-const PIN_EXAMPLES = new Set(['site/src/content/docs/docs/guides/upgrading.mdx']);
+/** Files whose `deploy.yml@v…` mentions are examples (of an upgrade, or test inputs), not pins to move. */
+const PIN_EXAMPLES = new Set(['site/src/content/docs/docs/guides/upgrading.mdx', 'scripts/release-prepare.test.mjs']);
 
 /** Semantic version, optionally with a pre-release (`1.2.3`, `0.1.0-beta.1`); no build metadata. */
 export const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
@@ -132,7 +132,9 @@ function main(/** @type {string[]} */ argv) {
   if (dryRun) return;
 
   for (const [rel, text] of writes) fs.writeFileSync(path.join(root, rel), text);
-  execFileSync('npm', ['install', '--package-lock-only', '--no-audit', '--no-fund'], { cwd: root, stdio: 'inherit' });
+  // The npm that runs this script (`npm run release:prepare`), not whichever `npm` is first on PATH.
+  const npm = process.env.npm_execpath ? [process.execPath, process.env.npm_execpath] : ['npm'];
+  execFileSync(npm[0], [...npm.slice(1), 'install', '--package-lock-only', '--no-audit', '--no-fund'], { cwd: root, stdio: 'inherit' });
   console.log(`
 Next:
   git diff                                   # review

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.1 - 2026-11-21
+
 ### Languages
 
 - The template's own words (85 of them: buttons, screen-reader names, empty states, alert titles, the theme
