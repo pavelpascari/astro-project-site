@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { titleFromCode, parseReadme } from '../src/detect/readme.mjs';
+import { clean, titleFromCode, parseReadme } from '../src/detect/readme.mjs';
 
 test('shell blocks sharing a tool become one "Run" title', () => {
   const code = 'npx pixel validate my.json   # errors\nnpx pixel preview  my.json --out a.png\nnpx pixel bundle   my.json --out b.json';
@@ -25,4 +25,9 @@ test('a README step without a lead sentence is titled from its code, not "Step N
   assert.equal(titles.length, 3);
   assert.equal(titles[2], 'Run npx lib check and build');
   assert.ok(!titles.some((t) => /^Step \d/.test(t)));
+});
+
+test('clean decodes entities once: an escaped entity stays text', () => {
+  assert.equal(clean('Fish &amp; chips &lt;3'), 'Fish & chips <3');
+  assert.equal(clean('Write &amp;lt;b&amp;gt; for bold'), 'Write &lt;b&gt; for bold');
 });

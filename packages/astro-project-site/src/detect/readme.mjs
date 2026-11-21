@@ -107,11 +107,12 @@ export function clean(/** @type {string} */ md) {
       .replace(/<img\b[^>]*>/gi, '')
       .replace(/<(picture|svg|video|audio)\b[\s\S]*?<\/\1>/gi, '')
       .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'"),
+      .replace(/&#39;/g, "'")
+      // Last, so that an escaped entity (`&amp;lt;`) comes out as the text `&lt;`, not as `<`.
+      .replace(/&amp;/g, '&'),
   );
 }
 

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Fixes
+
+- Text taken from a README (`project-site init`'s tagline and step titles) decodes HTML entities once: `&amp;lt;`
+  is now the text `&lt;`, not `<`.
+- Mirror paths and globs trim slashes in linear time, and the blog's reading-time count strips tags in linear time
+  (both regexes could take seconds on pathological input). Found by CodeQL, now enabled on this repository.
+
 ## 0.1.0-beta.3 - 2026-11-21
 
 ### Options

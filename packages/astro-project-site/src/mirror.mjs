@@ -149,7 +149,7 @@ export function resolveMirror(entry, index, root, outDir) {
         `Paths are relative to the site root (${root}). In CI, check that the repository holding it is checked out.`,
     );
   }
-  const to = entry.to.replace(/^\/+|\/+$/g, '');
+  const to = trimSlashes(entry.to);
   if (!to || to.split('/').some((seg) => !seg || seg === '.' || seg === '..' || seg.startsWith('.'))) {
     throw new Error(`[mirror] ${label}.to "${entry.to}" must be a URL prefix like "apps" or "pixel/src".`);
   }
@@ -249,11 +249,25 @@ function matchesAny(globs, path) {
 }
 
 /**
+ * `s` without leading and trailing slashes (or only trailing ones, with `'end'`). A loop, not /\/+$/: that regex
+ * backtracks quadratically on a long run of slashes not at the end.
+ * @param {string} s
+ * @param {'both' | 'end'} [side]
+ */
+function trimSlashes(s, side = 'both') {
+  let start = 0;
+  let end = s.length;
+  if (side === 'both') while (start < end && s[start] === '/') start++;
+  while (end > start && s[end - 1] === '/') end--;
+  return s.slice(start, end);
+}
+
+/**
  * Compiles a small glob dialect (`*`, `?`, `**`, `{a,b}`, `[...]`) to a matcher, no dependencies.
  * @param {string} pattern
  */
 export function compileGlob(pattern) {
-  const clean = pattern.replace(/^\.\//, '').replace(/\/+$/, '');
+  const clean = trimSlashes(pattern.replace(/^\.\//, ''), 'end');
   const anyDepth = !clean.includes('/');
   const whole = new RegExp(`^${globToRegex(clean)}$`);
   const segments = clean.split('/').map((s) => (s === '**' ? null : new RegExp(`^${globToRegex(s)}$`)));

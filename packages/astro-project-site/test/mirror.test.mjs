@@ -74,3 +74,12 @@ test('compileGlob: segment rules, any-depth names, folders cover their contents'
   assert.ok(!compileGlob('src/deep/*.js').couldMatchBelow('test'));
   assert.ok(compileGlob('src/**').couldMatchBelow('src/a/b'));
 });
+
+test('mirror paths: slashes trimmed in linear time', () => {
+  assert.equal(resolveMirror({ from: '../apps', to: '//apps//' }, 0, site, out).to, 'apps');
+  assert.ok(compileGlob('docs/a.md/').test('docs/a.md', 'a.md'));
+  // A long run of slashes that does not end the string: quadratic for /\/+$/, instant for the loop.
+  const started = performance.now();
+  compileGlob(`${'/'.repeat(50_000)}x`);
+  assert.ok(performance.now() - started < 200);
+});

@@ -58,7 +58,7 @@ export function wordCount(/** @type {string} */ body) {
     }
     if (/^\s*(import|export)\s/.test(line)) continue;
     const text = line
-      .replace(/<\/?[A-Za-z][^>]*>/g, ' ') // HTML and JSX tags (their text content stays)
+      .replace(/<\/?[A-Za-z][^<>]*>/g, ' ') // HTML and JSX tags (their text content stays; [^<>] keeps it linear)
       .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1') // links and images: keep the label
       .replace(/https?:\/\/\S+/g, ' ')
       .replace(/[{}]/g, ' ');

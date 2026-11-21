@@ -9,6 +9,8 @@ import { lit, note } from '../src/init/js.mjs';
 import { parseOptions } from '../src/options.mjs';
 import { copyFixture, fixture } from './helpers.mjs';
 
+const escapeRegExp = (/** @type {string} */ s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const quiet = () => {};
 const version = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 const TODAY = '2026-11-20';
@@ -81,7 +83,7 @@ test('--blank copies the plain starter and names it', async () => {
   assert.match(readFileSync(path.join(dir, 'astro.config.mjs'), 'utf8'), /name: 'Pixel Docs',/);
   assert.ok(existsSync(path.join(dir, '.gitignore')));
   const workflow = readFileSync(path.join(dir, '.github/workflows/site.yml'), 'utf8');
-  assert.match(workflow, new RegExp(`/deploy\\.yml@v${version.replace(/\./g, '\\.')},`));
+  assert.match(workflow, new RegExp(`/deploy\\.yml@v${escapeRegExp(version)},`));
   assert.ok(!workflow.includes('inherit'));
   assert.ok(existsSync(path.join(dir, 'src/content/gallery/hello.png')));
   assert.ok(!existsSync(path.join(dir, 'src/content/blog')));
@@ -170,7 +172,7 @@ test('a repository: config, docs mounts, gallery, blog post, CI, all from its fi
   assert.ok(pkg.scripts.dev && pkg.scripts.build);
   assert.match(readFileSync(path.join(site, 'wrangler.jsonc'), 'utf8'), /"name": "tiny-queue"/);
   const workflow = readFileSync(path.join(site, '.github/workflows/site.yml'), 'utf8');
-  assert.match(workflow, new RegExp(`deploy\\.yml@v${version.replace(/\./g, '\\.')}, with: \\{ working-directory: website \\}, permissions`));
+  assert.match(workflow, new RegExp(`deploy\\.yml@v${escapeRegExp(version)}, with: \\{ working-directory: website \\}, permissions`));
   assert.match(workflow, /secrets: \{ CLOUDFLARE_API_TOKEN: .*CLOUDFLARE_ACCOUNT_ID/);
   assert.match(readFileSync(path.join(site, 'docs-gen.config.mjs'), 'utf8'), /files: \['\.\.\/docs'\]/);
   assert.ok(existsSync(path.join(site, '.gitignore')));
