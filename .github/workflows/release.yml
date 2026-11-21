@@ -156,13 +156,23 @@ jobs:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
           npm --version
-          if npm view "astro-project-site@$VERSION" version > /dev/null 2>&1; then
+          if npm view "astro-project-site@$VERSION" version --prefer-online > /dev/null 2>&1; then
             echo "::notice title=Already on npm::astro-project-site@$VERSION is already published"
             exit 0
           fi
           # No token: npm exchanges this job's OIDC identity (id-token: write) for a one-off credential that can
           # stage, not publish. The version goes live when a maintainer approves it with 2FA.
-          npm stage publish "$FILE" --tag "$DIST_TAG" --access public
+          # A version published moments before can be missing from `npm view` still; npm then refuses to stage it,
+          # which means it is already there, not that the release failed.
+          if ! out=$(npm stage publish "$FILE" --tag "$DIST_TAG" --access public 2>&1); then
+            echo "$out"
+            if grep -q 'Cannot stage previously published version' <<< "$out"; then
+              echo "::notice title=Already on npm::astro-project-site@$VERSION is already published"
+              exit 0
+            fi
+            exit 1
+          fi
+          echo "$out"
           {
             echo "### astro-project-site@$VERSION is staged on npm (tag \`$DIST_TAG\`)"
             echo
