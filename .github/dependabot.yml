@@ -36,3 +36,9 @@ updates:
     groups:
       npm-minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # TypeScript 7: `astro check` (in every build here and in the starter) refuses to run with it ("does not
+      # currently support TypeScript 7.0"), and Astro's experimental replacement needs 7.1+. Lift this once astro
+      # check supports TypeScript 7 or the builds move to its replacement. (Closed: #1, typescript 6.0.3 → 7.0.2.)
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
