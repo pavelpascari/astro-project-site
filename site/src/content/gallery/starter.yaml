@@ -1,6 +1,6 @@
 title: The starter
-description: What project-site init copies. A complete site that builds as it is, built in this repository's CI.
-href: https://github.com/pavelpascari/astro-project-site/tree/main/starters/default
+description: What project-site init creates, built and deployed as it is, with no changes. Source in starters/default.
+href: https://project-site-starter.pascaripavel.workers.dev/
 kind: starter
 tags: [init, template]
 external: true

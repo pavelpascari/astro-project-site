@@ -1,9 +1,11 @@
 ---
-// The docs-mount demo: the starter's example docs/README.md (a stand-in for a project's own docs folder, mounted on
-// this site under /docs/example/), editable, next to the page it becomes. The file list, titles and sidebar are
+// The docs-mount demo: the starter's example docs/README.md (a stand-in for a project's own docs folder, mounted by
+// the deployed starter under /docs/reference/), editable, next to the page it becomes.
+// Its links go to those pages on the starter. The file list, titles and sidebar are
 // read here at build time; the browser side is public/landing-assets/runners/docs-mount.js.
 import { Live } from 'astro-project-site/components';
 import config from 'astro-project-site/config';
+import { STARTER_MOUNT as mount, STARTER_URL } from '../../lib/starter';
 
 const raw = import.meta.glob('../../../../starters/default/example/docs/**/*.md', {
   query: '?raw',
@@ -12,11 +14,6 @@ const raw = import.meta.glob('../../../../starters/default/example/docs/**/*.md'
 }) as Record<string, string>;
 const prefix = '../../../../starters/default/example/docs/';
 const dir = 'starters/default/example/docs';
-const mount = config.externalDocs.find((d) => d.dir.replace(/\/+$/, '').endsWith(dir)) ?? {
-  route: 'reference',
-  label: 'Reference',
-  order: [] as string[],
-};
 
 const slugify = (t: string) => t.trim().toLowerCase().replace(/\s/g, '-').replace(/[^\p{L}\p{N}_-]/gu, '');
 const titleOf = (md: string) => /^ {0,3}#\s+(.+?)\s*$/m.exec(md)?.[1]?.replace(/[`*_]/g, '');
@@ -29,7 +26,7 @@ const route = mount.route.replace(/^\/+|\/+$/g, '');
 const hrefFor = (rel: string) => {
   const parts = rel.replace(/\.md$/i, '').split('/');
   if (/^(readme|index)$/i.test(parts.at(-1) ?? '')) parts.pop();
-  return `/docs/${[route, ...parts.map(slugify)].join('/')}/`;
+  return `${STARTER_URL}/docs/${[route, ...parts.map(slugify)].join('/')}/`;
 };
 // The sidebar group the mount gets (same order rules as the package: README first as "Overview", then `order`,
 // then names; subfolders after, as groups).
@@ -58,6 +55,7 @@ const file = 'README.md';
 const source = raw[prefix + file] ?? '# Reference\n';
 const options = {
   route,
+  site: STARTER_URL,
   label: mount.label,
   repo: config.repo,
   branch: config.repoBranch,

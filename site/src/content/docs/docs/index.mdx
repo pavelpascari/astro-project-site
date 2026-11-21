@@ -21,9 +21,10 @@ import { LinkCard, CardGrid } from '@astrojs/starlight/components';
 - **generated docs blocks** (`docs:gen` / `docs:check`) so API tables cannot drift from the code;
 - **Cloudflare Workers deploys** with a preview URL per pull request, `next` from `main` and production from tags.
 
-This site is built with it. The page you are reading is a local MDX page; the
-[Example: mounted docs](/docs/example/) group is the starter's plain markdown folder mounted with `externalDocs`;
-the reference tables are generated from the package source.
+This site is built with it. The page you are reading is a local MDX page, and the reference tables are generated
+from the package source. The [starter](https://project-site-starter.pascaripavel.workers.dev/), deployed as `init`
+creates it, shows a mounted folder: its [Reference](https://project-site-starter.pascaripavel.workers.dev/docs/reference/)
+is plain markdown mounted with `externalDocs`.
 
 ## What it is not
 

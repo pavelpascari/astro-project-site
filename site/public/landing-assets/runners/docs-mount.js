@@ -3,7 +3,8 @@
 // relative links sent to the file on GitHub. It follows the rules of the package's docs/mount.mjs (resolveHref), on
 // a file list passed in ctx.options at build time; the markdown renderer is a small one for this demo only.
 //
-// ctx.options: { route, label, repo, branch, dir (mount folder, repo-relative), file (this file, mount-relative),
+// ctx.options: { route, site? (origin of the site serving the pages; default this one), label, repo, branch,
+//                dir (mount folder, repo-relative), file (this file, mount-relative),
 //                files: { [mountRelativePath]: titleSlug | null }, sidebar: [{ label, href, depth }] }
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -24,7 +25,7 @@ function idFor(o, rel) {
   const parts = rel.replace(/\.md$/i, '').split('/');
   const last = parts.at(-1)?.toLowerCase();
   if (last === 'readme' || last === 'index') parts.pop();
-  return `/docs/${[o.route, ...parts.map(slugify)].filter(Boolean).join('/')}/`;
+  return `${o.site ?? ''}/docs/${[o.route, ...parts.map(slugify)].filter(Boolean).join('/')}/`;
 }
 
 /** { href, kind: 'docs' | 'repo' | 'missing' | 'kept' } for a link written in the current file. */

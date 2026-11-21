@@ -1,7 +1,8 @@
 title: A mounted docs folder
-description: Plain markdown from the repository, no frontmatter, mounted under /docs/example/ with its .md links rewritten.
-href: /docs/example/
+description: The starter's example docs/ folder, plain markdown with no frontmatter, mounted under /docs/reference/ with its .md links rewritten.
+href: https://project-site-starter.pascaripavel.workers.dev/docs/reference/
 kind: docs
 tags: [externalDocs, markdown]
+external: true
 order: 2
 poster: ./reference.jpg

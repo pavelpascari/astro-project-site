@@ -7,6 +7,7 @@ import configSource from '../../../astro.config.mjs?raw';
 import docsConfig from '../../../docs.config.mjs';
 import Kit from './Kit.astro';
 import MountDemo from './MountDemo.astro';
+import { STARTER_URL } from '../../lib/starter';
 import ThemePlayground from './ThemePlayground.astro';
 import Flow from './Flow.astro';
 import Compare from './Compare.astro';
@@ -100,7 +101,7 @@ const num = (id: string) => String(sections.findIndex(([s]) => s === id) + 1).pa
     <span slot="header" class="lp-num" aria-hidden="true">{num('docs')}</span>
     <MountDemo />
     <p class="lp-more">
-      <a href="/docs/example/">See the mounted pages on this site <span aria-hidden="true">→</span></a>
+      <a href={`${STARTER_URL}/docs/reference/`}>See these pages mounted in the starter <span aria-hidden="true">→</span></a>
     </p>
   </Section>
 
