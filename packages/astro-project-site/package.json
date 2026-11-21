@@ -1,6 +1,6 @@
 {
   "name": "astro-project-site",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "An Astro integration for open-source project sites: landing page, Starlight docs that mount your markdown folder, live examples, a gallery, static apps served as they are, Cloudflare deploys.",
   "license": "MIT",
   "author": {

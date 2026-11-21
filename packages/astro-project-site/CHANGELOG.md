@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.3 - 2026-11-21
+
 ### Options
 
 - `docsOrder`: the order of the top-level docs sections (mount routes and folders of `src/content/docs/docs/`) in

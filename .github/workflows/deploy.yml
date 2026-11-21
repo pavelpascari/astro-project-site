@@ -3,7 +3,7 @@
 # A project calls it from its own workflow (this is the whole file the starter ships):
 #
 #   on: [pull_request, push, workflow_dispatch]
-#   jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.2,
+#   jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.3,
 #                   permissions: { contents: read, pull-requests: write },
 #                   secrets: { CLOUDFLARE_API_TOKEN: ..., CLOUDFLARE_ACCOUNT_ID: ... } } }
 #   permissions: {}
