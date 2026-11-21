@@ -165,7 +165,7 @@ export function starlightOptions(options, paths, root) {
     },
     // theme.css first, then the project's site-wide CSS, then docs-only CSS.
     customCss: [own('styles/theme.css'), own('styles/docs.css'), ...paths.customCss, ...asArray(customCss).map(resolve)],
-    sidebar: [...presentSidebar(buildSidebar(project, format(options.labels.overview)), countPages(project)), ...asArray(sidebar)],
+    sidebar: [...presentSidebar(buildSidebar(project, format(options.labels.overview), options.docsOrder), countPages(project)), ...asArray(sidebar)],
     // The site-wide `head` option first, then docs-only `starlight.head`.
     // The layer order first of all (lib/layers.mjs).
     head: [{ tag: 'style', content: LAYER_ORDER }, ...options.head, ...asArray(head)],

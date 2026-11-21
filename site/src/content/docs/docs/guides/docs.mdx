@@ -54,6 +54,21 @@ Edits to existing pages, local or mounted, reload live.
 This site's sidebar is exactly that: three top-level pages, the mounted example folder, then `guides/`,
 `recipes/` and `reference/`.
 
+Groups 2 and 3 are the docs **sections**. To put them in another order, for example a hands-on guide of your own
+before the mounted reference, list them in `docsOrder`, by mount `route` and local folder name:
+
+```js title="astro.config.mjs"
+projectSite({
+  // ...
+  externalDocs: [{ dir: '../docs', route: 'reference', label: 'Reference' }],
+  docsOrder: ['guide', 'reference'], // src/content/docs/docs/guide/ first
+});
+```
+
+The listed sections come first, in that order, and the others follow in the order above. The cards on the docs
+index and on the landing page follow the same order. A name that is not a section fails the build with the list
+of section names.
+
 To add links after the generated items, pass Starlight's `sidebar` through; it is appended:
 
 ```js

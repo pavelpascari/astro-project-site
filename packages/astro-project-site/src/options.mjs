@@ -102,6 +102,7 @@ export const optionsSchema = z.strictObject({
       }),
     )
     .default([]),
+  docsOrder: z.array(z.string().min(1)).default([]),
   mirrors: z
     .array(
       z.strictObject({

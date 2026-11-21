@@ -77,9 +77,20 @@ function mountFor(folder: string) {
   return site.externalDocs?.find((m) => `docs/${m.route.replace(/^\/+|\/+$/g, '')}` === folder);
 }
 
-function mountRank(folder: string) {
+/**
+ * A top-level section's place among the docs cards when there is no sidebar order to follow (the landing page):
+ * first the sections `docsOrder` lists, in its order, then the mounts as configured; other folders after them.
+ */
+// As docs/mount.mjs's slugify (that module reads the file system, so it stays out of page code).
+const slugify = (text: string) => text.trim().toLowerCase().replace(/\s/g, '-').replace(/[^\p{L}\p{N}_-]/gu, '');
+
+function sectionRank(folder: string) {
+  const order = (site.docsOrder ?? []).map((name: string) => slugify(name));
+  const top = folder.startsWith('docs/') && !folder.slice(5).includes('/') ? folder.slice(5) : undefined;
+  const listed = top ? order.indexOf(top) : -1;
+  if (listed !== -1) return listed;
   const mount = mountFor(folder);
-  return mount ? site.externalDocs!.indexOf(mount) : Infinity;
+  return mount ? order.length + site.externalDocs!.indexOf(mount) : Infinity;
 }
 
 export function folderTitle(folder: string, tree?: Tree) {
@@ -162,7 +173,7 @@ export async function childCards(folder: string, order: string[] = []): Promise<
       count: inside.length,
       rank: Math.min(rankOf(hrefFor(id)), ...inside.map((d) => rankOf(hrefFor(d)))),
       sort: sortOf(index),
-      mount: mountRank(id),
+      mount: sectionRank(id),
     });
   }
   // Infinity - Infinity is NaN, which is falsy: the next key decides.

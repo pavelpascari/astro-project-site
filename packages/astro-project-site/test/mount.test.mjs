@@ -138,6 +138,26 @@ test('buildSidebar: local pages by order, mounts, then local subfolders', () => 
   assert.equal(sidebar.length, 5);
 });
 
+test('buildSidebar: docsOrder puts the sections it lists first, in its order', () => {
+  const labels = (/** @type {any[]} */ sidebar) => sidebar.filter((i) => 'label' in i).map((i) => i.label);
+  assert.deepEqual(labels(buildSidebar(project)), ['Reference', 'Template']);
+  // A local folder before a mount; loose pages stay first.
+  const reordered = buildSidebar(project, 'Overview', ['template']);
+  assert.deepEqual(labels(reordered), ['Template', 'Reference']);
+  assert.deepEqual(reordered.slice(0, 3), [{ slug: 'docs' }, { slug: 'docs/a-page' }, { slug: 'docs/b-page' }]);
+  // Names are matched as slugs, and listing every section in the default order changes nothing.
+  assert.deepEqual(labels(buildSidebar(project, 'Overview', ['Template', 'Reference'])), ['Template', 'Reference']);
+  assert.deepEqual(buildSidebar(project, 'Overview', ['reference', 'template']), buildSidebar(project));
+  assert.throws(() => buildSidebar(project, 'Overview', ['guide']), /docsOrder: "guide" is not a docs section\. The sections are: reference, template\./);
+});
+
+test('docsOrder option: a list of names, empty by default', () => {
+  assert.deepEqual(parseOptions(options).docsOrder, []);
+  assert.deepEqual(parseOptions({ ...options, docsOrder: ['template', 'reference'] }).docsOrder, ['template', 'reference']);
+  assert.throws(() => parseOptions({ ...options, docsOrder: [''] }));
+  assert.throws(() => parseOptions({ ...options, docsOrder: 'template' }));
+});
+
 test('absolutizeLinks makes root-relative links absolute outside code', () => {
   const out = absolutizeLinks('[a](/docs/x/) <a href="/y">y</a> [b](//cdn.x/z)\n```\n[c](/docs/)\n```', 'https://lib.dev');
   assert.equal(out, '[a](https://lib.dev/docs/x/) <a href="https://lib.dev/y">y</a> [b](//cdn.x/z)\n```\n[c](/docs/)\n```');

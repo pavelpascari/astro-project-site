@@ -246,6 +246,15 @@ export interface ProjectSiteOptions {
   nav?: LinkAction[];
   /** Markdown folders outside the site, mounted under /docs/<route>/. */
   externalDocs?: ExternalDocs[];
+  /**
+   * The order of the top-level docs sections, in the sidebar and in the docs cards (the /docs/ page and the landing
+   * page): mount routes (`externalDocs[].route`, e.g. `reference`) and folders of `src/content/docs/docs/` (e.g.
+   * `guide`). Listed sections come first, in this order; the rest follow in the default order (mounts as configured,
+   * then your own folders by name). Pages directly in `src/content/docs/docs/` always come first. An unknown name
+   * fails the build. Default: none.
+   * @example docsOrder: ['guide', 'reference']
+   */
+  docsOrder?: string[];
   /** Static HTML/JS folders copied into the build byte for byte (and served from disk in dev). */
   mirrors?: Mirror[];
   /** Install command shown on the landing page. */
@@ -327,6 +336,7 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   repoBranch: string;
   nav: LinkAction[];
   externalDocs: ExternalDocs[];
+  docsOrder: string[];
   mirrors: Mirror[];
   favicon: string;
   theme: { accent?: string; accentDark?: string };

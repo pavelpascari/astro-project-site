@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Options
+
+- `docsOrder`: the order of the top-level docs sections (mount routes and folders of `src/content/docs/docs/`) in
+  the sidebar and in the docs cards on the docs index and the landing page. Listed sections come first; the rest
+  keep the default order (mounts as configured, then local folders by name). An unknown name fails the build.
+
 ## 0.1.0-beta.2 - 2026-11-21
 
 (0.1.0-beta.1 was never published: its tag was retired when the release moved to staged publishing.)

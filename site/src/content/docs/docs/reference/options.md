@@ -26,6 +26,7 @@ Types and descriptions come from `src/index.d.ts`, defaults and required fields 
 | `versionFrom` | `string` |  | A package.json (relative to the project root) whose `version` the header shows. |
 | `nav` | `LinkAction[]` |  | Top navigation, shared by every page. Default: Docs, and Gallery unless `gallery: false`. |
 | `externalDocs` | `ExternalDocs[]` | `[]` | Markdown folders outside the site, mounted under /docs/&lt;route>/. |
+| `docsOrder` | `string[]` | `[]` | The order of the top-level docs sections, in the sidebar and in the docs cards (the /docs/ page and the landing page): mount routes (`externalDocs[].route`, e.g. `reference`) and folders of `src/content/docs/docs/` (e.g. `guide`). Listed sections come first, in this order; the rest follow in the default order (mounts as configured, then your own folders by name). Pages directly in `src/content/docs/docs/` always come first. An unknown name fails the build. Default: none. |
 | `mirrors` | `Mirror[]` | `[]` | Static HTML/JS folders copied into the build byte for byte (and served from disk in dev). |
 | `install` | `string` |  | Install command shown on the landing page. |
 | `favicon` | `string` | `"/favicon.svg"` | Favicon path under public/. Default `/favicon.svg`. |
