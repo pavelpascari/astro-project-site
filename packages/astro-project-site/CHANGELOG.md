@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.7 - 2026-11-21
+
 ### Fixed
 
 - The docs menu on phones works in browsers without the Popover API (Safari and every iOS browser before 17,
