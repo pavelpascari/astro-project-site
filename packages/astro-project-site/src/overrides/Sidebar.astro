@@ -4,6 +4,10 @@
 // matching pages and opens their groups; clearing it restores the tree as it was. `/` focuses it.
 import Default from '@astrojs/starlight/components/Sidebar.astro';
 import { COLLAPSE_ABOVE } from '../lib/sidebar.mjs';
+import { labelsFor, translator } from '../lib/labels';
+
+const lang = Astro.locals.starlightRoute.lang;
+const t = translator(lang);
 
 type Entry = { type: 'link' } | { type: 'group'; entries: Entry[] };
 const count = (entries: Entry[]): number => entries.reduce((n, e) => n + (e.type === 'link' ? 1 : count(e.entries)), 0);
@@ -12,13 +16,18 @@ const showFilter = count(Astro.locals.starlightRoute.sidebar as Entry[]) > COLLA
 
 {
   showFilter && (
-    <sidebar-filter class="sidebar-filter">
+    <sidebar-filter
+      class="sidebar-filter"
+      data-lang={lang}
+      data-matches={JSON.stringify(labelsFor(lang).pagesMatch)}
+      data-none={t('noPagesMatch')}
+    >
       <label>
-        <span class="site-sr-only">Filter the navigation</span>
+        <span class="site-sr-only">{t('filterNav')}</span>
         <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
           <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 6h16M7 12h10M10 18h4" />
         </svg>
-        <input type="search" placeholder="Filter" autocomplete="off" spellcheck="false" aria-keyshortcuts="/" />
+        <input type="search" placeholder={t('filter')} autocomplete="off" spellcheck="false" aria-keyshortcuts="/" />
         <kbd aria-hidden="true">/</kbd>
       </label>
       <p class="site-sr-only" role="status" aria-live="polite" />
@@ -28,9 +37,14 @@ const showFilter = count(Astro.locals.starlightRoute.sidebar as Entry[]) > COLLA
 <Default><slot /></Default>
 
 <script>
+  import { format } from '../labels.mjs';
+
   class SidebarFilter extends HTMLElement {
     connectedCallback() {
       const input = this.querySelector('input')!;
+      const lang = this.dataset.lang ?? 'en';
+      const matchesLabel = JSON.parse(this.dataset.matches ?? '"{n}"');
+      const none = this.dataset.none ?? '';
       const status = this.querySelector('[role="status"]')!;
       const root = this.closest('.sidebar-content') ?? document;
       const tree = root.querySelector<HTMLElement>('ul.top-level');
@@ -68,7 +82,7 @@ const showFilter = count(Astro.locals.starlightRoute.sidebar as Entry[]) > COLLA
           }
         }
         clearTimeout(timer);
-        timer = window.setTimeout(() => (status.textContent = matches ? `${matches} pages match` : 'No pages match'), 400);
+        timer = window.setTimeout(() => (status.textContent = matches ? format(matchesLabel, { n: matches }, lang) : none), 400);
       };
       input.addEventListener('input', apply);
       input.addEventListener('keydown', (e) => {

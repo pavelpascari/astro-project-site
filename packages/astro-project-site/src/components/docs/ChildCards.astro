@@ -4,6 +4,7 @@
 // own index page to show the same grid there, or pass `dir` to list any folder. On a docs page the cards follow
 // the sidebar order; elsewhere `sidebar.order`, then title.
 import { childCards } from '../../lib/docs-tree';
+import { translator } from '../../lib/labels';
 
 interface Props {
   /** Folder to list, as a collection id (`docs/guides`) or path (`/docs/guides/`). Default: the current docs page. */
@@ -28,6 +29,7 @@ try {
 const dir = strip(Astro.props.dir ?? route?.id ?? 'docs');
 const exclude = new Set((Astro.props.exclude ?? []).map(strip));
 const order = route ? flatten(route.sidebar) : [];
+const t = translator((route as { lang?: string } | undefined)?.lang);
 const cards = (await childCards(dir, order)).filter((c) => !exclude.has(c.id) && !exclude.has(strip(c.href)));
 ---
 
@@ -42,7 +44,7 @@ const cards = (await childCards(dir, order)).filter((c) => !exclude.has(c.id) &&
           {card.description && <p class="description">{card.description}</p>}
           {card.folder && card.count ? (
             <p class="meta">
-              {card.count} {card.count === 1 ? 'page' : 'pages'}
+              {t('pageCount', { n: card.count })}
             </p>
           ) : null}
         </li>

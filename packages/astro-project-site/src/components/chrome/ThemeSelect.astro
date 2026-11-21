@@ -6,19 +6,20 @@ interface Props {
   id?: string;
 }
 const { id = 'site-theme' } = Astro.props;
+import { t } from '../../lib/labels';
 ---
 
 <site-theme-select class="theme-select">
   <label for={id}>
-    <span class="visually-hidden">Theme</span>
+    <span class="visually-hidden">{t('theme')}</span>
     <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
       <path fill="currentColor" d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 2v14a7 7 0 0 1 0-14Z" />
     </svg>
   </label>
   <select id={id}>
-    <option value="dark">Dark</option>
-    <option value="light">Light</option>
-    <option value="auto" selected>Auto</option>
+    <option value="dark">{t('themeDark')}</option>
+    <option value="light">{t('themeLight')}</option>
+    <option value="auto" selected>{t('themeAuto')}</option>
   </select>
 </site-theme-select>
 
@@ -86,7 +87,9 @@ const { id = 'site-theme' } = Astro.props;
     background: transparent;
     border: 1px solid transparent;
     border-radius: var(--site-radius-sm);
-    padding: 0.3rem 0.5rem 0.3rem 1.75rem;
+    /* The icon sits at the start of the line (left, or right in a right-to-left language). */
+    padding-block: 0.3rem;
+    padding-inline: 1.75rem 0.5rem;
     cursor: pointer;
   }
   select:hover {

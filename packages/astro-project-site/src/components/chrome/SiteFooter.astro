@@ -6,10 +6,22 @@ import site from 'virtual:astro-project-site/config';
 interface Props {
   /** `page`: full-width band under a page. `docs`: inside the docs content column. */
   variant?: 'page' | 'docs';
+  /** Accessible name of the footer's nav. Default: the `footerNav` label. Give a second footer on a page its own. */
+  navLabel?: string;
 }
 const { variant = 'page' } = Astro.props;
 const version = site.version;
+import { repoInfo } from '../../lib/nav';
+import { t } from '../../lib/labels';
+import { format } from '../../labels.mjs';
+
 const year = new Date().getFullYear();
+const repoLabel = repoInfo(site.repo, t('sourceCode')).label;
+// `footer.copyright` (false: none), else the label, with {year} and {name} filled in.
+const copyrightText = site.footer?.copyright;
+const copyright =
+  copyrightText === false ? undefined : copyrightText !== undefined ? format(copyrightText, { year, name: site.name }) : t('copyright', { year, name: site.name });
+const meta = [copyright, version && `v${version}`, site.footer?.note].filter(Boolean);
 ---
 
 <footer class="site-footer" data-variant={variant}>
@@ -18,7 +30,7 @@ const year = new Date().getFullYear();
       <a class="name" href="/">{site.name}</a>
       <p>{site.tagline}</p>
     </div>
-    <nav aria-label="Footer">
+    <nav aria-label={Astro.props.navLabel ?? t('footerNav')}>
       <ul>
         {
           site.nav.map((item) => (
@@ -27,13 +39,10 @@ const year = new Date().getFullYear();
             </li>
           ))
         }
-        <li><a href={site.repo}>Source</a></li>
+        <li><a href={site.repo}>{repoLabel}</a></li>
       </ul>
     </nav>
-    <p class="meta">
-      © {year} {site.name}{version && <> · v{version}</>}
-      {site.footer?.note && <> · {site.footer.note}</>}
-    </p>
+    {meta.length > 0 && <p class="meta">{meta.join(' · ')}</p>}
   </div>
 </footer>
 

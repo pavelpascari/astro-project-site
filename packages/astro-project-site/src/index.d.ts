@@ -55,9 +55,14 @@ export interface LandingContent {
     /** A live example under the hero copy (rendered with `<Live>`). */
     demo?: HeroDemo;
   };
-  /** Feature cards. Default heading "Why it exists". */
+  /** Feature cards. Default heading: the `featuresTitle` label ("Why it exists"). */
   features?: SectionContent<Feature>;
-  /** Numbered steps. Default heading "How it works". */
+  /**
+   * Cards for the top-level docs sections, shown when there are no `features` and the docs have at least two
+   * sections. Default heading: the `documentation` label. `false` hides them.
+   */
+  docs?: false | { title?: string; intro?: string };
+  /** Numbered steps. Default heading: the `stepsTitle` label ("How it works"). */
   steps?: SectionContent<Step>;
   /** The gallery strip: heading, intro and how many items (0 hides it; default 3). */
   gallery?: { title?: string; intro?: string; limit?: number };
@@ -257,14 +262,26 @@ export interface ProjectSiteOptions {
   theme?: { accent?: string; accentDark?: string };
   /** Content of the built-in landing page at `/`, or `false` for none (or add your own src/pages/index.astro). */
   landing?: false | LandingContent;
-  /** The built-in /gallery/ page, or `false` for none. */
-  gallery?: false | { title?: string; description?: string };
+  /**
+   * The built-in gallery page, or `false` for none. `route` is its URL path (default `gallery`: /gallery/); `title`
+   * and `description` default to the `gallery` and `galleryDescription` labels.
+   */
+  gallery?: false | { route?: string; title?: string; description?: string };
   /**
    * Posts from src/content/blog/ at /blog/ (list, posts, tags, RSS), or `true` for the defaults. Off unless set.
    */
   blog?: boolean | BlogOptions;
-  /** Extra footer text, e.g. a licence line. */
-  footer?: { note?: string };
+  /**
+   * Footer text. `note`: extra text, e.g. a licence line. `copyright`: the copyright line, with `{year}` (the build
+   * year) and `{name}` filled in; default the `copyright` label ("© {year} {name}"); `false` leaves it out.
+   */
+  footer?: { note?: string; copyright?: string | false };
+  /**
+   * The words the template puts on pages (buttons, screen-reader names, empty states, alert titles), by name.
+   * They follow the site's language (Starlight's root or default locale): built in for English, French, German
+   * and Spanish, English for anything else. Set any of them here, in any language.
+   */
+  labels?: Partial<Labels>;
   /** Serve /llms.txt and /llms-full.txt. Default `true`. */
   llms?: boolean;
   /**
@@ -314,9 +331,10 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   favicon: string;
   theme: { accent?: string; accentDark?: string };
   landing: false | ResolvedLanding;
-  gallery: false | { title?: string; description?: string };
+  gallery: false | { route: string; title: string; description: string };
   blog: false | ResolvedBlog;
-  footer: { note?: string };
+  footer: { note?: string; copyright?: string | false };
+  labels: Labels;
   llms: boolean;
   customCss: string[];
   head: HeadTag[];
@@ -325,6 +343,12 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   markdown: MarkdownOptions;
 }
 
+/** A label: text with `{name}` placeholders, or plural forms by Intl.PluralRules category (`other` required). */
+export type Label = string | { other: string; zero?: string; one?: string; two?: string; few?: string; many?: string };
+
+/** Every label the template uses, by name. The English defaults are in `src/labels.mjs`. */
+export type Labels = { [K in keyof typeof import('./labels.mjs').EN]: Label };
+
 /** A `<head>` tag, same shape as Starlight's `head` entries. */
 export interface HeadTag {
   tag: 'title' | 'base' | 'link' | 'style' | 'meta' | 'script' | 'noscript' | 'template';
@@ -332,7 +356,8 @@ export interface HeadTag {
   content?: string;
 }
 
-export interface ResolvedLanding extends Omit<LandingContent, 'features' | 'steps'> {
+export interface ResolvedLanding extends Omit<LandingContent, 'features' | 'steps' | 'docs'> {
+  docs?: false | { title: string; intro?: string };
   features?: { title?: string; intro?: string; items: Feature[] };
   steps?: { title?: string; intro?: string; items: Step[] };
 }

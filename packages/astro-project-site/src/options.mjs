@@ -3,19 +3,33 @@
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { z } from 'astro/zod';
-import { blogOptionSchema, resolveBlog } from './blog/options.mjs';
+import { blogOptionSchema, resolveBlog, routeSchema } from './blog/options.mjs';
+import { EN, format, resolveLabels, siteLocale } from './labels.mjs';
 
 const link = z.strictObject({ label: z.string().min(1), href: z.string().min(1) });
 
 /** A feature/step list: either the items, or `{ title, intro, items }` to also set the section heading. */
 /**
  * @param {import('astro/zod').ZodType} item
- * @param {{ title: string, intro?: string }} defaults
+ * The heading defaults to a label in the site's language (filled in by parseOptions).
  */
-const section = (item, defaults) =>
+const section = (/** @type {import('astro/zod').ZodType} */ item) =>
   z
     .union([z.array(item), z.strictObject({ title: z.string().optional(), intro: z.string().optional(), items: z.array(item) })])
-    .transform((v) => (Array.isArray(v) ? { ...defaults, items: v } : { ...defaults, ...v }));
+    .transform((v) => (Array.isArray(v) ? { items: v } : v));
+
+/** One label: a string, or plural forms (`other` required). */
+const labelValue = z.union([
+  z.string(),
+  z.strictObject({
+    other: z.string(),
+    zero: z.string().optional(),
+    one: z.string().optional(),
+    two: z.string().optional(),
+    few: z.string().optional(),
+    many: z.string().optional(),
+  }),
+]);
 
 const demo = z.strictObject({
   code: z.string(),
@@ -42,13 +56,11 @@ const landing = z.strictObject({
       demo: demo.optional(),
     })
     .optional(),
-  features: section(z.strictObject({ title: z.string(), body: z.string(), href: z.string().optional() }), {
-    title: 'Why it exists',
-    intro: 'The short version, for people deciding whether to read on.',
-  }).optional(),
+  features: section(z.strictObject({ title: z.string(), body: z.string(), href: z.string().optional() })).optional(),
+  // The cards for the top-level docs sections, shown when there are no `features` (and at least two sections).
+  docs: z.union([z.literal(false), z.strictObject({ title: z.string().optional(), intro: z.string().optional() })]).optional(),
   steps: section(
     z.strictObject({ title: z.string(), body: z.string(), code: z.string().optional(), lang: z.string().optional() }),
-    { title: 'How it works' },
   ).optional(),
   gallery: z.strictObject({ title: z.string().optional(), intro: z.string().optional(), limit: z.number().int().min(0).optional() }).optional(),
   cta: z
@@ -115,11 +127,18 @@ export const optionsSchema = z.strictObject({
   theme: z.strictObject({ accent: z.string().optional(), accentDark: z.string().optional() }).default({}),
   landing: z.union([z.literal(false), landing]).default({}),
   gallery: z
-    .union([z.literal(false), z.strictObject({ title: z.string().optional(), description: z.string().optional() })])
+    .union([
+      z.literal(false),
+      z.strictObject({ route: routeSchema.optional(), title: z.string().optional(), description: z.string().optional() }),
+    ])
     .default({}),
   // Posts in src/content/blog/, at /<route>/ (see blog/options.mjs). Off unless set; `true` uses the defaults.
   blog: blogOptionSchema.default(false),
-  footer: z.strictObject({ note: z.string().optional() }).default({}),
+  footer: z
+    .strictObject({ note: z.string().optional(), copyright: z.union([z.literal(false), z.string()]).optional() })
+    .default({}),
+  // Words the template puts on pages, by name (see src/labels.mjs). Built-in translations follow the site's language.
+  labels: z.strictObject(Object.fromEntries(Object.keys(EN).map((k) => [k, labelValue.optional()]))).default({}),
   llms: z.boolean().default(true),
   linksValidator: z.union([z.literal(false), z.record(z.string(), z.unknown())]).optional(),
   customCss: z.array(z.string()).default([]),
@@ -198,10 +217,28 @@ export function parseOptions(input) {
   const result = optionsSchema.safeParse(input);
   if (!result.success) throw new ProjectSiteOptionsError(result.error.issues.map(describeIssue));
   const options = /** @type {any} */ (result.data);
-  options.blog = resolveBlog(options.blog, options.tagline);
+  const { lang } = siteLocale(options.starlight);
+  const labels = resolveLabels(lang, options.labels);
+  options.labels = labels;
+  const text = (/** @type {keyof typeof EN} */ name) => format(labels[name], {}, lang);
+  options.blog = resolveBlog(options.blog, options.tagline, { blog: text('blog'), latestPosts: text('latestPosts') });
+  if (options.gallery !== false) {
+    options.gallery = {
+      ...options.gallery,
+      route: options.gallery.route ?? 'gallery',
+      title: options.gallery.title ?? text('gallery'),
+      description: options.gallery.description ?? text('galleryDescription'),
+    };
+  }
+  if (options.landing) {
+    const l = options.landing;
+    if (l.features) l.features = { title: text('featuresTitle'), ...l.features };
+    if (l.steps) l.steps = { title: text('stepsTitle'), ...l.steps };
+    if (l.docs !== false) l.docs = { title: text('documentation'), ...l.docs };
+  }
   options.nav ??= [
-    { label: 'Docs', href: '/docs/' },
-    ...(options.gallery === false ? [] : [{ label: 'Gallery', href: '/gallery/' }]),
+    { label: text('docs'), href: '/docs/' },
+    ...(options.gallery === false ? [] : [{ label: options.gallery.title, href: `/${options.gallery.route}/` }]),
     ...(options.blog ? [{ label: options.blog.title, href: `/${options.blog.route}/` }] : []),
   ];
   return options;

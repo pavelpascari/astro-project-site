@@ -11,6 +11,7 @@
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { own } from './own.mjs';
+import { siteLocale } from './labels.mjs';
 
 /**
  * Where `<Code>` comes from. Starlight re-exports it from `@astrojs/starlight/components`, but importing that barrel
@@ -51,19 +52,7 @@ export function publicConfig(
   return { ...rest, ...siteLocale(starlight), version };
 }
 
-/**
- * Language and direction for pages outside the docs, from Starlight's locales: the root locale, else the
- * `defaultLocale`, else English.
- */
-export function siteLocale(/** @type {Record<string, any> | undefined} */ starlight) {
-  const locales = starlight?.locales;
-  if (locales && typeof locales === 'object') {
-    const key = 'root' in locales ? 'root' : starlight?.defaultLocale in locales ? starlight?.defaultLocale : undefined;
-    const locale = key ? locales[key] : undefined;
-    if (locale) return { lang: String(locale.lang ?? (key === 'root' ? 'en' : key)), dir: locale.dir === 'rtl' ? 'rtl' : 'ltr' };
-  }
-  return { lang: 'en', dir: 'ltr' };
-}
+export { siteLocale };
 
 /**
  * @param {{

@@ -10,11 +10,12 @@ import type { BlogPostProps } from '../../index';
 import { listUrl, postUrl } from '../../blog/posts.mjs';
 import PostMeta from './PostMeta.astro';
 import TagList from './TagList.astro';
+import { t } from '../../lib/labels';
 
 type Props = BlogPostProps;
 const { post, readingTime, authors, editUrl, newer, older } = Astro.props;
 const { title, description, image, imageAlt, tags, draft } = post.data;
-const blog = site.blog || { route: 'blog', title: 'Blog' };
+const blog = site.blog || { route: 'blog', title: t('blog') };
 ---
 
 <article class="post" data-draft={draft ? '' : undefined}>
@@ -44,7 +45,7 @@ const blog = site.blog || { route: 'blog', title: 'Blog' };
       </div>
 
       <footer class="post-footer">
-        <TagList tags={tags} label="Tagged" />
+        <TagList tags={tags} label={t('tagged')} />
         {
           editUrl && (
             <p class="edit">
@@ -52,18 +53,18 @@ const blog = site.blog || { route: 'blog', title: 'Blog' };
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
                   <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20h4L19 9l-4-4L4 16v4Zm9-13 4 4" />
                 </svg>
-                Edit this post
+                {t('editPost')}
               </a>
             </p>
           )
         }
         {
           (newer || older) && (
-            <nav class="adjacent" aria-label="More posts">
+            <nav class="adjacent" aria-label={t('morePosts')}>
               {newer ? (
                 <a class="newer" href={postUrl(blog.route, newer.id)} rel="prev">
                   <span class="dir">
-                    <span aria-hidden="true">←</span> Newer
+                    <span class="arrow" aria-hidden="true">←</span> {t('newer')}
                   </span>
                   <span class="name">{newer.data.title}</span>
                 </a>
@@ -73,7 +74,7 @@ const blog = site.blog || { route: 'blog', title: 'Blog' };
               {older ? (
                 <a class="older" href={postUrl(blog.route, older.id)} rel="next">
                   <span class="dir">
-                    Older <span aria-hidden="true">→</span>
+                    {t('older')} <span class="arrow" aria-hidden="true">→</span>
                   </span>
                   <span class="name">{older.data.title}</span>
                 </a>

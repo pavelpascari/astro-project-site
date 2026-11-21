@@ -1,0 +1,43 @@
+---
+title: Accessibility
+description: What the template does for keyboard, screen-reader and low-vision readers, and how each change is checked.
+sidebar:
+  order: 4.5
+---
+
+The template aims at WCAG 2.2 AA on every page it renders: the landing page, docs, gallery and blog.
+
+## What you get without doing anything
+
+- **Keyboard:** a "Skip to content" link, visible focus rings, `/` to filter a long docs sidebar, menus that close
+  on Escape and give focus back, and live-example editors you can leave with Escape then Tab.
+- **Screen readers:** one `<h1>` and a `<main>` per page; every landmark, button and link has a name (copy buttons
+  included, not just a tooltip); status messages ("Copied", "3 pages match", the gallery count) are announced;
+  external gallery links say "(external site)"; decorative icons are hidden.
+- **Low vision:** text, links, buttons and focus rings meet WCAG 2.2 AA contrast in both themes; with
+  "Increase contrast" turned on in the system, secondary text goes to 7:1. Zooming is never blocked, and pages
+  reflow down to 320 px wide without scrolling sideways.
+- **Touch:** targets are at least 44×44 px on touch screens.
+- **Language:** `<html lang>` and `dir` on every page, and the template's words in the site's language (see
+  [Languages](/docs/recipes/i18n/)).
+
+## What is yours to look after
+
+Your content: alt text for images in posts and gallery posters (`posterAlt`), headings in order, link text that
+says where it goes, and captions for video. A custom `theme.accent` is checked for contrast at build time (see
+[Theming](/docs/guides/theming/)); colours you set in `customCss` are not.
+
+## How it is checked
+
+On every change, CI:
+
+1. builds the template's own site and the starter, then runs html-validate's accessibility rules and checks of
+   its own (lang, one `<h1>`, a `<main>`) on every page: `npm run test:a11y`;
+2. builds a small site in French and in Arabic (right to left) and runs the same checks, plus the language ones:
+   `npm run test:i18n`;
+3. checks the theme's colour pairs against WCAG 2.2 AA in both themes, and that no component has English text
+   written into it (`npm test`).
+
+A handful of findings in Starlight's own markup (its two tables of contents share a name, as only one is shown
+at a time) are listed, with the reason, in `scripts/check-html.mjs`. Layout at different screen sizes and in
+three browsers is checked by the UX harness described in `CONTRIBUTING.md`.

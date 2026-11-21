@@ -8,21 +8,33 @@ interface Props {
   target: string;
   total: number;
 }
+import { labelsFor, t } from '../../lib/labels';
+import site from 'virtual:astro-project-site/config';
+
 const { kinds, tags, target, total } = Astro.props;
+const labels = labelsFor();
 const showKinds = kinds.length > 1;
 const showTags = tags.length > 0;
 ---
 
 {
   (showKinds || showTags) && (
-    <gallery-filters class="filters" data-target={target} data-total={total} hidden>
+    <gallery-filters
+      class="filters"
+      data-target={target}
+      data-total={total}
+      data-lang={site.lang}
+      data-showing-all={JSON.stringify(labels.galleryShowingAll)}
+      data-showing={JSON.stringify(labels.galleryShowing)}
+      hidden
+    >
       {showKinds && (
         <div class="group" role="group" aria-labelledby="filter-kind-label">
           <span class="label" id="filter-kind-label">
-            Kind
+            {t('filterKind')}
           </span>
           <button type="button" data-filter="kind" data-value="" aria-pressed="true">
-            All
+            {t('filterAll')}
           </button>
           {kinds.map((kind) => (
             <button type="button" data-filter="kind" data-value={kind} aria-pressed="false">
@@ -34,10 +46,10 @@ const showTags = tags.length > 0;
       {showTags && (
         <div class="group" role="group" aria-labelledby="filter-tag-label">
           <span class="label" id="filter-tag-label">
-            Tag
+            {t('filterTag')}
           </span>
           <button type="button" data-filter="tag" data-value="" aria-pressed="true">
-            Any
+            {t('filterAny')}
           </button>
           {tags.map((tag) => (
             <button type="button" data-filter="tag" data-value={tag} aria-pressed="false">
@@ -52,6 +64,8 @@ const showTags = tags.length > 0;
 }
 
 <script>
+  import { format } from '../../labels.mjs';
+
   class GalleryFilters extends HTMLElement {
     connectedCallback() {
       const grid = document.getElementById(this.dataset.target ?? '');
@@ -60,6 +74,9 @@ const showTags = tags.length > 0;
       const buttons = [...this.querySelectorAll<HTMLButtonElement>('button[data-filter]')];
       const status = this.querySelector('.status');
       const total = items.length;
+      const lang = this.dataset.lang ?? 'en';
+      const showingAll = JSON.parse(this.dataset.showingAll ?? '"{n}"');
+      const showing = JSON.parse(this.dataset.showing ?? '"{shown}/{n}"');
       const params = new URLSearchParams(location.search);
       const state: Record<string, string> = { kind: params.get('kind') ?? '', tag: params.get('tag') ?? '' };
       // Ignore values from the URL that no button offers.
@@ -77,7 +94,7 @@ const showTags = tags.length > 0;
         }
         for (const b of buttons) b.setAttribute('aria-pressed', String(state[b.dataset.filter!] === b.dataset.value));
         if (status) {
-          const text = shown === total ? `Showing all ${total}` : `Showing ${shown} of ${total}`;
+          const text = shown === total ? format(showingAll, { n: total }, lang) : format(showing, { shown, n: total }, lang);
           // Only announce after user interaction; the initial render just fills the text.
           if (announce || !status.textContent) status.textContent = text;
         }

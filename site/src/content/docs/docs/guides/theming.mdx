@@ -88,6 +88,11 @@ customCss: ['./src/styles/brand.css'],
 Only the accent? `theme: { accent: '#c2541b', accentDark: '#ffb347' }` in the config does that without CSS, and
 wins over a `customCss` value for `--site-accent`.
 
+The build checks a `theme.accent` (hex, `rgb()` or `hsl()`) against the theme it lands in and warns when links,
+the primary button's text, the current nav item or the focus ring would fall below WCAG 2.2 AA contrast
+(4.5:1 for text, 3:1 for the focus ring), naming the pair and the ratio. The build still runs; pick a darker
+accent for the light theme, or a lighter `accentDark`, until the warning goes away.
+
 ## Light and dark
 
 The theme is `<html data-theme="light|dark">`, shared with Starlight: the switch in the header (on every page)

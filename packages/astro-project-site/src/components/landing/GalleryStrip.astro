@@ -3,6 +3,7 @@
 import { galleryItems } from '../../lib/gallery';
 import GalleryGrid from '../gallery/GalleryGrid.astro';
 import Section from './Section.astro';
+import { galleryHref, t } from '../../lib/labels';
 
 interface Props {
   title?: string;
@@ -11,18 +12,19 @@ interface Props {
   /** Only items of these kinds. */
   kinds?: string[];
 }
-const { title = 'Gallery', intro, limit = 3, kinds } = Astro.props;
+const { title = t('gallery'), intro, limit = 3, kinds } = Astro.props;
+const href = galleryHref();
 const all = await galleryItems();
 const items = all.filter((item) => !kinds || kinds.includes(item.data.kind)).slice(0, limit);
 ---
 
 {
-  items.length > 0 && (
+  items.length > 0 && href && (
     <Section id="gallery" title={title} intro={intro} tone="surface">
       <GalleryGrid items={items} />
       <p class="more">
-        <a href="/gallery/">
-          See the whole gallery <span aria-hidden="true">→</span>
+        <a href={href}>
+          {t('galleryAll')} <span class="arrow" aria-hidden="true">→</span>
         </a>
       </p>
     </Section>

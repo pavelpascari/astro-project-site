@@ -72,3 +72,9 @@
   background-color: var(--shiki-light-bg);
 }
 
+
+/* Arrows in links ("All posts →", "← Newer") point the way the text reads. */
+.arrow:dir(rtl) {
+  display: inline-block;
+  transform: scaleX(-1);
+}

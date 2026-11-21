@@ -4,6 +4,8 @@
 // Expressive Code's <Code>, imported without Starlight's component barrel and its stylesheet (see virtual.mjs).
 import { Code } from 'virtual:astro-project-site/code';
 import type { LiveProps } from './types';
+import { labelsFor, t } from '../../lib/labels';
+import { format } from '../../labels.mjs';
 
 type Props = LiveProps;
 
@@ -71,20 +73,27 @@ const config = {
   data-mode={mode}
   data-editable={editable ? '' : undefined}
   data-config={JSON.stringify(config)}
+  data-labels={JSON.stringify({
+    details: t('details'),
+    retry: t('retry'),
+    editCode: t('editCode'),
+    editHint: t('editHint'),
+    liveExample: t('liveExample'),
+    loadFailed: format(labelsFor().liveLoadFailed),
+  })}
 >
   <figure class="live-ex__figure">
-    <div
+    <section
       class="live-ex__preview not-content"
       style={minHeight ? `--live-ex-min-h: ${minHeight}` : undefined}
-      role="region"
-      aria-label={`Live example${named ? `: ${named}` : ''}`}
+      aria-label={`${t('liveExample')}${named ? `: ${named}` : ''}`}
     >
       <div class="live-ex__mount"></div>
-      <noscript><p class="live-ex__noscript">This example runs in the browser and needs JavaScript.</p></noscript>
-    </div>
+      <noscript><p class="live-ex__noscript">{t('liveNoScript')}</p></noscript>
+    </section>
     <div class="live-ex__bar not-content" hidden>
       <div class="live-ex__status" role="status" aria-live="polite"></div>
-      {editable && <button type="button" class="live-ex__reset" disabled>Reset</button>}
+      {editable && <button type="button" class="live-ex__reset" disabled>{t('reset')}</button>}
     </div>
     <div class="live-ex__code">
       {code !== undefined ? <Code code={code} lang={lang} title={title} /> : <Fragment set:html={slotHtml} />}
@@ -92,7 +101,7 @@ const config = {
     {
       caption && (
         <figcaption class="live-ex__caption">
-          {caption} <a class="live-ex__anchor" href={`#${id}`} aria-label={`Link to this example: ${caption}`}>#</a>
+          {caption} <a class="live-ex__anchor" href={`#${id}`} aria-label={`${t('linkToExample')}: ${caption}`}>#</a>
         </figcaption>
       )
     }
@@ -265,7 +274,7 @@ const config = {
     margin-top: 0.25rem;
   }
   .live-ex__retry + .live-ex__reset {
-    margin-left: 0.5rem;
+    margin-inline-start: 0.5rem;
   }
   .live-ex__reset[hidden] {
     display: none;
@@ -284,7 +293,7 @@ const config = {
     border-color: var(--sl-color-red, #dc2626);
   }
   .live-ex__reset {
-    margin-left: auto;
+    margin-inline-start: auto;
     flex: none;
     padding: 0.125rem 0.75rem;
     border: 1px solid var(--sl-color-gray-4, GrayText);

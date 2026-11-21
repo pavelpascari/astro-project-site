@@ -18,9 +18,14 @@
     "build": "npm run check -w astro-project-site && npm run build -w site && npm run build -w project-site-starter",
     "docs:check": "npm run docs:check -w site && npm run docs:check -w project-site-starter",
     "preview": "npm run preview -w site",
-    "release:prepare": "node scripts/release-prepare.mjs"
+    "release:prepare": "node scripts/release-prepare.mjs",
+    "test:i18n": "node scripts/check-i18n.mjs",
+    "test:a11y": "node scripts/check-html.mjs site/dist starters/default/dist --skip apps --lang en --dir ltr"
   },
   "engines": {
     "node": ">=22.23.4"
+  },
+  "devDependencies": {
+    "html-validate": "^11.21.1"
   }
 }

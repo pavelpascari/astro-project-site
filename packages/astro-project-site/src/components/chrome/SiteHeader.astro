@@ -12,15 +12,22 @@
 //   theme-menu  — the theme switch inside the small-screen menu.
 import site from 'virtual:astro-project-site/config';
 import { isActive, repoInfo } from '../../lib/nav';
+import { t } from '../../lib/labels';
 
 interface Props {
   /** Current path, for the active nav state. Defaults to the request URL. */
   pathname?: string;
+  /**
+   * Render the small-screen menu. Default true. The docs header turns it off on pages with a sidebar, where the
+   * nav is in Starlight's mobile menu instead, so a page never has two menus holding the same links.
+   */
+  menu?: boolean;
 }
 
 const pathname = Astro.props.pathname ?? Astro.url.pathname;
+const showMenu = Astro.props.menu ?? true;
 const version = site.version;
-const repo = repoInfo(site.repo);
+const repo = repoInfo(site.repo, t('sourceCode'));
 const repoHost = repo.host;
 const repoLabel = repo.label;
 const releasesHref = repo.releases;
@@ -33,14 +40,14 @@ const hasSearch = Astro.slots.has('search');
     <a class="brand" href="/">{site.name}</a>
     {
       version && (
-        <a class="version" href={releasesHref} title="Release notes">
-          <span class="visually-hidden">Version </span>v{version}
+        <a class="version" href={releasesHref} title={t('releaseNotes')}>
+          <span class="visually-hidden">{t('version')} </span>v{version}
         </a>
       )
     }
   </div>
 
-  <nav class="nav" aria-label="Site">
+  <nav class="nav" aria-label={t('siteNav')}>
     <ul>
       {
         links.map((link) => (
@@ -82,6 +89,7 @@ const hasSearch = Astro.slots.has('search');
     <div class="theme"><slot name="theme" /></div>
   </div>
 
+  {showMenu && (
   <details class="menu">
     <summary>
       <svg class="open" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
@@ -90,10 +98,10 @@ const hasSearch = Astro.slots.has('search');
       <svg class="close" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
         <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
       </svg>
-      <span class="visually-hidden">Site menu</span>
+      <span class="visually-hidden">{t('siteMenu')}</span>
     </summary>
     <div class="menu-panel">
-      <nav aria-label="Site (menu)">
+      <nav aria-label={t('siteMenu')}>
         <ul>
           {
             links.map((link) => (
@@ -118,6 +126,7 @@ const hasSearch = Astro.slots.has('search');
       }
     </div>
   </details>
+  )}
 </div>
 
 <script>

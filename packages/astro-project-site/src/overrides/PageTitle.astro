@@ -7,8 +7,10 @@
 //   actions       "Copy page" (the page's markdown, from <page>.md) and Starlight's edit link
 import EditLink from 'virtual:starlight/components/EditLink';
 import type { NavData } from '../nav-middleware';
+import { translator } from '../lib/labels';
 
 const route = Astro.locals.starlightRoute;
+const t = translator(route.lang);
 const nav = (Astro.locals as any).projectSiteNav as NavData | undefined;
 const crumbs = nav?.breadcrumbs ?? [];
 const { title, description } = route.entry.data;
@@ -23,7 +25,7 @@ const hasActions = !!markdownHref || !!route.editUrl;
 <header class="page-header">
   {
     crumbs.length > 0 && (
-      <nav class="crumbs print:hidden" aria-label="Breadcrumbs">
+      <nav class="crumbs print:hidden" aria-label={t('breadcrumbs')}>
         <ol>
           {crumbs.map((c) => (
             <li>{c.href ? <a href={c.href}>{c.label}</a> : <span>{c.label}</span>}</li>
@@ -38,7 +40,13 @@ const hasActions = !!markdownHref || !!route.editUrl;
     hasActions && (
       <div class="page-actions print:hidden">
         {markdownHref && (
-          <copy-page data-src={markdownHref}>
+          <copy-page
+            data-src={markdownHref}
+            data-copied={t('copied')}
+            data-failed={t('copyFailed')}
+            data-copied-status={t('pageCopied')}
+            data-failed-status={t('pageCopyFailed')}
+          >
             <button type="button" class="page-action" disabled>
               <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16">
                 <path
@@ -50,14 +58,14 @@ const hasActions = !!markdownHref || !!route.editUrl;
                   d="M8 8h11v13H8zM5 16H4V3h11v1"
                 />
               </svg>
-              <span class="label">Copy page</span>
+              <span class="label">{t('copyPage')}</span>
             </button>
             <span class="site-sr-status" role="status" aria-live="polite" />
           </copy-page>
         )}
         {markdownHref && (
           <a class="page-action" href={markdownHref}>
-            <span>Markdown</span>
+            <span>{t('markdown')}</span>
           </a>
         )}
         <div class="edit">
@@ -80,17 +88,17 @@ const hasActions = !!markdownHref || !!route.editUrl;
       const text = label.textContent;
       let timer: number | undefined;
       button.addEventListener('click', async () => {
-        let message;
+        let ok = false;
         try {
           const res = await fetch(this.dataset.src!);
           if (!res.ok) throw new Error(String(res.status));
           await navigator.clipboard.writeText(await res.text());
-          message = 'Copied';
+          ok = true;
         } catch {
-          message = 'Could not copy';
+          ok = false;
         }
-        label.textContent = message;
-        status.textContent = message === 'Copied' ? 'Page copied to the clipboard as markdown' : 'Could not copy the page';
+        label.textContent = (ok ? this.dataset.copied : this.dataset.failed) ?? '';
+        status.textContent = (ok ? this.dataset.copiedStatus : this.dataset.failedStatus) ?? '';
         clearTimeout(timer);
         timer = window.setTimeout(() => {
           label.textContent = text;

@@ -2,6 +2,7 @@
 // A post's tags, each a link to its tag page.
 import site from 'virtual:astro-project-site/config';
 import { tagUrl } from '../../blog/posts.mjs';
+import { t } from '../../lib/labels';
 
 interface Props {
   tags: string[];
@@ -17,7 +18,7 @@ const route = site.blog ? site.blog.route : 'blog';
   tags.length > 0 && (
     <div class:list={['tag-list', className]}>
       {label && <span class="label">{label}</span>}
-      <ul aria-label="Tags">
+      <ul aria-label={t('tags')}>
         {tags.map((tag) => (
           <li>
             <a href={tagUrl(route, tag)}>{tag}</a>

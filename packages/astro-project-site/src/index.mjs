@@ -18,6 +18,7 @@ import { own } from './own.mjs';
 import { parseOptions, ProjectSiteOptionsError, resolveOptionPaths } from './options.mjs';
 import { starlightIntegration } from './starlight.mjs';
 import { markdownIntegration } from './markdown/index.mjs';
+import { accentWarnings } from './contrast.mjs';
 import { vitePluginProjectSite } from './virtual.mjs';
 
 
@@ -42,6 +43,9 @@ export default function projectSite(userOptions) {
         const version = readVersion(paths.versionFrom, options.versionFrom, logger);
         if (paths.versionFrom) addWatchFile(paths.versionFrom);
 
+        // A `theme.accent` that makes links, buttons or focus rings too faint: say so (the build still runs).
+        for (const warning of accentWarnings(options.theme)) logger.warn(warning);
+
         // The blog's "edit this post" links need the site's place in its repo.
         const blog = options.blog;
         if (blog) blog.editBase = editBaseUrl(resolveProject(options, root));
@@ -49,7 +53,9 @@ export default function projectSite(userOptions) {
         // Routes: each can be switched off, and a page of the project's own at the same URL always wins.
         const routes = [
           { on: options.landing !== false, pattern: '/', entry: 'routes/index.astro', files: ['index.astro', 'index.md', 'index.mdx', 'index.html'] },
-          { on: options.gallery !== false, pattern: '/gallery', entry: 'routes/gallery.astro', files: ['gallery.astro', 'gallery/index.astro', 'gallery/index.md', 'gallery/index.mdx'] },
+          ...(options.gallery
+            ? [{ on: true, pattern: `/${options.gallery.route}`, entry: 'routes/gallery.astro', files: [`${options.gallery.route}.astro`, `${options.gallery.route}/index.astro`, `${options.gallery.route}/index.md`, `${options.gallery.route}/index.mdx`] }]
+            : []),
           { on: options.llms, pattern: '/llms.txt', entry: 'routes/llms.txt.ts', files: ['llms.txt.ts', 'llms.txt.js'] },
           { on: options.llms, pattern: '/llms-full.txt', entry: 'routes/llms-full.txt.ts', files: ['llms-full.txt.ts', 'llms-full.txt.js'] },
           // One route for the post list, its pages, the posts and the tag pages (see routes/blog/[...path].astro).

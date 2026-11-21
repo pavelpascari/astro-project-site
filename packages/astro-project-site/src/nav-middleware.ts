@@ -9,6 +9,7 @@ import { defineRouteMiddleware, type StarlightRouteData } from '@astrojs/starlig
 import starlightConfig from 'virtual:starlight/user-config';
 import site from 'virtual:astro-project-site/config';
 import { isAutoOverview, isPage } from './lib/docs-tree';
+import { translator } from './lib/labels';
 
 type Entry = StarlightRouteData['sidebar'][number];
 type Link = Extract<Entry, { type: 'link' }>;
@@ -55,6 +56,7 @@ const hrefOf = (parts: string[]) => `${base}/${parts.join('/')}/`;
 export const onRequest = defineRouteMiddleware(async (context) => {
   const route = context.locals.starlightRoute;
   const here = segments(context.url.pathname).join('/');
+  const overview = translator(route.lang)('overview');
   let inserted = false;
   // Starlight shares one sidebar object between pages (it only moves `isCurrent`): change a copy.
   route.sidebar = structuredClone(route.sidebar);
@@ -76,13 +78,13 @@ export const onRequest = defineRouteMiddleware(async (context) => {
         // A folder's index page listed under its own name ("Reference" › "Reference") reads as "Overview",
         // like the automatic overview pages.
         if (index.label.trim().toLowerCase() === entry.label.trim().toLowerCase()) {
-          index.label = 'Overview';
+          index.label = overview;
           overviewOf.set(index, entry.label);
         }
       }
       else if (await isAutoOverview(id)) {
         const href = hrefOf(folder);
-        const link: Link = { type: 'link', label: 'Overview', href, isCurrent: here === id, badge: undefined, attrs: {} };
+        const link: Link = { type: 'link', label: overview, href, isCurrent: here === id, badge: undefined, attrs: {} };
         entry.entries.unshift(link);
         overviewOf.set(link, entry.label);
         groupHref.set(entry, href);

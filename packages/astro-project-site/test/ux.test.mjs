@@ -1,7 +1,7 @@
 // Static guards for the responsive/UX work. The browser check itself is test/ux/ux-check.mjs (needs Playwright and
 // a running site; see the README's Development section).
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { codeComponentModule, vitePluginProjectSite } from '../src/virtual.mjs';
@@ -97,4 +97,25 @@ test('one glob dialect: {a,b} and [..] work in externalDocs exclude too', async 
   assert.ok(globToRegExp('{drafts,internal}/**').test('internal/a/b.md'));
   assert.ok(globToRegExp('notes-[0-9].md').test('notes-3.md'));
   assert.ok(!globToRegExp('*.md').test('a/b.md'));
+});
+
+test('styles use logical directions, so right-to-left pages mirror', () => {
+  /** @type {string[]} */
+  const offenders = [];
+  const walk = (/** @type {string} */ dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (statSync(full).isDirectory()) walk(full);
+      else if (/\.(astro|css)$/.test(name)) {
+        const text = readFileSync(full, 'utf8');
+        // Only CSS: <style> blocks in components, whole files for .css.
+        const css = name.endsWith('.css') ? text : [...text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
+        for (const m of css.matchAll(/^\s*((?:margin|padding|border)-(?:left|right)|left|right|text-align:\s*(?:left|right)|float:\s*(?:left|right))\b[^;]*;/gm)) {
+          offenders.push(`${path.relative(path.resolve(import.meta.dirname, '../src'), full)}: ${m[0].trim()}`);
+        }
+      }
+    }
+  };
+  walk(path.resolve(import.meta.dirname, '../src'));
+  assert.deepEqual(offenders, []);
 });

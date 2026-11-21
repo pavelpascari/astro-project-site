@@ -8,10 +8,11 @@ import type { BlogIndexProps } from '../../index';
 import { rssPath } from '../../blog/options.mjs';
 import { listUrl, tagsUrl } from '../../blog/posts.mjs';
 import { blogPosts } from '../../blog/data';
+import { t } from '../../lib/labels';
 
 type Props = BlogIndexProps;
 const { posts, title, description, tag, tags, page } = Astro.props;
-const blog = site.blog || { route: 'blog', rss: false, title: 'Blog' };
+const blog = site.blog || { route: 'blog', rss: false, title: t('blog') };
 const feed = blog.rss ? rssPath(blog) : undefined;
 // Drafts are left out of production builds; when they are all there is, say so instead of "No posts yet".
 const drafts = posts.length === 0 && !tag ? (await blogPosts({ drafts: true })).filter((p) => p.data.draft) : [];
@@ -24,7 +25,7 @@ const drafts = posts.length === 0 && !tag ? (await blogPosts({ drafts: true })).
         <p class="crumb">
           <a href={listUrl(blog.route)}>{blog.title}</a>
           <span aria-hidden="true"> / </span>
-          <a href={tagsUrl(blog.route)}>Tags</a>
+          <a href={tagsUrl(blog.route)}>{t('tags')}</a>
         </p>
       )
     }
@@ -33,14 +34,14 @@ const drafts = posts.length === 0 && !tag ? (await blogPosts({ drafts: true })).
     {
       !tag && (tags.length > 0 || feed) && (
         <p class="links">
-          {tags.length > 0 && <a href={tagsUrl(blog.route)}>All tags</a>}
+          {tags.length > 0 && <a href={tagsUrl(blog.route)}>{t('allTags')}</a>}
           {
             feed && (
               <a href={feed} class="feed">
                 <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14">
                   <path fill="currentColor" d="M5 3a16 16 0 0 1 16 16h-3A13 13 0 0 0 5 6Zm0 6a10 10 0 0 1 10 10h-3a7 7 0 0 0-7-7Zm2 7a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z" />
                 </svg>
-                RSS feed
+                {t('rssFeed')}
               </a>
             )
           }
@@ -60,14 +61,10 @@ const drafts = posts.length === 0 && !tag ? (await blogPosts({ drafts: true })).
       </ol>
     ) : (
       drafts.length > 0 ? (
-        <p class="empty">
-          {drafts.length === 1 ? '1 draft is' : `${drafts.length} drafts are`} waiting: drafts only show in
-          development. Run <code>npm run dev</code> to read {drafts.length === 1 ? 'it' : 'them'}, then set{' '}
-          <code>draft: false</code> to publish.
-        </p>
+        <p class="empty">{t('draftsWaiting', { n: drafts.length })}</p>
       ) : (
         <p class="empty">
-          No posts yet. Add a Markdown or MDX file to <code>src/content/blog/</code>.
+          {t('noPosts')} {import.meta.env.DEV && <code>src/content/blog/</code>}
         </p>
       )
     )
@@ -75,20 +72,20 @@ const drafts = posts.length === 0 && !tag ? (await blogPosts({ drafts: true })).
 
   {
     page.last > 1 && (
-      <nav class="pagination" aria-label="Pages">
+      <nav class="pagination" aria-label={t('pagination')}>
         {page.prev ? (
           <a href={page.prev} rel="prev">
-            <span aria-hidden="true">←</span> Newer posts
+            <span class="arrow" aria-hidden="true">←</span> {t('newerPosts')}
           </a>
         ) : (
           <span />
         )}
         <span class="count">
-          Page {page.current} of {page.last}
+          {t('pageOf', { n: page.current, total: page.last })}
         </span>
         {page.next ? (
           <a href={page.next} rel="next">
-            Older posts <span aria-hidden="true">→</span>
+            {t('olderPosts')} <span class="arrow" aria-hidden="true">→</span>
           </a>
         ) : (
           <span />

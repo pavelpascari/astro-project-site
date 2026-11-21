@@ -3,13 +3,14 @@
 import '../../styles/components.css';
 import site from 'virtual:astro-project-site/config';
 import { listUrl, tagUrl } from '../../blog/posts.mjs';
+import { t as label } from '../../lib/labels';
 
 interface Props {
   tags: { tag: string; slug: string; count: number }[];
   title: string;
 }
 const { tags, title } = Astro.props;
-const blog = site.blog || { route: 'blog', title: 'Blog' };
+const blog = site.blog || { route: 'blog', title: label('blog') };
 ---
 
 <div class="site-container blog-tags">
@@ -24,7 +25,7 @@ const blog = site.blog || { route: 'blog', title: 'Blog' };
           <a href={tagUrl(blog.route, t.tag)}>
             <span class="name">{t.tag}</span>
             <span class="count">
-              {t.count} {t.count === 1 ? 'post' : 'posts'}
+              {label('postCount', { n: t.count })}
             </span>
           </a>
         </li>

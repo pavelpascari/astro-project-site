@@ -19,14 +19,16 @@
 interface Props {
   /** `note` (default), `field` (a field note: an observation from practice), or `warning`. */
   kind?: 'note' | 'field' | 'warning';
-  /** Label above the note. Default: "Note", "Field note" or "Warning"; `''` for none. */
+  /** Label above the note. Default: the `note`, `fieldNote` or `warning` label; `''` for none. */
   label?: string;
   /** Number the note and put the number in the text at the anchor (numbers count up through the page). */
   numbered?: boolean;
   id?: string;
 }
 
-const LABELS = { note: 'Note', field: 'Field note', warning: 'Warning' } as const;
+import { t } from '../../lib/labels';
+
+const LABELS = { note: t('note'), field: t('fieldNote'), warning: t('warning') } as const;
 const { kind = 'note', numbered = false, id } = Astro.props;
 const label = Astro.props.label ?? LABELS[kind] ?? LABELS.note;
 ---

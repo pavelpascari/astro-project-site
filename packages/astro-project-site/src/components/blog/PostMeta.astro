@@ -3,6 +3,7 @@
 import site from 'virtual:astro-project-site/config';
 import type { BlogAuthor, BlogEntry } from '../../index';
 import { formatDate } from '../../blog/posts.mjs';
+import { t } from '../../lib/labels';
 
 interface Props {
   post: BlogEntry;
@@ -15,25 +16,36 @@ const { post, readingTime, authors = [], class: className } = Astro.props;
 const { date, updated, draft } = post.data;
 const showUpdated = updated && updated.valueOf() > date.valueOf();
 const iso = (d: Date) => d.toISOString().slice(0, 10);
+// "A, B and C" in the site's language; each name keeps its link.
+const joiners = (() => {
+  const marks = authors.map((_, i) => `\u0000${i}\u0000`);
+  let parts: string[];
+  try {
+    parts = new Intl.ListFormat(site.lang, { type: 'conjunction' }).format(marks).split(/\u0000\d+\u0000/);
+  } catch {
+    parts = new Intl.ListFormat('en', { type: 'conjunction' }).format(marks).split(/\u0000\d+\u0000/);
+  }
+  return parts; // parts[i] goes before author i; the last one after the last author
+})();
 ---
 
 <p class:list={['post-meta', className]}>
-  {draft && <span class="draft">Draft</span>}
+  {draft && <span class="draft">{t('draft')}</span>}
   <time datetime={iso(date)}>{formatDate(date, site.lang)}</time>
   {
     showUpdated && (
       <span class="item">
-        Updated <time datetime={iso(updated)}>{formatDate(updated, site.lang)}</time>
+        {t('updated')} <time datetime={iso(updated)}>{formatDate(updated, site.lang)}</time>
       </span>
     )
   }
-  <span class="item">{readingTime} min read</span>
+  <span class="item">{t('minRead', { n: readingTime })}</span>
   {
     authors.length > 0 && (
       <span class="item authors">
         {authors.map((a, i) => (
           <>
-            {i > 0 && (i === authors.length - 1 ? ' and ' : ', ')}
+            {joiners[i]}
             <span class="author">
               {a.avatar && <img src={a.avatar} alt="" width="22" height="22" loading="lazy" decoding="async" />}
               {a.url ? <a href={a.url}>{a.name}</a> : a.name}

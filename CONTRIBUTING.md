@@ -38,9 +38,13 @@ npm run build        # package type check, then site/ and starters/default/ (ast
 npm run docs:check   # the docs link and structure check on its own, for site/ and the starter
 npm run dev          # site/ at http://localhost:4321
 npm run dev:starter  # the starter
+npm run test:a11y    # accessibility checks on the built site/ and starter (after npm run build)
+npm run test:i18n    # builds the i18n fixture in French and Arabic (right to left) and checks both
 ```
 
-Before opening a pull request, `npm test` and `npm run build` must both pass; CI runs the same.
+Before opening a pull request, `npm test`, `npm run build`, `npm run test:a11y` and `npm run test:i18n` must pass;
+CI runs the same. A word that shows on a page belongs in `packages/astro-project-site/src/labels.mjs` (with its
+French, German and Spanish), not in a component: a test fails on English written into a template.
 
 ### The UX harness
 

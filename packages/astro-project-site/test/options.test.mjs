@@ -26,7 +26,8 @@ test('minimal options get defaults', () => {
   assert.deepEqual(o.mirrors, []);
   assert.equal(o.favicon, '/favicon.svg');
   assert.equal(o.llms, true);
-  assert.deepEqual(o.landing, {});
+  assert.deepEqual(o.landing, { docs: { title: 'Documentation' } });
+  assert.deepEqual(o.gallery, { route: 'gallery', title: 'Gallery', description: 'Demos, examples and tools, running live.' });
 });
 
 test('gallery: false drops the Gallery nav default', () => {
@@ -70,7 +71,8 @@ test('landing: false and the section shorthand', () => {
   assert.equal(parseOptions({ ...base, landing: false }).landing, false);
   const o = parseOptions({ ...base, landing: { features: [{ title: 'A', body: 'b' }], steps: { title: 'Steps', items: [] } } });
   assert.ok(o.landing);
-  assert.deepEqual(o.landing.features, { title: 'Why it exists', intro: 'The short version, for people deciding whether to read on.', items: [{ title: 'A', body: 'b' }] });
+  // No default intro: a default would put words on the page the site never wrote.
+  assert.deepEqual(o.landing.features, { title: 'Why it exists', items: [{ title: 'A', body: 'b' }] });
   assert.deepEqual(o.landing.steps, { title: 'Steps', items: [] });
 });
 
@@ -111,4 +113,35 @@ test('resolveOptionPaths: resolves against the root and names missing files', ()
       return true;
     },
   );
+});
+
+test('landing.docs: a title and intro, or false', () => {
+  const landing = (/** @type {unknown} */ input) => /** @type {any} */ (parseOptions({ ...base, landing: input }).landing);
+  assert.deepEqual(landing({ docs: { title: 'Read the docs', intro: 'i' } }).docs, { title: 'Read the docs', intro: 'i' });
+  assert.equal(landing({ docs: false }).docs, false);
+});
+
+test('gallery.route moves the gallery and its nav link', () => {
+  const o = /** @type {any} */ (parseOptions({ ...base, gallery: { route: '/showcase/' } }));
+  assert.equal(o.gallery.route, 'showcase');
+  assert.deepEqual(o.nav.at(-1), { label: 'Gallery', href: '/showcase/' });
+  assert.ok(problems({ ...base, gallery: { route: '../x' } }).some((p) => p.startsWith('gallery.route')));
+});
+
+test('footer.copyright: a string or false', () => {
+  assert.equal(parseOptions({ ...base, footer: { copyright: '© {year} Ada' } }).footer.copyright, '© {year} Ada');
+  assert.equal(parseOptions({ ...base, footer: { copyright: false } }).footer.copyright, false);
+});
+
+test('labels: the site language picks the defaults; unknown names are refused', () => {
+  const fr = /** @type {any} */ (parseOptions({ ...base, starlight: { locales: { root: { label: 'Français', lang: 'fr' } } } }));
+  assert.equal(fr.labels.copy, 'Copier');
+  assert.deepEqual(fr.nav, [{ label: 'Docs', href: '/docs/' }, { label: 'Galerie', href: '/gallery/' }]);
+  assert.equal(fr.gallery.title, 'Galerie');
+  assert.equal(fr.landing.docs.title, 'Documentation');
+  const custom = parseOptions({ ...base, labels: { copy: 'Grab it', pageCount: { one: 'one page', other: '{n} pages' } } });
+  assert.equal(custom.labels.copy, 'Grab it');
+  assert.equal(custom.labels.copied, 'Copied');
+  assert.ok(problems({ ...base, labels: { copyy: 'x' } }).some((p) => /unknown option "copyy"/.test(p)));
+  assert.ok(problems({ ...base, labels: { pageCount: { one: 'x' } } }).length > 0, 'plural forms need `other`');
 });

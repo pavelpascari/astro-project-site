@@ -1,14 +1,13 @@
 ---
-// Injected at /gallery/ unless `gallery: false` or the project has its own src/pages/gallery.astro.
+// Injected at /<gallery.route>/ (default /gallery/) unless `gallery: false` or the project has its own src/pages/gallery.astro.
 import site from 'virtual:astro-project-site/config';
 import BaseLayout from '../components/layouts/BaseLayout.astro';
 import Gallery from 'virtual:astro-project-site/components/Gallery';
 import { galleryItems } from '../lib/gallery';
 
 const items = await galleryItems();
-const options = site.gallery || {};
-const title = options.title ?? 'Gallery';
-const description = options.description ?? 'Demos, examples and tools, running live.';
+// parseOptions() fills in the title and description (labels in the site's language) when they are not set.
+const { title, description } = site.gallery || { title: '', description: '' };
 ---
 
 <BaseLayout title={title} description={description}>

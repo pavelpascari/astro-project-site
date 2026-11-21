@@ -86,6 +86,7 @@ The one site header: landing page, gallery, and (through overrides/Header.astro)
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `pathname` | `string` | `Astro.url.pathname` | Current path, for the active nav state. Defaults to the request URL. |
+| `menu` | `boolean` | `true` | Render the small-screen menu. Default true. The docs header turns it off on pages with a sidebar, where the nav is in Starlight's mobile menu instead, so a page never has two menus holding the same links. |
 
 Slots: `search`, `theme`, `theme-menu`.
 
@@ -96,6 +97,7 @@ The shared footer: under the landing page and the gallery (variant `page`), and 
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `variant` | `'page' \| 'docs'` | `'page'` | `page`: full-width band under a page. `docs`: inside the docs content column. |
+| `navLabel` | `string` |  | Accessible name of the footer's nav. Default: the `footerNav` label. Give a second footer on a page its own. |
 
 #### ThemeSelect
 
@@ -163,7 +165,7 @@ The landing page's gallery section: the first few gallery items and a link to th
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `title` | `string` | `'Gallery'` |  |
+| `title` | `string` | `t('gallery')` |  |
 | `intro` | `string` |  |  |
 | `limit` | `number` | `3` |  |
 | `kinds` | `string[]` |  | Only items of these kinds. |
@@ -188,7 +190,7 @@ A shell command with a copy button. The button appears only when the Clipboard A
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `command` (required) | `string` |  |  |
-| `label` | `string` | `'Install command'` | Accessible name for the command, read before it. |
+| `label` | `string` | `t('installCommand')` | Accessible name for the command, read before it. |
 
 ### Docs
 #### ChildCards
@@ -326,7 +328,7 @@ A post's tags, each a link to its tag page.
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `title` | `string` | `'Latest posts'` |  |
+| `title` | `string` | `t('latestPosts')` |  |
 | `intro` | `string` |  |  |
 | `limit` | `number` | `3` | How many posts. Default 3. |
 | `tone` | `'plain' \| 'surface'` | `'plain'` | Section background. |
@@ -339,7 +341,7 @@ A side note anchored to a spot in the text.
 | Prop | Type | Default | Description |
 |---|---|---|---|
 | `kind` | `'note' \| 'field' \| 'warning'` | `'note'` | `note` (default), `field` (a field note: an observation from practice), or `warning`. |
-| `label` | `string` |  | Label above the note. Default: "Note", "Field note" or "Warning"; `''` for none. |
+| `label` | `string` |  | Label above the note. Default: the `note`, `fieldNote` or `warning` label; `''` for none. |
 | `numbered` | `boolean` | `false` | Number the note and put the number in the text at the anchor (numbers count up through the page). |
 | `id` | `string` |  |  |
 

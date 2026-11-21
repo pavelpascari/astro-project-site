@@ -14,6 +14,7 @@ import Header from 'virtual:astro-project-site/components/Header';
 import { Search, showSearch } from 'virtual:astro-project-site/starlight';
 import SiteHead from '../chrome/SiteHead.astro';
 import ThemeSelect from '../chrome/ThemeSelect.astro';
+import { t } from '../../lib/labels';
 
 interface Props {
   title?: string;
@@ -35,7 +36,7 @@ const props = Astro.props;
     <SiteHead {...props}><slot name="head" /></SiteHead>
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <header class="site-bar">
       <div class="site-bar-inner">
         <Header>

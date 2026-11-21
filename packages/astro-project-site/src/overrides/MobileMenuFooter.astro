@@ -5,11 +5,14 @@
 import Default from '@astrojs/starlight/components/MobileMenuFooter.astro';
 import site from 'virtual:astro-project-site/config';
 import { isActive } from '../lib/nav';
+import { translator } from '../lib/labels';
+
+const t = translator(Astro.locals.starlightRoute.lang);
 
 const pathname = Astro.url.pathname;
 ---
 
-<nav class="site-nav" aria-label="Site">
+<nav class="site-nav" aria-label={t('siteMenu')}>
   <ul>
     {
       site.nav.map((item) => (

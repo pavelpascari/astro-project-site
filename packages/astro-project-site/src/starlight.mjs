@@ -13,15 +13,15 @@ import { LAYER_ORDER } from './lib/layers.mjs';
 import { COLLAPSE_ABOVE } from './lib/sidebar.mjs';
 import { resolveModulePath } from './options.mjs';
 import { own } from './own.mjs';
+import { repoHost } from './repo-host.mjs';
+import { format } from './labels.mjs';
 
 const asArray = (/** @type {unknown} */ v) => (v === undefined ? [] : Array.isArray(v) ? v : [v]);
 
 /** Starlight `social` entry for the repo link (shown in the mobile menu). */
-function repoSocial(/** @type {string} */ repo) {
-  const host = new URL(repo).hostname.replace(/^www\./, '');
-  const icon = host === 'github.com' ? 'github' : host === 'gitlab.com' ? 'gitlab' : host === 'codeberg.org' ? 'codeberg' : 'external';
-  const label = icon === 'github' ? 'GitHub' : icon === 'gitlab' ? 'GitLab' : icon === 'codeberg' ? 'Codeberg' : 'Source';
-  return { icon, label, href: repo };
+function repoSocial(/** @type {string} */ repo, /** @type {string} */ fallback) {
+  const { icon, name } = repoHost(repo);
+  return { icon, label: name ?? fallback, href: repo };
 }
 
 /**
@@ -35,7 +35,7 @@ export function linksValidator(options, /** @type {string[]} */ pages = []) {
   if (!Array.isArray(exclude)) return [starlightLinksValidator({ ...rest, exclude })];
   const known = [
     ...(options.landing === false ? [] : ['/']),
-    ...(options.gallery === false ? [] : ['/gallery', '/gallery/', '/gallery/#*']),
+    ...(options.gallery === false ? [] : [`/${options.gallery.route}`, `/${options.gallery.route}/`, `/${options.gallery.route}/#*`]),
     ...(options.llms ? ['/llms.txt', '/llms-full.txt'] : []),
     ...blogKnownLinks(options.blog),
     // Automatic overview pages (routes/section.astro) are not in the docs collection either.
@@ -149,7 +149,7 @@ export function starlightOptions(options, paths, root) {
     title: options.name,
     description: options.tagline,
     favicon: options.favicon,
-    social: social ?? [repoSocial(options.repo)],
+    social: social ?? [repoSocial(options.repo, format(options.labels.sourceCode))],
     // Local pages: <repo>/edit/<branch>/<project folder>/src/content/docs/...; mounted pages carry their own editUrl.
     ...(editBase ? { editLink: { baseUrl: editBase } } : {}),
     ...rest,
@@ -165,7 +165,7 @@ export function starlightOptions(options, paths, root) {
     },
     // theme.css first, then the project's site-wide CSS, then docs-only CSS.
     customCss: [own('styles/theme.css'), own('styles/docs.css'), ...paths.customCss, ...asArray(customCss).map(resolve)],
-    sidebar: [...presentSidebar(buildSidebar(project), countPages(project)), ...asArray(sidebar)],
+    sidebar: [...presentSidebar(buildSidebar(project, format(options.labels.overview)), countPages(project)), ...asArray(sidebar)],
     // The site-wide `head` option first, then docs-only `starlight.head`.
     // The layer order first of all (lib/layers.mjs).
     head: [{ tag: 'style', content: LAYER_ORDER }, ...options.head, ...asArray(head)],

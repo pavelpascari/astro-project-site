@@ -23,7 +23,8 @@ const latest = site.blog && site.blog.landing && site.blog.landing.limit > 0 ? s
 // No features configured: the top-level docs sections fill that place, so an unconfigured landing page still
 // points somewhere useful (only when there are at least two to show).
 const hasFeatures = !!landing.features && landing.features.items.length > 0;
-const showDocs = !hasFeatures && (await childCards('docs')).length >= 2;
+const docs = landing.docs;
+const showDocs = !!docs && !hasFeatures && (await childCards('docs')).length >= 2;
 ---
 
 <Hero
@@ -52,8 +53,8 @@ const showDocs = !hasFeatures && (await childCards('docs')).length >= 2;
 
 {
   showDocs && (
-    <Section id="docs" title="Documentation">
-      <ChildCards dir="docs" label="Documentation" />
+    <Section id="docs" title={docs.title} intro={docs.intro}>
+      <ChildCards dir="docs" label={docs.title} />
     </Section>
   )
 }

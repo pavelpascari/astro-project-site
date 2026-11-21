@@ -106,8 +106,10 @@ watch();
 document.addEventListener('astro:page-load', watch);
 `;
 
-/** @param {{ wrapToggle: boolean }} opts */
-export function pluginProjectSiteCode({ wrapToggle }) {
+/** @typedef {{ wrapToggle: boolean, wrapLabel?: string }} CodeOptions */
+
+/** @param {CodeOptions} opts */
+export function pluginProjectSiteCode({ wrapToggle, wrapLabel = 'Wrap lines' }) {
   return definePlugin({
     name: 'project-site-code',
     baseStyles: ({ cssVar }) => `
@@ -169,6 +171,13 @@ export function pluginProjectSiteCode({ wrapToggle }) {
       },
       postprocessRenderedBlock: ({ codeBlock, renderData }) => {
         const figure = renderData.blockAst;
+        // Expressive Code's copy button is named only by its `title` (a tooltip, which some screen readers skip and
+        // touch screens never show): give it the same text as its accessible name, and an explicit type.
+        const copy = find(figure, (n) => n.tagName === 'button' && n.properties?.dataCode !== undefined);
+        if (copy) {
+          copy.properties.type ??= 'button';
+          if (copy.properties.title && !copy.properties.ariaLabel) copy.properties.ariaLabel = copy.properties.title;
+        }
         if (TERMINAL.has(codeBlock.language)) {
           const commands = commandsToCopy(codeBlock.code);
           // hastscript stores `data-code` as the `dataCode` property.
@@ -185,7 +194,7 @@ export function pluginProjectSiteCode({ wrapToggle }) {
           figure.children.push({
             type: 'element',
             tagName: 'button',
-            properties: { type: 'button', className: ['md-wrap-toggle'], 'aria-pressed': 'false', title: 'Wrap lines', 'aria-label': 'Wrap lines', hidden: true },
+            properties: { type: 'button', className: ['md-wrap-toggle'], 'aria-pressed': 'false', title: wrapLabel, 'aria-label': wrapLabel, hidden: true },
             children: [
               {
                 type: 'element',
@@ -237,7 +246,7 @@ export function jsonSafe(plugin) {
 }
 
 /** The plugins this package adds, in order. */
-export function codePlugins(/** @type {{ wrapToggle: boolean }} */ opts) {
+export function codePlugins(/** @type {CodeOptions} */ opts) {
   return [pluginLineNumbers(), pluginCollapsibleSections(), pluginProjectSiteCode(opts)];
 }
 
@@ -245,14 +254,14 @@ export function codePlugins(/** @type {{ wrapToggle: boolean }} */ opts) {
  * Source of the module served as `virtual:astro-expressive-code/ec-config` (what an `ec.config.mjs` would export),
  * so <Code> renders with the same plugins as markdown code blocks.
  */
-export function ecConfigModule(/** @type {{ wrapToggle: boolean }} */ opts) {
+export function ecConfigModule(/** @type {CodeOptions} */ opts) {
   return `import { codePlugins } from ${JSON.stringify(fileURLToPath(import.meta.url))};\nexport default { plugins: codePlugins(${JSON.stringify(opts)}) };\n`;
 }
 
 /**
  * The `expressiveCode` option for Starlight: ours merged with what the project passed as `starlight.expressiveCode`
  * (its plugins after ours, its `defaultProps`, `shiki.langAlias` and other settings winning). `false` stays false.
- * @param {{ markdown?: { codeWrapToggle?: boolean } }} options
+ * @param {{ markdown?: { codeWrapToggle?: boolean }, labels?: { wrapLines?: unknown } }} options
  * @param {unknown} user
  */
 export function expressiveCodeConfig(options, user) {
@@ -260,7 +269,13 @@ export function expressiveCodeConfig(options, user) {
   const u = /** @type {Record<string, any>} */ (user && typeof user === 'object' ? user : {});
   return {
     ...u,
-    plugins: [...codePlugins({ wrapToggle: options.markdown?.codeWrapToggle !== false }).map(jsonSafe), ...(u.plugins ?? [])],
+    plugins: [
+      ...codePlugins({
+        wrapToggle: options.markdown?.codeWrapToggle !== false,
+        wrapLabel: typeof options.labels?.wrapLines === 'string' ? options.labels.wrapLines : undefined,
+      }).map(jsonSafe),
+      ...(u.plugins ?? []),
+    ],
     defaultProps: {
       // Line numbers are opt-in (`showLineNumbers`), as on GitHub; collapsed sections look like GitHub's.
       showLineNumbers: false,

@@ -47,8 +47,8 @@ if (page.kind === 'post') {
         }
       : {
           posts: page.posts as BlogEntry[],
-          title: `Posts tagged “${page.tag.tag}”`,
-          description: `${page.tag.count} ${page.tag.count === 1 ? 'post' : 'posts'} about ${page.tag.tag}.`,
+          title: t('postsTagged', { tag: page.tag.tag }),
+          description: t('tagDescription', { n: page.tag.count, tag: page.tag.tag }),
           tag: page.tag,
           tags: allTags,
           page: { current: 1, last: 1, total: page.posts.length },
@@ -59,15 +59,16 @@ const pageTitle =
   page.kind === 'post'
     ? post!.data.title
     : page.kind === 'tags'
-      ? `Tags · ${blog.title}`
+      ? `${t('tags')} · ${blog.title}`
       : indexProps!.page.current > 1
-        ? `${indexProps!.title} · Page ${indexProps!.page.current}`
+        ? `${indexProps!.title} · ${t('pageN', { n: indexProps!.page.current })}`
         : indexProps!.title;
 const iso = (d: Date) => d.toISOString();
 const postProps = (p: BlogEntry) => {
   const { readingTime, authors } = postInfo(p);
   return { post: p, readingTime, authors };
 };
+import { t } from '../../lib/labels';
 ---
 
 {
@@ -90,8 +91,8 @@ const postProps = (p: BlogEntry) => {
       </BlogPost>
     </BaseLayout>
   ) : page.kind === 'tags' ? (
-    <BaseLayout title={pageTitle} description={`Every topic on the ${site.name} ${blog.title.toLowerCase()}.`}>
-      <BlogTags tags={page.tags} title="Tags" />
+    <BaseLayout title={pageTitle} description={t('tagsDescription', { blog: blog.title })}>
+      <BlogTags tags={page.tags} title={t('tags')} />
     </BaseLayout>
   ) : (
     indexProps && (

@@ -7,6 +7,7 @@ import type { GalleryEntry } from '../../index';
 import GalleryGrid from './GalleryGrid.astro';
 import GalleryFilters from './GalleryFilters.astro';
 import { distinct } from '../../lib/gallery';
+import { t } from '../../lib/labels';
 
 interface Props {
   items: GalleryEntry[];
@@ -29,7 +30,7 @@ const tags = distinct(items, (item) => item.data.tags).sort();
       <GalleryGrid items={items} id="gallery-items" headingLevel={2} />
     ) : (
       <p>
-        Nothing here yet. Add a file to <code>src/content/gallery/</code>.
+        {t('galleryEmpty')} {import.meta.env.DEV && <code>src/content/gallery/</code>}
       </p>
     )
   }

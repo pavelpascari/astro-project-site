@@ -36,10 +36,12 @@ Types and descriptions come from `src/index.d.ts`, defaults and required fields 
 | `theme.accent` | `string` |  |  |
 | `theme.accentDark` | `string` |  |  |
 | `landing` | `false \| LandingContent` | `{}` | Content of the built-in landing page at `/`, or `false` for none (or add your own src/pages/index.astro). |
-| `gallery` | `false \| { title?: string; description?: string }` | `{}` | The built-in /gallery/ page, or `false` for none. |
+| `gallery` | `false \| { route?: string; title?: string; description?: string }` | `{}` | The built-in gallery page, or `false` for none. `route` is its URL path (default `gallery`: /gallery/); `title` and `description` default to the `gallery` and `galleryDescription` labels. |
 | `blog` | `boolean \| BlogOptions` | `false` | Posts from src/content/blog/ at /blog/ (list, posts, tags, RSS), or `true` for the defaults. Off unless set. |
-| `footer` | `object` | `{}` | Extra footer text, e.g. a licence line. |
+| `footer` | `object` | `{}` | Footer text. `note`: extra text, e.g. a licence line. `copyright`: the copyright line, with `{year}` (the build year) and `{name}` filled in; default the `copyright` label ("© {year} {name}"); `false` leaves it out. |
 | `footer.note` | `string` |  |  |
+| `footer.copyright` | `string \| false` |  |  |
+| `labels` | `Partial<Labels>` | `{}` | The words the template puts on pages (buttons, screen-reader names, empty states, alert titles), by name. They follow the site's language (Starlight's root or default locale): built in for English, French, German and Spanish, English for anything else. Set any of them here, in any language. |
 | `llms` | `boolean` | `true` | Serve /llms.txt and /llms-full.txt. Default `true`. |
 | `linksValidator` | `false \| Record<string, unknown>` |  | Options for starlight-links-validator, which fails the build on a broken link in a docs page, or `false` to turn it off. Links to the landing page, the gallery, llms.txt and mirrored folders are always accepted; `exclude` adds to that list. |
 | `customCss` | `string[]` | `[]` | Stylesheets (relative to the project root) loaded on every page after theme.css: override tokens here. |
@@ -94,8 +96,9 @@ See [Landing page](/docs/guides/landing-page/).
 | `hero.primary` | `LinkAction` |  |  |
 | `hero.secondary` | `LinkAction` |  |  |
 | `hero.demo` | `HeroDemo` |  | A live example under the hero copy (rendered with `<Live>`). |
-| `features` | `SectionContent<Feature>` |  | Feature cards. Default heading "Why it exists". |
-| `steps` | `SectionContent<Step>` |  | Numbered steps. Default heading "How it works". |
+| `features` | `SectionContent<Feature>` |  | Feature cards. Default heading: the `featuresTitle` label ("Why it exists"). |
+| `docs` | `false \| { title?: string; intro?: string }` |  | Cards for the top-level docs sections, shown when there are no `features` and the docs have at least two sections. Default heading: the `documentation` label. `false` hides them. |
+| `steps` | `SectionContent<Step>` |  | Numbered steps. Default heading: the `stepsTitle` label ("How it works"). |
 | `gallery` | `object` |  | The gallery strip: heading, intro and how many items (0 hides it; default 3). |
 | `gallery.title` | `string` |  |  |
 | `gallery.intro` | `string` |  |  |

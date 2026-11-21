@@ -20,7 +20,7 @@ type FrameMessage =
   | { type: 'ready' }
   | { type: 'done' }
   | { type: 'status'; message: string; level: LiveStatusLevel }
-  | { type: 'error'; message: string; detail?: string; load?: boolean };
+  | { type: 'error'; message: string; detail?: string; load?: boolean; url?: string };
 
 const MARK = '__liveExample';
 const reducedMotionQuery = () => matchMedia('(prefers-reduced-motion: reduce)');
@@ -102,8 +102,17 @@ function renderHtml(mount: HTMLElement, html: string, onError: (message: string)
 
 // A module that could not be fetched (network error, 404, server gone): shown as a plain sentence, with the
 // browser's own message kept as the detail.
-const loadFailureText = (kind: 'runner' | 'module', url: string) =>
-  `Couldn't load the ${kind} ${url} (network error or 404). Check the path, or that the site is still being served.`;
+const loadFailureText = (url: string, template = DEFAULT_LABELS.loadFailed) => template.replace('{url}', url);
+
+/** The words this element shows; Live.astro renders them in the site's language as `data-labels`. */
+const DEFAULT_LABELS = {
+  details: 'Details',
+  retry: 'Retry',
+  editCode: 'Edit the example code',
+  editHint: 'Edits re-run the example. Tab inserts spaces; press Escape, then Tab, to leave the editor.',
+  liveExample: 'Live example',
+  loadFailed: "Couldn't load {url} (network error or 404). Check the path, or that the site is still being served.",
+};
 
 class ModuleLoadError extends Error {
   constructor(
@@ -111,7 +120,7 @@ class ModuleLoadError extends Error {
     readonly kind: 'runner' | 'module',
     readonly detail: string,
   ) {
-    super(loadFailureText(kind, url));
+    super(loadFailureText(url));
   }
 }
 
@@ -208,7 +217,7 @@ const BOOT = `(function (cfg) {
     }).catch(function (err) {
       var fetchFailed = err instanceof TypeError && /fetch|import|load|module script/i.test(err.message);
       post(fetchFailed
-        ? { type: 'error', load: true, detail: fmt(err), message: "Couldn't load the runner " + cfg.runnerLabel + ' (network error or 404). Check the path, or that the site is still being served.' }
+        ? { type: 'error', load: true, detail: fmt(err), url: cfg.runnerLabel, message: "Couldn't load " + cfg.runnerLabel + ' (network error or 404).' }
         : { type: 'error', message: 'Could not load the runner: ' + fmt(err) });
     });
   } else {
@@ -279,6 +288,7 @@ function wireGlobals() {
 
 class LiveExample extends HTMLElement {
   private cfg!: Config;
+  private labels = DEFAULT_LABELS;
   private mount!: HTMLElement;
   private bar!: HTMLElement;
   private statusEl!: HTMLElement;
@@ -333,6 +343,7 @@ class LiveExample extends HTMLElement {
     }
     wireGlobals();
     this.cfg = JSON.parse(this.dataset.config ?? '{}') as Config;
+    this.labels = { ...DEFAULT_LABELS, ...(JSON.parse(this.dataset.labels ?? '{}') as Partial<typeof DEFAULT_LABELS>) };
     this.mount = this.querySelector('.live-ex__mount')!;
     this.bar = this.querySelector('.live-ex__bar')!;
     this.statusEl = this.querySelector('.live-ex__status')!;
@@ -403,7 +414,7 @@ class LiveExample extends HTMLElement {
       const more = document.createElement('details');
       more.className = 'live-ex__detail';
       const summary = document.createElement('summary');
-      summary.textContent = 'Details';
+      summary.textContent = this.labels.details;
       const code = document.createElement('code');
       code.textContent = detail;
       more.append(summary, code);
@@ -427,7 +438,7 @@ class LiveExample extends HTMLElement {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'live-ex__reset live-ex__retry';
-      b.textContent = 'Retry';
+      b.textContent = this.labels.retry;
       b.addEventListener('click', () => void this.run());
       if (this.resetBtn) this.resetBtn.before(b);
       else this.bar.append(b);
@@ -464,7 +475,7 @@ class LiveExample extends HTMLElement {
       if (seq === this.seq && this.dataset.state === 'running') this.dataset.state = 'ok';
     } catch (err) {
       if (seq !== this.seq) return;
-      if (err instanceof ModuleLoadError) this.showLoadError(err.message, err.detail);
+      if (err instanceof ModuleLoadError) this.showLoadError(loadFailureText(err.url, this.labels.loadFailed), err.detail);
       else this.showError(describeError(err));
     }
   }
@@ -526,7 +537,7 @@ class LiveExample extends HTMLElement {
     if (!this.frame) {
       const f = document.createElement('iframe');
       f.className = 'live-ex__frame';
-      f.title = this.querySelector('.live-ex__preview')?.getAttribute('aria-label') ?? 'Live example';
+      f.title = this.querySelector('.live-ex__preview')?.getAttribute('aria-label') ?? this.labels.liveExample;
       f.setAttribute('sandbox', this.cfg.sandbox);
       f.setAttribute('allow', 'clipboard-write');
       this.mount.replaceChildren(f);
@@ -557,7 +568,7 @@ class LiveExample extends HTMLElement {
         this.setStatus(m.message, m.level);
         break;
       case 'error':
-        if (m.load) this.showLoadError(m.message, m.detail ?? '');
+        if (m.load) this.showLoadError(m.url ? loadFailureText(m.url, this.labels.loadFailed) : m.message, m.detail ?? '');
         else this.showError(m.message, m.detail);
         break;
       case 'done':
@@ -596,7 +607,7 @@ class LiveExample extends HTMLElement {
     const hint = document.createElement('span');
     hint.id = hintId;
     hint.className = 'live-ex__sr';
-    hint.textContent = 'Edits re-run the example. Tab inserts spaces; press Escape, then Tab, to leave the editor.';
+    hint.textContent = this.labels.editHint;
 
     const ta = document.createElement('textarea');
     ta.className = 'live-ex__editor';
@@ -607,7 +618,7 @@ class LiveExample extends HTMLElement {
     ta.setAttribute('autocapitalize', 'off');
     ta.setAttribute('autocomplete', 'off');
     ta.setAttribute('autocorrect', 'off');
-    ta.setAttribute('aria-label', `Edit the example code${title ? `: ${title}` : ''}`);
+    ta.setAttribute('aria-label', `${this.labels.editCode}${title ? `: ${title}` : ''}`);
     ta.setAttribute('aria-describedby', hintId);
     pre.after(ta, hint);
     this.editor = ta;

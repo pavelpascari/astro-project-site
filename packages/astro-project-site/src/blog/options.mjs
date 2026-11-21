@@ -10,6 +10,15 @@ export const BLOG_DEFAULTS = Object.freeze({
   landing: Object.freeze({ title: 'Latest posts', limit: 3 }),
 });
 
+/** A URL path option (`blog`, `news/posts`): no leading or trailing slash, no `.`/`..` segments. */
+export const routeSchema = z
+  .string()
+  .transform((r) => r.replace(/^\/+|\/+$/g, ''))
+  .refine(
+    (r) => !!r && r.split('/').every((s) => s && s !== '.' && s !== '..' && /^[\w.~-]+$/.test(s)),
+    'must be a URL path like "blog" or "news/posts"',
+  );
+
 const author = z.strictObject({
   name: z.string().min(1),
   url: z.string().min(1).optional(),
@@ -20,14 +29,7 @@ const author = z.strictObject({
 export const blogOptionSchema = z.union([
   z.boolean(),
   z.strictObject({
-    route: z
-      .string()
-      .transform((r) => r.replace(/^\/+|\/+$/g, ''))
-      .refine(
-        (r) => !!r && r.split('/').every((s) => s && s !== '.' && s !== '..' && /^[\w.~-]+$/.test(s)),
-        'must be a URL path like "blog" or "news/posts"',
-      )
-      .optional(),
+    route: routeSchema.optional(),
     title: z.string().min(1).optional(),
     description: z.string().optional(),
     authors: z.record(z.string(), author).optional(),
@@ -43,19 +45,27 @@ export const blogOptionSchema = z.union([
  * The blog option with every default filled in, or `false`.
  * @param {unknown} value the parsed `blog` option
  * @param {string} tagline default description
+ * @param {{ blog: unknown, latestPosts: unknown }} [labels] default titles, in the site's language
  * @returns {false | import('../index').ResolvedBlog}
  */
-export function resolveBlog(value, tagline) {
+export function resolveBlog(value, tagline, labels) {
   if (!value) return false;
   const o = /** @type {Record<string, any>} */ (value === true ? {} : value);
   return {
     route: o.route ?? BLOG_DEFAULTS.route,
-    title: o.title ?? BLOG_DEFAULTS.title,
+    title: o.title ?? (typeof labels?.blog === 'string' ? labels.blog : BLOG_DEFAULTS.title),
     description: o.description ?? tagline,
     authors: o.authors ?? {},
     postsPerPage: o.postsPerPage ?? BLOG_DEFAULTS.postsPerPage,
     rss: o.rss ?? BLOG_DEFAULTS.rss,
-    landing: o.landing === false ? false : { ...BLOG_DEFAULTS.landing, ...o.landing },
+    landing:
+      o.landing === false
+        ? false
+        : {
+            ...BLOG_DEFAULTS.landing,
+            ...(typeof labels?.latestPosts === 'string' ? { title: labels.latestPosts } : {}),
+            ...o.landing,
+          },
   };
 }
 

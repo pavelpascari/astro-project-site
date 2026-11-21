@@ -1,20 +1,30 @@
 ---
 // A shell command with a copy button. The button appears only when the Clipboard API is available.
 import '../../styles/components.css';
+import { t } from '../../lib/labels';
 interface Props {
   command: string;
   /** Accessible name for the command, read before it. */
   label?: string;
 }
-const { command, label = 'Install command' } = Astro.props;
+const { command, label = t('installCommand') } = Astro.props;
 // Each word stays whole, so narrow screens wrap between words (never inside `my-site`). textContent is unchanged.
 const words = command.split(' ');
 ---
 
-<div class="install" role="group" aria-label={label}>
-  <code><span class="prompt" aria-hidden="true">$</span> <span data-command>{words.map((w, i) => <>{i > 0 && ' '}<span class="word">{w}</span></>)}</span></code>
+<div
+  class="install"
+  role="group"
+  aria-label={label}
+  data-copy-text={t('copy')}
+  data-copied-text={t('copied')}
+  data-copied-status={t('copiedToClipboard')}
+  data-copy-fallback={t('copyFallback')}
+>
+  {/* A shell command reads left to right in every language, and is not for browser translation. */}
+  <code dir="ltr" translate="no"><span class="prompt" aria-hidden="true">$</span> <span data-command>{words.map((w, i) => <>{i > 0 && ' '}<span class="word">{w}</span></>)}</span></code>
   <button type="button" class="copy" data-copy hidden>
-    <span data-copy-label>Copy</span>
+    <span data-copy-label>{t('copy')}</span>
   </button>
   <span class="status site-visually-hidden" role="status" aria-live="polite"></span>
 </div>
@@ -31,14 +41,14 @@ const words = command.split(' ');
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(text);
-        if (label) label.textContent = 'Copied';
-        if (status) status.textContent = 'Copied to clipboard';
+        if (label) label.textContent = box.dataset.copiedText ?? '';
+        if (status) status.textContent = box.dataset.copiedStatus ?? '';
       } catch {
-        if (label) label.textContent = 'Press Ctrl+C';
+        if (label) label.textContent = box.dataset.copyFallback ?? '';
       }
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (label) label.textContent = 'Copy';
+        if (label) label.textContent = box.dataset.copyText ?? '';
         if (status) status.textContent = '';
       }, 2000);
     });

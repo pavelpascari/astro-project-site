@@ -26,7 +26,8 @@ import Slugger from 'github-slugger';
  *   fileURL?: URL, sourceFormat?: string }} Ctx
  * @typedef {{ alerts: boolean, emoji: boolean, math: boolean, mermaid: boolean, headingLinks: boolean }} Features
  * @typedef {{ features: Features, katexCss: string, isStarlightFile: (url: URL | undefined) => boolean,
- *   mermaidInstalled?: boolean, onMissingMermaid?: (file: URL | undefined) => void }} PluginOptions
+ *   mermaidInstalled?: boolean, onMissingMermaid?: (file: URL | undefined) => void,
+ *   alertLabels?: Partial<Record<keyof typeof ALERTS, string>> }} PluginOptions
  */
 
 // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ export const ALERTS = /** @type {const} */ ({
 const ALERT_MARKER = /^\[!(note|tip|important|warning|caution)\][ \t]*(?:\r?\n|$)/i;
 
 /** `> [!NOTE]` blockquotes → `<aside class="md-alert md-alert--note">` with a title row, like Starlight's asides. */
-export function alertsPlugin() {
+export function alertsPlugin(/** @type {Partial<Record<keyof typeof ALERTS, string>>} */ labels = {}) {
   return {
     name: 'project-site-alerts',
     element: {
@@ -98,7 +99,8 @@ export function alertsPlugin() {
         const match = lead?.type === 'text' ? ALERT_MARKER.exec(lead.value ?? '') : null;
         if (!match) return;
         const kind = /** @type {keyof typeof ALERTS} */ (match[1].toLowerCase());
-        const { label, icon } = ALERTS[kind];
+        const { icon } = ALERTS[kind];
+        const label = labels[kind] ?? ALERTS[kind].label;
 
         // The first paragraph without the marker (and without a hard break right after it).
         let rest = /** @type {HastNode[]} */ ([...(first.children ?? []).slice(1)]);
@@ -350,7 +352,7 @@ export function markdownPlugins(opts) {
   const first = features.math || features.mermaid ? [blocksPlugin(opts)] : [];
   /** @type {any[]} */
   const rest = [tablesAndFootnotesPlugin()];
-  if (features.alerts) rest.push(alertsPlugin());
+  if (features.alerts) rest.push(alertsPlugin(opts.alertLabels));
   if (features.emoji) rest.push(emojiPlugin());
   if (features.headingLinks) {
     rest.push((/** @type {{ fileURL?: URL }} */ doc) => (opts.isStarlightFile(doc.fileURL) ? null : headingLinksPlugin()));

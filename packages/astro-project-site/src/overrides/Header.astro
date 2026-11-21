@@ -15,7 +15,7 @@ const themeCss = themeOverrideCss();
 ---
 
 {themeCss && <style is:inline set:html={themeCss} />}
-<Header>
+<Header menu={!Astro.locals.starlightRoute.hasSidebar}>
   {showSearch && <Search slot="search" />}
   <ThemeSelect slot="theme" />
 </Header>

@@ -55,6 +55,8 @@ npm workspaces:
 npm ci
 npm test             # unit tests (node --test)
 npm run build        # package type check, then site/ and starters/default/ (astro check, build, docs:check)
+npm run test:a11y    # accessibility checks on what was just built
+npm run test:i18n    # the site built in French and in Arabic (right to left), checked
 npm run dev          # site/ at http://localhost:4321
 ```
 

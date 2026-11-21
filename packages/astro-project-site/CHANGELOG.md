@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+### Languages
+
+- The template's own words (85 of them: buttons, screen-reader names, empty states, alert titles, the theme
+  switch, reading time, dates, the default nav and section headings) follow the site's language, from Starlight's
+  root locale. Built in: English, French, German, Spanish; any other language gets English until set.
+- New option `labels`: set any of those words by name, in any language, with plural forms where something is
+  counted (`{ one: '{n} page', other: '{n} pages' }`). Unknown names are a build error.
+- Multilingual docs: a docs page in a second locale gets that locale's built-in words.
+- Authors are joined the way the language does it ("Ada et Grace"), with `Intl.ListFormat`.
+- Right to left: shell commands stay left to right; the theme switch, live-example buttons and link arrows
+  mirror. Styles use logical properties only (a test keeps it that way).
+
+### Options
+
+- `landing.docs`: the heading and intro of the landing page's docs sections, or `false` to hide them. The
+  heading was fixed to "Documentation".
+- `gallery.route`: the gallery's URL path (default `gallery`); the nav, the landing page's link and the links
+  validator follow it.
+- `footer.copyright`: the copyright line (`{year}`, `{name}` filled in), or `false` for none. Default unchanged.
+- `landing.features` no longer adds a default intro ("The short version, for people deciding whether to read
+  on."): a default should not put words on a page the site never wrote.
+- The footer's repository link is named after its host (GitHub, GitLab, Codeberg), like the header's, instead of
+  "Source". One list of hosts now serves the header, the footer and Starlight.
+
+### Accessibility
+
+- Code blocks' copy buttons have an accessible name (they only had a tooltip) and `type="button"`.
+- Docs pages with a sidebar render one small-screen menu, not two, so the site nav's landmarks have unique names.
+- `<Live>` previews are a named `<section>` instead of `<div role="region">`.
+- `SiteHeader` has a `menu` prop and `SiteFooter` a `navLabel` prop.
+- A `theme.accent` that would make links, buttons, the current nav item or focus rings fall below WCAG 2.2 AA
+  contrast is reported at build time, with the pair and the ratio.
+- The repository now checks every built page with html-validate's accessibility rules, and the theme's colours
+  against WCAG 2.2 AA in both themes.
+
+### Fixes
+
 - Section cards outside the docs (the landing page) list `externalDocs` mounts in the order they are configured,
   not alphabetically.
 - `externalDocs[].description`: one sentence for the section's card on /docs/ and the landing page, and the meta

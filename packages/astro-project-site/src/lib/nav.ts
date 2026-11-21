@@ -1,4 +1,5 @@
 // Helpers for the shared navigation.
+import { repoHost } from '../repo-host.mjs';
 
 /** Whether a nav link should be marked as the current section for `pathname`. */
 export function isActive(href: string, pathname: string): boolean {
@@ -14,14 +15,11 @@ export function isExternal(href: string): boolean {
   return /^[a-z]+:\/\//i.test(href);
 }
 
-/** Host, display label and releases page for the repository link. */
-export function repoInfo(repo: string): { host: string; label: string; releases: string } {
-  let host = '';
-  try {
-    host = new URL(repo).hostname.replace(/^www\./, '');
-  } catch {
-    // not a URL: shown as a plain "Source code" link
-  }
-  const label = host === 'github.com' ? 'GitHub' : host === 'gitlab.com' ? 'GitLab' : host === 'codeberg.org' ? 'Codeberg' : 'Source code';
-  return { host, label, releases: host === 'github.com' ? `${repo}/releases` : repo };
+/**
+ * Host, display label and releases page for the repository link. The label is the host's name (GitHub), else
+ * `fallback` (the `sourceCode` label).
+ */
+export function repoInfo(repo: string, fallback = 'Source code'): { host: string; label: string; releases: string } {
+  const { host, name } = repoHost(repo);
+  return { host, label: name ?? fallback, releases: host === 'github.com' ? `${repo}/releases` : repo };
 }

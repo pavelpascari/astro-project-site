@@ -1,29 +1,77 @@
 ---
-title: i18n status
-description: What works today for non-English and multilingual sites, and what does not.
+title: Languages
+description: A site in one language other than English, right-to-left languages, changing the template's words, and what multilingual sites can expect.
 sidebar:
   order: 4
 ---
 
-**Multilingual sites are not supported yet.** The generated sidebar, the mounted docs, the landing page, the
-gallery and `llms.txt` all assume one language.
+## A site in another language
 
-What works today, for a site in **one language other than English**:
+Set the language once, as Starlight's root locale:
 
-```js
-starlight: { locales: { root: { label: 'Deutsch', lang: 'de' } } },
+```js title="astro.config.mjs"
+projectSite({
+  // ...
+  starlight: { locales: { root: { label: 'Français', lang: 'fr' } } },
+});
 ```
 
-- Docs pages get `<html lang="de">` and Starlight's German UI strings ("Zum Inhalt springen", search,
-  pagination). Adjust Starlight's strings in `src/content/i18n/de.json` (the `i18n` collection is set up).
-- Your own text (options, docs, gallery) is whatever language you write it in.
+Every page follows it, the landing page, gallery and blog included:
 
-What does not follow the locale:
+- `<html lang="fr">` everywhere, and `dir="rtl"` for a right-to-left language (`dir: 'rtl'` in the locale).
+- Starlight's own words (search, "On this page", pagination) in French, from Starlight.
+- The template's own words in French: "Copier", "Aller au contenu", the theme switch, the gallery filters,
+  "Voir toute la galerie", reading time, dates, "Ada et Grace" for two authors, alert titles (`> [!NOTE]` is
+  "Remarque"), the default nav and section headings.
 
-- Pages outside Starlight (landing, gallery, your `BaseLayout` pages) are always `<html lang="en">`.
-- Built-in component text is English: "Skip to content", the theme switch labels, "See the whole gallery",
-  the gallery filter labels, the 404 text, `<Live>`'s "Reset" and status text.
+Built-in translations: **English, French, German and Spanish**. Any other language gets English for the
+template's words until you set them (below); a regional tag (`pt-BR`, `fr-CA`) uses its language's translation.
 
-Starlight's multi-locale setup (`locales` with several entries and `src/content/docs/<lang>/` folders) passes
-through, but the generated sidebar only reads `src/content/docs/docs/`, so translated pages would need a
-hand-written `starlight.sidebar`. It is untested.
+Your own text (options, docs, posts, gallery entries) is whatever language you write it in.
+
+## Change the template's words
+
+`labels` sets any of them, by name, in any language. For example, in Portuguese:
+
+```js title="astro.config.mjs"
+projectSite({
+  // ...
+  starlight: { locales: { root: { label: 'Português', lang: 'pt' } } },
+  labels: {
+    copy: 'Copiar',
+    skipToContent: 'Ir para o conteúdo',
+    // Counted words take plural forms (Intl.PluralRules categories; `other` is required).
+    pageCount: { one: '{n} página', other: '{n} páginas' },
+  },
+});
+```
+
+It works in English too, to change a word you would rather not use (`labels: { galleryAll: 'More demos' }`).
+Every name, with its English text, is in [`src/labels.mjs`](https://github.com/pavelpascari/astro-project-site/blob/main/packages/astro-project-site/src/labels.mjs);
+an unknown name is a build error, so a typo does not go unnoticed. `{n}`, `{year}`, `{name}`, `{tag}` and the other
+placeholders are filled in for you.
+
+A few words are options of their own, because they are content rather than interface: section headings
+(`landing.features.title`, `landing.docs.title`, `blog.title`, `gallery.title`), the footer's copyright line
+(`footer.copyright`, `{year}` and `{name}` filled in) and the nav (`nav`).
+
+## Right-to-left languages
+
+With `dir: 'rtl'`, the layout mirrors: the header, cards, arrows ("All posts ←"), the theme switch and the margin
+notes. Shell commands and code stay left to right. The template's styles use logical properties only
+(`margin-inline-start`, not `margin-left`); a test keeps it that way.
+
+## Multilingual sites
+
+Starlight's multi-locale setup (several `locales` and `src/content/docs/<lang>/` folders) passes through, and
+docs pages in a second locale get the template's words in that language (its built-in translation, or English),
+except alert titles, which markdown renders once, in the root language.
+The generated sidebar only reads `src/content/docs/docs/`, though, so translated pages need a hand-written
+`starlight.sidebar`; the landing page, gallery, blog and `llms.txt` are in the root language only. This is not
+tested yet.
+
+## How it is checked
+
+The repository builds a small site in French and in Arabic (right to left) on every change
+(`npm run test:i18n`): each page must carry the right `lang` and `dir`, show the translated words and none of the
+English they replace, and pass the same accessibility checks as the template's own site.

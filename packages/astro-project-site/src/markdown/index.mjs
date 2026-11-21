@@ -14,6 +14,7 @@ import { own } from '../own.mjs';
 import { existsSync } from 'node:fs';
 import { ecConfigModule } from './expressive-code.mjs';
 import { markdownPlugins } from './plugins.mjs';
+import { format } from '../labels.mjs';
 
 export { expressiveCodeConfig } from './expressive-code.mjs';
 
@@ -90,6 +91,10 @@ export function markdownIntegration(options) {
           let warned = false;
           const { first, rest } = markdownPlugins({
             features,
+            // Alert titles in the site's language (`labels`); markdown is rendered once, so per-locale docs share them.
+            alertLabels: Object.fromEntries(
+              /** @type {const} */ (['note', 'tip', 'important', 'warning', 'caution']).map((k) => [k, format(options.labels[k])]),
+            ),
             katexCss: `${base}${katex.path}/katex.min.css`,
             isStarlightFile,
             mermaidInstalled,
@@ -134,7 +139,8 @@ export function markdownIntegration(options) {
                   name: 'project-site:ec-config',
                   enforce: 'pre',
                   resolveId: (/** @type {string} */ id) => (id === EC_CONFIG ? RESOLVED : undefined),
-                  load: (/** @type {string} */ id) => (id === RESOLVED ? ecConfigModule({ wrapToggle: features.codeWrapToggle }) : undefined),
+                  load: (/** @type {string} */ id) =>
+                    id === RESOLVED ? ecConfigModule({ wrapToggle: features.codeWrapToggle, wrapLabel: format(options.labels.wrapLines) }) : undefined,
                 },
               ],
             },

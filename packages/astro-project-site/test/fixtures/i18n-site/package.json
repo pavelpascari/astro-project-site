@@ -1,0 +1,10 @@
+{
+  "name": "i18n-fixture",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@astrojs/starlight": "*",
+    "astro": "*",
+    "astro-project-site": "*"
+  }
+}
