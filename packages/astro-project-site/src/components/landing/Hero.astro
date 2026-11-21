@@ -59,6 +59,12 @@ const Title = `h${headingLevel}` as const;
     padding-top: calc(var(--site-space) * 5);
     padding-bottom: calc(var(--site-space) * 3);
   }
+  @media (max-width: 50rem) {
+    .hero {
+      padding-top: calc(var(--site-space) * 3);
+      padding-bottom: calc(var(--site-space) * 1.5);
+    }
+  }
   .copy {
     display: flex;
     flex-direction: column;
@@ -90,5 +96,9 @@ const Title = `h${headingLevel}` as const;
     position: relative;
     width: 100%;
     margin-top: calc(var(--site-space) * 3);
+  }
+  /* A page that passes the slot through without filling it (Landing does) gets no empty band under the copy. */
+  .live:empty {
+    display: none;
   }
 </style>

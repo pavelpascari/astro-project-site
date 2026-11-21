@@ -57,7 +57,17 @@ const words = command.split(' ');
     background: var(--site-code-bg);
     color: var(--site-code-text);
   }
+  /* Phones: the box takes the full width, so a long command wraps once instead of into a narrow column. */
+  @media (max-width: 30rem) {
+    .install {
+      display: flex;
+      width: 100%;
+    }
+  }
   code {
+    flex: 1 1 auto;
+    /* A wrapped command reads from the left, even inside a centred hero. */
+    text-align: start;
     font-size: 0.9375rem;
     /* Wrap at spaces on narrow screens instead of hiding the end of the command in a scroll box. */
     white-space: normal;

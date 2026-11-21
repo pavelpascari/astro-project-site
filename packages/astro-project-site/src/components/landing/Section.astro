@@ -38,6 +38,11 @@ const headingId = id && title ? `${id}-title` : undefined;
   .landing-section {
     padding-block: calc(var(--site-space) * 4);
   }
+  @media (max-width: 50rem) {
+    .landing-section {
+      padding-block: calc(var(--site-space) * 2.5);
+    }
+  }
   .tone-surface {
     background: var(--site-surface);
     border-block: 1px solid var(--site-border);

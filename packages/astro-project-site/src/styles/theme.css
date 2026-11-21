@@ -179,6 +179,24 @@
   outline-offset: 2px;
 }
 
+/* Starlight's mobile menu button looks like the site header's own menu button (a plain icon in the bar) instead
+   of a floating white disc that is taller than the bar. Unlayered, so it wins over starlight.core. */
+.sl-menu-button {
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--site-text);
+  box-shadow: none;
+  border-radius: var(--site-radius-sm);
+}
+.sl-menu-button:has(~ :popover-open) {
+  background: var(--site-surface);
+}
+.sl-menu-button:focus-visible {
+  outline: 2px solid var(--site-focus);
+  outline-offset: 2px;
+}
+
 /* Touch screens: Starlight's mobile menu button at 44×44 (WCAG 2.5.5) instead of 32×32. */
 @media (pointer: coarse) {
   :root {

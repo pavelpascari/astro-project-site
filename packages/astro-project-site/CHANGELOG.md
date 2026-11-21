@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Phones: the hero's install command fills the width, reads from the left and no longer runs under its Copy
+  button; an unfilled hero `live` slot no longer leaves an empty band; hero and section spacing is tighter below 50rem.
+- Docs: Starlight's mobile menu button matches the site header's (a plain icon in the bar, centred) instead of a
+  floating white disc.
 - `InstallCommand`: a word longer than the line (a URL or a `github:` spec) wraps inside itself instead of making
   the page scroll sideways on phones; shorter words still move to the next line whole.
 
