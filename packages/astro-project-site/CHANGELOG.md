@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-## 0.1.0-beta.1 - 2026-11-21
+## 0.1.0-beta.2 - 2026-11-21
+
+(0.1.0-beta.1 was never published: its tag was retired when the release moved to staged publishing.)
 
 ### Languages
 

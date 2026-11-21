@@ -397,7 +397,7 @@ The starter deploys as a static-assets Worker (`wrangler.jsonc`, `public/_header
 
 ```yaml
 on: [pull_request, push, workflow_dispatch]
-jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.1, permissions: { contents: read, pull-requests: write }, secrets: { CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" } } }
+jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.2, permissions: { contents: read, pull-requests: write }, secrets: { CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" } } }
 ```
 
 `init` pins the workflow to the release it came from (`@v<version>`); a full commit SHA is the stricter option.
