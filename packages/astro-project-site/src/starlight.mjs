@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { buildSidebar, editBaseUrl, listMountFiles, resolveProject, slugify } from './docs/mount.mjs';
 import { LAYER_ORDER } from './lib/layers.mjs';
+import { POPOVER_FALLBACK } from './docs/popover-fallback.mjs';
 import { COLLAPSE_ABOVE } from './lib/sidebar.mjs';
 import { resolveModulePath } from './options.mjs';
 import { own } from './own.mjs';
@@ -168,7 +169,13 @@ export function starlightOptions(options, paths, root) {
     sidebar: [...presentSidebar(buildSidebar(project, format(options.labels.overview), options.docsOrder), countPages(project)), ...asArray(sidebar)],
     // The site-wide `head` option first, then docs-only `starlight.head`.
     // The layer order first of all (lib/layers.mjs).
-    head: [{ tag: 'style', content: LAYER_ORDER }, ...options.head, ...asArray(head)],
+    // The popover fallback first, so browsers without the Popover API never paint the docs menu open.
+    head: [
+      { tag: 'style', content: LAYER_ORDER },
+      { tag: 'script', content: POPOVER_FALLBACK },
+      ...options.head,
+      ...asArray(head),
+    ],
     // Starlight's markdown features (heading anchors, asides, ...) only run on folders it knows about.
     markdown: { ...markdown, processedDirs: [...project.mounts.map((m) => m.dir), ...asArray(markdown.processedDirs).map(resolve)] },
     // og:image (and a large Twitter card) on every docs page, from the same hook as the other pages.

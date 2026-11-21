@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Fixed
+
+- The docs menu on phones works in browsers without the Popover API (Safari and every iOS browser before 17,
+  Firefox before 125, older Android browsers). Starlight's menu button relies on it, so there the button did nothing
+  and the sidebar covered the page. A small inline script in the docs `<head>` now opens and closes the menu in
+  those browsers (Escape and a tap outside close it; `aria-expanded` and the icons follow); where the API exists it
+  does nothing.
+- Small screens: the header's search button no longer slides under the docs menu button when the project name is
+  long. The search keeps its width; the name is cut with an ellipsis instead, and the version badge goes first.
+
 ## 0.1.0-beta.6 - 2026-11-21
 
 ### Added

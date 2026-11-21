@@ -396,3 +396,30 @@ mobile-starlight-toc .dropdown {
 .header {
   border-bottom-color: var(--site-border);
 }
+
+/* ── Browsers without the Popover API ─────────────────────────────────────────────────────── */
+/* `html.no-popover` is set by docs/popover-fallback.mjs, which opens and closes the menu with `data-open`. Starlight
+   relies on the API to hide the sidebar on small screens and to switch the button's icons, so these rules do it
+   instead. Unlayered, so they win over starlight.core. */
+html.no-popover [popover]:not([data-open]) {
+  display: none;
+}
+@media (min-width: 50rem) {
+  /* As in Starlight: on wide screens the sidebar is always shown, whatever the popover state. */
+  html.no-popover .sidebar-pane[popover]:not([data-open]) {
+    display: block;
+  }
+}
+html.no-popover .sl-menu-button .close-menu,
+html.no-popover .sl-menu-button[aria-expanded='true'] .open-menu {
+  display: none;
+}
+html.no-popover .sl-menu-button[aria-expanded='true'] .close-menu {
+  display: inline;
+}
+html.no-popover .sl-menu-button[aria-expanded='true'] {
+  background: var(--site-surface);
+}
+html.no-popover body:has(#starlight__sidebar[data-open]) {
+  overflow: hidden;
+}

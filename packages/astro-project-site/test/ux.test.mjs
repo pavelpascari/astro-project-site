@@ -85,10 +85,12 @@ test('lang/dir come from Starlight locales; `head` reaches docs pages before sta
     starlight: { head: [{ tag: 'meta', attrs: { name: 'b', content: '2' } }] },
   });
   const opts = /** @type {any} */ (starlightOptions(options, { customCss: [] }, process.cwd()));
-  // First the cascade-layer order (lib/layers.mjs), then `head`, then `starlight.head`.
+  // First the cascade-layer order (lib/layers.mjs), then the popover fallback (docs/popover-fallback.mjs), then
+  // `head`, then `starlight.head`.
   assert.equal(opts.head[0].tag, 'style');
   assert.match(opts.head[0].content, /^@layer project-site\.fallback, starlight\.base, starlight\.reset, starlight\.core/);
-  assert.deepEqual(opts.head.slice(1).map((/** @type {any} */ h) => h.attrs.name), ['a', 'b']);
+  assert.equal(opts.head[1].tag, 'script');
+  assert.deepEqual(opts.head.slice(2).map((/** @type {any} */ h) => h.attrs.name), ['a', 'b']);
   assert.match(src('components/chrome/SiteHead.astro'), /site\.head\.map/);
 });
 

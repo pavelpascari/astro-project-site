@@ -373,6 +373,11 @@ const hasSearch = Astro.slots.has('search');
     .menu {
       display: block;
     }
+    /* The search keeps its button's width (it would otherwise shrink to nothing and its button spill out under the
+       menu button); a long project name gives way instead: it is cut with an ellipsis, and the version badge goes. */
+    .search {
+      flex: 1 0 auto;
+    }
     /* Docs pages with a sidebar: the nav lives in Starlight's mobile menu instead. */
     :global(:root[data-has-sidebar]) .menu {
       display: none;
