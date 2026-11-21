@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.5 - 2026-11-21
+
 ### Changed
 
 - `init` no longer writes the GitHub workflow unless asked: `--ci` adds `.github/workflows/site.yml` (checks, a
