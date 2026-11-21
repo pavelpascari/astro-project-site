@@ -99,9 +99,13 @@ Releases are cut by hand by the maintainer:
 
 The tag runs [`.github/workflows/release.yml`](.github/workflows/release.yml): it checks the tag against the package
 version, runs the tests and the build, packs the package, creates the GitHub release (a pre-release for versions
-with a `-`) with the tarball, its SHA-256 and the changelog section, and publishes the same tarball to npm with
+with a `-`) with the tarball, its SHA-256 and the changelog section, and stages the same tarball on npm with
 [trusted publishing](https://docs.npmjs.com/trusted-publishers) (OIDC, no stored token): `--tag beta` for
 pre-releases, `latest` otherwise.
+
+5. Approve the staged version, which needs your npm 2FA: `npm stage list`, then `npm stage approve <stage-id>`
+   (npm 11.15.0+), or from the package's page on npmjs.com. Only then is it on npm. The workflow cannot publish on
+   its own: its trusted publisher is allowed to stage, nothing else.
 
 ## Licence of contributions
 

@@ -6,10 +6,13 @@
 #   publish (needs build; runs no project or dependency code: no checkout, no npm install):
 #     3. creates the GitHub release (pre-release for versions with a `-`), with the tarball, the checksum and the
 #        version's CHANGELOG section as notes
-#     4. publishes the same tarball to npm through trusted publishing (OIDC: no token, no one-time code), `--tag beta`
-#        for pre-releases and `latest` otherwise. npm adds provenance on its own once the repository is public.
+#     4. stages the same tarball on npm through trusted publishing (OIDC: no token), `--tag beta` for pre-releases and
+#        `latest` otherwise. Staged is not published: a maintainer approves it with 2FA (`npm stage list`, then
+#        `npm stage approve <stage-id>`, or the package's page on npmjs.com), so this workflow alone cannot put a
+#        version on npm. npm adds provenance on its own once the repository is public.
 #        One-time setup on npmjs.com: astro-project-site → Settings → Trusted publishing → GitHub Actions,
-#        user `pavelpascari`, repository `astro-project-site`, workflow `release.yml` (keep this file name).
+#        user `pavelpascari`, repository `astro-project-site`, workflow `release.yml` (keep this file name), and
+#        "Allow npm publish" and "Allow npm dist-tag" left unticked (staging is always allowed).
 # No dependency cache anywhere in this workflow (cache poisoning would reach the published tarball).
 name: Release
 
@@ -106,9 +109,9 @@ jobs:
     # environment: release
     permissions:
       contents: write # create the GitHub release and upload its assets
-      id-token: write # npm trusted publishing (OIDC) and provenance
+      id-token: write # npm trusted publishing (OIDC, staging only) and provenance
     steps:
-      # Trusted publishing needs npm 11.5.1+ (Node 24 ships it).
+      # `npm stage publish` needs npm 11.15.0+ (Node 24 ships it).
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
@@ -146,7 +149,7 @@ jobs:
               --title "astro-project-site $TAG" --notes-file "$RUNNER_TEMP/release/notes.md" --verify-tag "${flags[@]}"
           fi
 
-      - name: Publish to npm (trusted publishing)
+      - name: Stage on npm (trusted publishing)
         env:
           FILE: ${{ steps.file.outputs.file }}
           DIST_TAG: ${{ needs.build.outputs.dist_tag }}
@@ -157,5 +160,12 @@ jobs:
             echo "::notice title=Already on npm::astro-project-site@$VERSION is already published"
             exit 0
           fi
-          # No token: npm exchanges this job's OIDC identity (id-token: write) for a one-off publish credential.
-          npm publish "$FILE" --tag "$DIST_TAG" --access public
+          # No token: npm exchanges this job's OIDC identity (id-token: write) for a one-off credential that can
+          # stage, not publish. The version goes live when a maintainer approves it with 2FA.
+          npm stage publish "$FILE" --tag "$DIST_TAG" --access public
+          {
+            echo "### astro-project-site@$VERSION is staged on npm (tag \`$DIST_TAG\`)"
+            echo
+            echo "Not published yet. Approve it with 2FA: \`npm stage list\`, then \`npm stage approve <stage-id>\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Staged on npm::astro-project-site@$VERSION is staged; approve it with npm stage approve (2FA) to publish it"

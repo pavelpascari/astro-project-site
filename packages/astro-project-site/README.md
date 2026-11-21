@@ -429,8 +429,9 @@ Cloudflare secrets it builds and skips the deploy.
   `owner/name`. Event data and inputs reach shell steps through `env:`, never interpolated into scripts.
 - **Releases.** A `v<version>` tag matching `package.json` runs `release.yml`: a read-only job runs the tests and the
   full build, then packs the tarball and its SHA-256 (no dependency cache). A second job, which runs no project
-  code, verifies the checksum, creates the GitHub release and publishes that tarball to npm through trusted
+  code, verifies the checksum, creates the GitHub release and stages that tarball on npm through trusted
   publishing (OIDC, `id-token: write`): there is no npm token to leak, and npm records provenance for public repositories.
+  A staged version goes live only when a maintainer approves it with 2FA, so a compromised workflow cannot publish.
 - **Audited** with [zizmor](https://docs.zizmor.sh) (including `--persona=pedantic`) and
   [actionlint](https://github.com/rhysd/actionlint); remaining exceptions are commented inline.
 
