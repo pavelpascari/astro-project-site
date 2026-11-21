@@ -5,12 +5,14 @@
 // comments, trailing commas, `...spread`). Spreads are filled from ctx.options.spreads. Validation mirrors the
 // package's options.mjs closely enough to show its error format; the build is the real check.
 
-const KNOWN = [
-  'name', 'tagline', 'url', 'repo', 'repoBranch', 'versionFrom', 'nav', 'externalDocs', 'mirrors', 'install', 'favicon',
-  'ogImage', 'ogImageFor', 'theme', 'landing', 'gallery', 'footer', 'llms', 'linksValidator', 'customCss', 'components',
-  'starlight',
+// Copies of OPTION_NAMES and COMPONENT_NAMES in options.mjs (this file runs in the browser, without zod);
+// scripts/landing-runners.test.mjs fails when they differ.
+export const KNOWN = [
+  'name', 'tagline', 'url', 'repo', 'repoBranch', 'versionFrom', 'nav', 'externalDocs', 'docsOrder', 'mirrors',
+  'install', 'favicon', 'ogImage', 'ogImageFor', 'theme', 'landing', 'gallery', 'blog', 'footer', 'labels', 'llms',
+  'linksValidator', 'customCss', 'head', 'components', 'starlight', 'markdown',
 ];
-const COMPONENTS = ['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery'];
+export const COMPONENTS = ['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery', 'BlogIndex', 'BlogPost', 'BlogCard'];
 
 class ParseError extends Error {
   constructor(message, src, at) {
@@ -128,7 +130,7 @@ function parseObjectLiteral(src, start) {
   return { value: result, spreads };
 }
 
-function extract(source) {
+export function extract(source) {
   const call = /projectSite\s*\(/.exec(source);
   const from = call ? call.index + call[0].length : 0;
   const brace = source.indexOf('{', from);
@@ -145,7 +147,7 @@ function isUrl(s) {
 }
 
 /** The same "field: problem" lines the integration prints, for the mistakes worth showing. */
-function validate(o) {
+export function validate(o) {
   const problems = [];
   const str = (k, v, required) => {
     if (v === undefined) {
@@ -230,6 +232,11 @@ export function run(source, mount, ctx) {
   }
   if (o.gallery !== false) {
     routes.push(['/gallery/', own.includes('/gallery/') ? 'gallery: your own page' : 'gallery, from src/content/gallery/']);
+  }
+  // blog: true, or an object (its `route` defaults to "blog"); false or absent: no blog.
+  if (o.blog) {
+    const route = trim(String((typeof o.blog === 'object' && o.blog.route) || 'blog'));
+    routes.push([`/${route}/`, 'blog, from src/content/blog/: tags, feeds, reading time']);
   }
   for (const m of o.mirrors ?? []) routes.push([`/${trim(String(m.to))}/`, `${m.from}, served byte for byte`]);
   if (o.llms !== false) routes.push(['/llms.txt', 'and /llms-full.txt, the docs for LLMs']);
