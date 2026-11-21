@@ -14,6 +14,7 @@ import {
   resolveProject,
   rewriteLinks,
 } from '../src/docs/mount.mjs';
+import { parseOptions } from '../src/options.mjs';
 import { fixture } from './helpers.mjs';
 
 // A git repo holding a site/ folder and a docs/ folder next to it, mounted at /docs/reference/.
@@ -140,4 +141,12 @@ test('buildSidebar: local pages by order, mounts, then local subfolders', () => 
 test('absolutizeLinks makes root-relative links absolute outside code', () => {
   const out = absolutizeLinks('[a](/docs/x/) <a href="/y">y</a> [b](//cdn.x/z)\n```\n[c](/docs/)\n```', 'https://lib.dev');
   assert.equal(out, '[a](https://lib.dev/docs/x/) <a href="https://lib.dev/y">y</a> [b](//cdn.x/z)\n```\n[c](/docs/)\n```');
+});
+
+test('externalDocs description: validated, and carried onto the mount', () => {
+  const described = { ...options, externalDocs: [{ ...options.externalDocs[0], description: 'Every API, flag and format.' }] };
+  assert.equal(parseOptions(described).externalDocs[0].description, 'Every API, flag and format.');
+  assert.equal(resolveProject(described, site).mounts[0].description, 'Every API, flag and format.');
+  assert.equal(mount.description, undefined);
+  assert.throws(() => parseOptions({ ...options, externalDocs: [{ ...options.externalDocs[0], description: '' }] }));
 });

@@ -83,6 +83,7 @@ export const optionsSchema = z.strictObject({
         dir: z.string().min(1),
         route: z.string().refine((r) => r.split('/').some(Boolean), 'must not be empty'),
         label: z.string().min(1),
+        description: z.string().min(1).optional(),
         order: z.array(z.string()).optional(),
         exclude: z.array(z.string()).optional(),
         include: z.array(z.string().min(1)).min(1).optional(),

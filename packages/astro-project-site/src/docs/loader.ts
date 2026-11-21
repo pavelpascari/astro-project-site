@@ -103,6 +103,8 @@ function withExternalMarkdown(
         body = lines.join('\n').trim();
       }
       data.title ??= h1?.title ?? titleCase(rel.replace(/\.md$/i, '').split('/').at(-1) ?? rel);
+      // The mount's README: the configured description, when there is one, beats a guess from its first paragraph.
+      if (idForFile(mount, rel) === mount.routeId) data.description ??= mount.description;
       data.description ??= describe(body);
       if (data.editUrl === undefined) data.editUrl = editUrlFor(project, abs) ?? false;
       // The links validator keys pages by frontmatter slug when a file lives outside src/content/docs.

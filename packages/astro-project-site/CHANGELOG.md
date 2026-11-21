@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Section cards outside the docs (the landing page) list `externalDocs` mounts in the order they are configured,
+  not alphabetically.
+- `externalDocs[].description`: one sentence for the section's card on /docs/ and the landing page, and the meta
+  description of its README page. Without it the card still guesses from the README's first paragraph, which can be
+  a footer line when the README is mostly a table.
 - Phones: the hero's install command fills the width, reads from the left and no longer runs under its Copy
   button; an unfilled hero `live` slot no longer leaves an empty band; hero and section spacing is tighter below 50rem.
 - Docs: Starlight's mobile menu button matches the site header's (a plain icon in the bar, centred) instead of a

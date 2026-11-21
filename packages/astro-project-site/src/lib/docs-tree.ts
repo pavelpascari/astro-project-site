@@ -72,10 +72,20 @@ function load(): Promise<Tree> {
 }
 
 /** Title for a folder: the `externalDocs` label for a mount root, else its index page's title, else its name. */
+/** The externalDocs mount whose root is `folder`, if any. */
+function mountFor(folder: string) {
+  return site.externalDocs?.find((m) => `docs/${m.route.replace(/^\/+|\/+$/g, '')}` === folder);
+}
+
+function mountRank(folder: string) {
+  const mount = mountFor(folder);
+  return mount ? site.externalDocs!.indexOf(mount) : Infinity;
+}
+
 export function folderTitle(folder: string, tree?: Tree) {
   // A mount root is named by its configured label ("Reference"), not by its README's heading, which is usually the
   // project name and would make every mount card read the same.
-  const mount = site.externalDocs?.find((m) => `docs/${m.route.replace(/^\/+|\/+$/g, '')}` === folder);
+  const mount = mountFor(folder);
   if (mount) return mount.label;
   const page = tree?.pages.get(folder);
   if (page) return page.data.title;
@@ -109,7 +119,9 @@ export async function isAutoOverview(id: string) {
 export async function childCards(folder: string, order: string[] = []): Promise<DocsCard[]> {
   const tree = await load();
   folder = folder.replace(/^\/+|\/+$/g, '');
-  const cards: (DocsCard & { rank: number; sort: number })[] = [];
+  // `mount`: a mount root's place in `externalDocs`, so with no sidebar order (the landing page) sections keep the
+  // order they are configured in instead of going alphabetical.
+  const cards: (DocsCard & { rank: number; sort: number; mount: number })[] = [];
   const rankOf = (href: string) => {
     const i = order.indexOf(href);
     return i === -1 ? Infinity : i;
@@ -128,6 +140,7 @@ export async function childCards(folder: string, order: string[] = []): Promise<
       folder: false,
       rank: rankOf(hrefFor(id)),
       sort: sortOf(entry),
+      mount: Infinity,
     });
   }
   for (const [id, descendants] of tree.folders) {
@@ -143,16 +156,19 @@ export async function childCards(folder: string, order: string[] = []): Promise<
       id,
       href: hrefFor(id),
       title: folderTitle(id, tree),
-      description: index?.data.description ?? (names.length ? summarise(names) : undefined),
+      description:
+        index?.data.description ?? mountFor(id)?.description ?? (names.length ? summarise(names) : undefined),
       folder: true,
       count: inside.length,
       rank: Math.min(rankOf(hrefFor(id)), ...inside.map((d) => rankOf(hrefFor(d)))),
       sort: sortOf(index),
+      mount: mountRank(id),
     });
   }
+  // Infinity - Infinity is NaN, which is falsy: the next key decides.
   return cards
-    .sort((a, b) => a.rank - b.rank || a.sort - b.sort || a.title.localeCompare(b.title))
-    .map(({ rank: _r, sort: _s, ...card }) => card);
+    .sort((a, b) => a.rank - b.rank || a.sort - b.sort || a.mount - b.mount || a.title.localeCompare(b.title))
+    .map(({ rank: _r, sort: _s, mount: _m, ...card }) => card);
 }
 
 function summarise(names: string[]) {

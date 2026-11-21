@@ -14,10 +14,11 @@ const MD_EXT = /\.md$/i;
 const LOCAL_EXT = /\.(md|mdx|markdown|mdoc)$/i;
 
 /**
- * @typedef {{ dir: string, route: string, label: string, order?: string[], exclude?: string[], include?: string[] }} ExternalDocsEntry
+ * @typedef {{ dir: string, route: string, label: string, description?: string, order?: string[], exclude?: string[], include?: string[] }} ExternalDocsEntry
  * @typedef {{ name: string, tagline: string, url: string, repo: string, repoBranch?: string,
  *   externalDocs?: ExternalDocsEntry[] }} SiteLike
- * @typedef {{ dir: string, relDir: string, route: string, routeId: string, label: string, order: string[],
+ * @typedef {{ dir: string, relDir: string, route: string, routeId: string, label: string, description?: string,
+ *   order: string[],
  *   exclude: string[], include: string[], skip: string[] }} Mount
  * @typedef {{ root: string, gitRoot: string | undefined, repo: string, branch: string, url: string,
  *   localDir: string, mounts: Mount[] }} Project
@@ -36,6 +37,7 @@ export function resolveProject(/** @type {SiteLike} */ site, /** @type {string} 
       route,
       routeId: `docs/${route}`,
       label: entry.label,
+      description: entry.description,
       order: entry.order ?? [],
       exclude: entry.exclude ?? [],
       include: entry.include ?? [],

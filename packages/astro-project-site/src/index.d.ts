@@ -71,6 +71,11 @@ export interface ExternalDocs {
   route: string;
   /** Sidebar group label. */
   label: string;
+  /**
+   * One sentence on what the section holds: its card on /docs/ and the landing page, and the meta description of its
+   * README page. Defaults to the README's frontmatter `description`, then its first paragraph.
+   */
+  description?: string;
   /** File names (relative to `dir`, `.md` optional) listed first, in this order. README.md always leads. */
   order?: string[];
   /** Globs relative to `dir` to leave out, e.g. `['plans/**']`. */
