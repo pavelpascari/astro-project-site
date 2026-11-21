@@ -108,7 +108,7 @@ registry: `npm i <tarball URL>`.
 | `example/docs/`, `example/apps/` | Stand-ins for your project's markdown docs and static apps. Point `externalDocs` and `mirrors` at the real ones, then delete `example/` |
 | `docs-gen.config.mjs` | [Generated blocks](/docs/guides/docs-generation/) in markdown |
 | `wrangler.jsonc`, `public/_headers` | [Cloudflare Workers](/docs/guides/deploying/) deploy |
-| `.github/workflows/site.yml` | CI: checks, a preview per PR, production on `v*` tags |
+| `.github/workflows/site.yml` | Only with `init --ci`: checks, a preview per PR, production on `v*` tags ([Deploying](/docs/guides/deploying/#ci-optional)) |
 
 `package.json` scripts: `dev`, `build`, `preview`, `check`, `docs:gen`, `docs:check`, `deploy`
 (`build` + `wrangler deploy`), `deploy:preview`, `cf:dev` (the built site on Cloudflare's local runtime).

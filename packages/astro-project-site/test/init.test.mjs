@@ -57,6 +57,26 @@ test('starter file list: renames _gitignore, skips build output', () => {
   assert.ok(!files.some((f) => /(^|\/)(node_modules|dist|\.astro)\//.test(f)));
 });
 
+test('CI is opt-in: without --ci, no workflow, no step about one, and the way to add it later', async () => {
+  const repo = copyFixture('node-lib');
+  const site = path.join(repo, 'website');
+  /** @type {string[]} */
+  const lines = [];
+  assert.equal(await run({ dir: 'website', cwd: repo, packageSpec: 'file:/pkg.tgz', log: (l) => lines.push(l) }), 0);
+  const out = lines.join('\n');
+  assert.ok(!existsSync(path.join(site, '.github')));
+  assert.match(out, /Will write 14 files to website\//);
+  assert.ok(!out.includes('site.yml'));
+  assert.match(out, /npm run deploy/);
+  assert.match(out, /--ci/);
+  assert.ok(!readFileSync(path.join(site, 'README.md'), 'utf8').includes('.github/workflows'));
+
+  const blank = path.join(fixture({}), 'plain');
+  assert.equal(await init({ dir: blank, log: quiet, blank: true, yes: true }), 0);
+  assert.ok(!existsSync(path.join(blank, '.github')));
+  assert.ok(existsSync(path.join(blank, 'wrangler.jsonc')));
+});
+
 test('names', () => {
   assert.equal(slugify('My Lib: Site!'), 'my-lib-site');
   assert.equal(slugify('@scope/my-lib'), 'my-lib');
@@ -75,7 +95,7 @@ test('config literals: quotes, template literals, comments, commented-out proper
 
 test('--blank copies the plain starter and names it', async () => {
   const dir = path.join(fixture({}), 'pixel-docs');
-  assert.equal(await init({ dir, log: quiet, packageSpec: 'file:/x', blank: true, yes: true }), 0);
+  assert.equal(await init({ dir, log: quiet, packageSpec: 'file:/x', blank: true, yes: true, ci: true }), 0);
   const pkg = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8'));
   assert.equal(pkg.name, 'pixel-docs');
   assert.equal(pkg.dependencies['astro-project-site'], 'file:/x');
@@ -94,7 +114,7 @@ test('a repository: config, docs mounts, gallery, blog post, CI, all from its fi
   const site = path.join(repo, 'website');
   /** @type {string[]} */
   const lines = [];
-  assert.equal(await run({ dir: 'website', cwd: repo, packageSpec: 'file:/pkg.tgz', log: (l) => lines.push(l) }), 0);
+  assert.equal(await run({ dir: 'website', cwd: repo, packageSpec: 'file:/pkg.tgz', ci: true, log: (l) => lines.push(l) }), 0);
   const out = lines.join('\n');
   assert.match(out, /Found:\n {2}name +tiny-queue {2}\(README\.md\)/);
   assert.match(out, /docs +docs\/ \(3 pages\) → \/docs\/reference\//);

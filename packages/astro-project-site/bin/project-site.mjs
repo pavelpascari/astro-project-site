@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // project-site: the astro-project-site command line. Zero dependencies.
 //
-//   project-site init [dir] [--from <repo>] [--yes] [--dry-run] [--force] [--blank] [--name "My Project"] [--package <npm spec>]
+//   project-site init [dir] [--from <repo>] [--yes] [--dry-run] [--force] [--blank] [--ci] [--name "My Project"] [--package <npm spec>]
 //   project-site docs:gen [--check] [--config docs-gen.config.mjs]
 //   project-site docs:check [--config docs-gen.config.mjs]
 //   project-site deploy:preview [--alias pr-12] [--message "..."] [--dry-run] [-- <wrangler args>]
@@ -18,6 +18,8 @@ Commands:
       --dry-run           Print what was found and what would be written; write nothing
       --force             Overwrite files that already exist
       --blank             Copy the plain starter instead (placeholders and example docs, no detection)
+      --ci                Also write .github/workflows/site.yml: checks and a preview per pull request, production
+                          deploys on v* tags (needs Cloudflare secrets). Without it, deploy with npm run deploy
       --name <name>       Project name shown on the site (default: README title, manifest or folder name)
       --package <spec>    Version spec for the astro-project-site dependency (default: ^<this version>)
   docs:gen            Fill <!-- gen:... --> blocks in markdown (reads ./docs-gen.config.mjs)
@@ -44,6 +46,7 @@ switch (command) {
         yes: { type: 'boolean', short: 'y', default: false },
         'dry-run': { type: 'boolean', default: false },
         blank: { type: 'boolean', default: false },
+        ci: { type: 'boolean', default: false },
       },
       allowPositionals: true,
     });
@@ -61,6 +64,7 @@ switch (command) {
       yes: values.yes,
       dryRun: values['dry-run'],
       blank: values.blank,
+      ci: values.ci,
     });
     break;
   }

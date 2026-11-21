@@ -1,7 +1,8 @@
 // `project-site init [dir]`: reads the repository the site is for and writes a ready site into `dir`: a landing
 // page from the README, the repo's markdown mounted as docs, demo pages in the gallery, a blog with a drafted
 // first post. `--blank` copies the plain starter instead. Never writes outside `dir`, never overwrites without
-// --force, asks before writing (--yes skips; --dry-run only prints).
+// --force, asks before writing (--yes skips; --dry-run only prints). --ci adds the GitHub Actions workflow (checks, a
+// preview per PR, production on tags); without it the site deploys from a machine with `npm run deploy`.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { copyFile, mkdir, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -14,6 +15,8 @@ import { APPS_ROUTE, planFiles } from './init/generate.mjs';
 export { slugify, titleFrom };
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+/** The deploying guide's CI section, for the next steps when --ci was not given. */
+const GUIDE = 'https://astro-project-site.pascaripavel.workers.dev/docs/guides/deploying/#ci-optional';
 const pkg = JSON.parse(readFileSync(path.join(here, '../package.json'), 'utf8'));
 
 /** The starter: packed into the package as starter/ (see the `prepack` script), or the repo's starters/default. */
@@ -85,7 +88,7 @@ const today = () => {
 /**
  * @typedef {{
  *   dir?: string, from?: string, name?: string, packageSpec?: string, force?: boolean, yes?: boolean,
- *   dryRun?: boolean, blank?: boolean, cwd?: string, today?: string, gitUser?: string,
+ *   dryRun?: boolean, blank?: boolean, ci?: boolean, cwd?: string, today?: string, gitUser?: string,
  *   log?: (line: string) => void, isTTY?: boolean, confirm?: (question: string) => Promise<boolean>,
  * }} InitOptions
  */
@@ -113,22 +116,25 @@ export async function init(opts) {
     const source = starterDir();
     title = opts.name ?? titleFrom(path.basename(target));
     const rename = namers({ slug: slugify(opts.name ?? path.basename(target)), title, packageSpec });
-    files = starterFiles(source).map((f) => {
+    files = starterFiles(source).filter((f) => opts.ci || !f.to.startsWith('.github/')).map((f) => {
       const fix = rename[f.to];
       return fix ? { to: f.to, content: fix(readFileSync(path.join(source, f.from), 'utf8')) } : { to: f.to, from: path.join(source, f.from) };
     });
-    then = ['Then edit astro.config.mjs (name, url, repo, docs, mirrors) and the name in wrangler.jsonc.'];
+    then = [
+      'Then edit astro.config.mjs (name, url, repo, docs, mirrors) and the name in wrangler.jsonc.',
+      ...(opts.ci ? [] : [`Deploy with \`npx wrangler login\` and \`npm run deploy\`. For CI (checks, a preview per pull request), see ${GUIDE}`]),
+    ];
   } else {
     const root = resolveSource(target, opts.from, cwd);
     if (!existsSync(root) || !statSync(root).isDirectory()) return fail(`--from ${opts.from}: ${root} is not a folder.`);
     if (root !== target && !path.relative(target, root).startsWith('..')) return fail(`the repository (${root}) must not be inside the site folder (${target}).`);
     const gitUser = opts.gitUser ?? readGlobalGitUser(path.join(os.homedir(), '.gitconfig'));
     const d = detectProject({ root, site: target, name: opts.name, gitUser });
-    const plan = planFiles(d, { packageSpec, version: pkg.version, today: opts.today ?? today(), starter: starterDir() });
+    const plan = planFiles(d, { packageSpec, version: pkg.version, today: opts.today ?? today(), starter: starterDir(), ci: !!opts.ci });
     files = plan.files;
     title = d.name.value;
     found = foundLines(d, plan.model, root, cwd);
-    then = nextSteps(d, plan.model, files);
+    then = nextSteps(d, plan.model, files, !!opts.ci);
   }
 
   // Never outside the target folder.
@@ -268,17 +274,19 @@ function fileTree(/** @type {string[]} */ files, /** @type {string[]} */ existin
 }
 
 /** @param {import('./detect/index.mjs').Detected} d @param {ReturnType<typeof planFiles>['model']} m */
-function nextSteps(d, m, /** @type {{ to: string }[]} */ files) {
+function nextSteps(d, m, /** @type {{ to: string }[]} */ files, ci = false) {
   const post = files.find((f) => f.to.startsWith('src/content/blog/'))?.to;
   const out = [];
   if (post) out.push(`read the drafted post ${post}, then set \`draft: false\``);
   const todos = [d.name.todo && 'name', d.tagline.todo && 'tagline', d.url.todo && 'url', d.repo.todo && 'repo', d.branch.todo && 'repoBranch'].filter(Boolean);
   if (todos.length) out.push(`fill in the TODOs in astro.config.mjs (${todos.join(', ')})`);
   if (m.example) out.push('point `externalDocs` and `mirrors` at your own docs and apps, then delete example/');
-  if (!d.sameFolder) {
+  if (ci && !d.sameFolder) {
     const sub = path.relative(d.git?.root ?? d.root, d.site).split(path.sep).join('/');
     out.push(`move ${sub}/.github/workflows/site.yml to .github/workflows/ at the repo root (GitHub runs workflows from there only)`);
   }
   out.push('deploy: `npx wrangler login`, then `npm run deploy`');
+  if (ci) out.push('for CI deploys and previews, add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID as repository secrets');
+  else out.push(`optional CI (checks, a preview per pull request, production on tags): add the workflow from ${GUIDE} (new sites: init --ci)`);
   return out;
 }

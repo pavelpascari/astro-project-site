@@ -19,4 +19,4 @@ npm run deploy         # production (after `npx wrangler login`)
 | `example/` | stand-ins for your project's docs and apps: point `externalDocs` and `mirrors` at the real ones |
 | `docs-gen.config.mjs` | generated blocks in markdown (`npm run docs:gen`) |
 | `wrangler.jsonc`, `public/_headers` | Cloudflare Workers deploy; set `name` |
-| `.github/workflows/site.yml` | CI: checks, a preview per PR, production on `v*` tags |
+| `.github/workflows/site.yml` | Optional CI, copied by `init --ci`: checks, a preview per PR, production on `v*` tags |

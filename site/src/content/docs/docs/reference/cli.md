@@ -20,6 +20,8 @@ Commands:
       --dry-run           Print what was found and what would be written; write nothing
       --force             Overwrite files that already exist
       --blank             Copy the plain starter instead (placeholders and example docs, no detection)
+      --ci                Also write .github/workflows/site.yml: checks and a preview per pull request, production
+                          deploys on v* tags (needs Cloudflare secrets). Without it, deploy with npm run deploy
       --name <name>       Project name shown on the site (default: README title, manifest or folder name)
       --package <spec>    Version spec for the astro-project-site dependency (default: ^<this version>)
   docs:gen            Fill <!-- gen:... --> blocks in markdown (reads ./docs-gen.config.mjs)
@@ -41,7 +43,7 @@ Copies the starter into `dir` (default `.`) and names it:
   `--package` (default `^<version of the CLI>`).
 - `wrangler.jsonc` → the first `"name"` becomes the slug.
 - `astro.config.mjs` → `name: '…'` becomes `--name` or the folder name in title case (`my-lib` → "My Lib").
-- `.github/workflows/site.yml` → the reusable workflow is pinned to `@v<version of the CLI>`.
+- `.github/workflows/site.yml`, only with `--ci` → the reusable workflow is pinned to `@v<version of the CLI>`.
 - `_gitignore` is written as `.gitignore`. `node_modules`, `dist`, `.astro`, `.wrangler` and `package-lock.json`
   are never copied.
 

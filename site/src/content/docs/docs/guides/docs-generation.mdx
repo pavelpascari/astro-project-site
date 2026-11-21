@@ -94,7 +94,7 @@ an unclosed or nested block, a generator that throws or returns something other 
 ## In CI
 
 - The starter's `npm run build` is `astro check && astro build && project-site docs:check`.
-- The [reusable workflow](/docs/guides/deploying/#ci-with-the-reusable-workflow) runs
+- The [reusable workflow](/docs/guides/deploying/#ci-optional) runs
   `project-site docs:check` after the build whenever `docs-gen.config.mjs` exists in the site folder.
 
 So a PR that changes an export without running `docs:gen` fails with the diff above.

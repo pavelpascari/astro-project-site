@@ -25,7 +25,7 @@ npm run build
 
 ## The workflow pin
 
-`.github/workflows/site.yml` calls `deploy.yml@v<version>`. Move the pin to the release you upgraded to (or its
+If you use CI (`init --ci`), `.github/workflows/site.yml` calls `deploy.yml@v<version>`. Move the pin to the release you upgraded to (or its
 commit SHA) in the same PR, so CI and package match:
 
 ```diff lang="yaml"

@@ -27,8 +27,10 @@ Run `project-site init <dir>` in your repository. It reads the repository and wr
 
 `astro.config.mjs` comes out as commented config naming where each value came from; values it could not find are
 placeholders marked `TODO`. Also written: `src/content.config.ts`, `package.json` (scripts, this package as a
-dependency), `wrangler.jsonc` named after the project, the CI workflow pinned to this release (with
-`working-directory` when the site is a subfolder: move it to the repo root's `.github/workflows/`), `.gitignore`.
+dependency), `wrangler.jsonc` named after the project, `.gitignore`. With `--ci`, also the GitHub workflow
+(checks, a preview per pull request, production on tags), pinned to this release (with `working-directory` when
+the site is a subfolder: move it to the repo root's `.github/workflows/`). Without it, the site deploys from your
+machine with `npm run deploy`.
 
 It prints what it found and the files it will write, then asks (`--yes` skips the question; without a terminal,
 `--yes` or `--dry-run` is required). It only writes inside `dir` and never overwrites a file without `--force`.
@@ -378,7 +380,7 @@ with Starlight (`localStorage['starlight-theme']`, `<html data-theme>`).
 ## CLI
 
 ```
-project-site init [dir] [--from <repo>] [--yes] [--dry-run] [--force] [--blank] [--name "My Lib"] [--package <npm spec>]
+project-site init [dir] [--from <repo>] [--yes] [--dry-run] [--force] [--blank] [--ci] [--name "My Lib"] [--package <npm spec>]
 project-site docs:gen [--check] [--config docs-gen.config.mjs]
 project-site docs:check
 project-site deploy:preview [--alias pr-12] [--message "…"] [--dry-run] [-- <wrangler args>]
@@ -393,14 +395,15 @@ project-site deploy:preview [--alias pr-12] [--message "…"] [--dry-run] [-- <w
 
 ## Deploys and CI
 
-The starter deploys as a static-assets Worker (`wrangler.jsonc`, `public/_headers`). Its whole CI is:
+The starter deploys as a static-assets Worker (`wrangler.jsonc`, `public/_headers`): `npx wrangler login` once,
+then `npm run deploy`. CI is optional (`init --ci`, or add the file yourself); all of it is:
 
 ```yaml
 on: [pull_request, push, workflow_dispatch]
 jobs: { site: { uses: pavelpascari/astro-project-site/.github/workflows/deploy.yml@v0.1.0-beta.4, permissions: { contents: read, pull-requests: write }, secrets: { CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN }}", CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" } } }
 ```
 
-`init` pins the workflow to the release it came from (`@v<version>`); a full commit SHA is the stricter option.
+`init --ci` pins the workflow to the release it came from (`@v<version>`); a full commit SHA is the stricter option.
 Pass only the secrets the workflow declares, never `secrets: inherit`.
 
 The reusable workflow type-checks, builds, runs `docs:check`, and deploys: a preview per PR (sticky comment),

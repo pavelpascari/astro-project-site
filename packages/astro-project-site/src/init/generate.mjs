@@ -9,7 +9,7 @@ import { comment, lit, note, str } from './js.mjs';
 /**
  * @typedef {import('../detect/index.mjs').Detected} Detected
  * @typedef {{ to: string, content?: string, from?: string }} PlannedFile  from: absolute path of a starter file to copy
- * @typedef {{ packageSpec: string, version: string, today: string, starter: string }} GenerateOptions
+ * @typedef {{ packageSpec: string, version: string, today: string, starter: string, ci?: boolean }} GenerateOptions
  */
 
 /** The mermaid version range a generated site installs when its markdown has diagrams (the template's peer range). */
@@ -329,7 +329,7 @@ export function wrangler(/** @type {string} */ starterText, /** @type {string} *
 }
 
 /** The site's README. */
-export function siteReadme(/** @type {Detected} */ d, /** @type {ReturnType<typeof siteModel>} */ m) {
+export function siteReadme(/** @type {Detected} */ d, /** @type {ReturnType<typeof siteModel>} */ m, ci = false) {
   return `# ${comment(d.name.value)} — website
 
 Built with [astro-project-site](https://github.com/pavelpascari/astro-project-site): a landing page, docs, a blog
@@ -348,8 +348,7 @@ npm run deploy         # Cloudflare Workers (after \`npx wrangler login\`)
 ${m.mounts.filter((x) => !m.example).map((x) => `| \`${x.dir}${x.include ? `/{${x.include.join(',')}}` : '/'}\` | mounted under \`/docs/${x.route}/\` (\`externalDocs\`) |\n`).join('')}| \`src/content/docs/docs/\` | docs pages of the site itself, under \`/docs/\` |
 | \`src/content/blog/\` | blog posts (\`draft: true\` ones are not published) |
 ${m.hasGallery ? '| `src/content/gallery/` | one file per gallery item |\n' : ''}${m.example ? '| `example/` | stand-ins for your docs and apps: point `externalDocs` and `mirrors` at the real ones |\n' : ''}| \`wrangler.jsonc\`, \`public/_headers\` | Cloudflare Workers deploy |
-| \`.github/workflows/site.yml\` | CI: checks, a preview per PR, production on \`v*\` tags${d.sameFolder || m.example ? '' : ' (move it to the repo root\'s `.github/workflows/`)'} |
-`;
+${ci ? `| \`.github/workflows/site.yml\` | CI: checks, a preview per PR, production on \`v*\` tags${d.sameFolder || m.example ? '' : ' (move it to the repo root\'s `.github/workflows/`)'} |\n` : ''}`;
 }
 
 /** The docs-gen config: the starter's generators, over the mounted docs folder. */
@@ -369,9 +368,9 @@ export function planFiles(/** @type {Detected} */ d, /** @type {GenerateOptions}
   const files = [
     { to: 'astro.config.mjs', content: astroConfig(d, m) },
     { to: 'package.json', content: packageJson(read('package.json'), siteName, o.packageSpec, !!d.usesMermaid) },
-    { to: 'README.md', content: siteReadme(d, m) },
+    { to: 'README.md', content: siteReadme(d, m, o.ci) },
     { to: 'wrangler.jsonc', content: wrangler(read('wrangler.jsonc'), d.slug) },
-    { to: '.github/workflows/site.yml', content: workflow(read('.github/workflows/site.yml'), o.version, workingDirectory) },
+    ...(o.ci ? [{ to: '.github/workflows/site.yml', content: workflow(read('.github/workflows/site.yml'), o.version, workingDirectory) }] : []),
     { to: '.gitignore', from: s('_gitignore') },
     { to: 'tsconfig.json', content: m.example ? read('tsconfig.json') : read('tsconfig.json').replace(/, "example\/apps"/, '') },
     { to: 'docs-gen.config.mjs', content: docsGenConfig(read('docs-gen.config.mjs'), m.example ? ['example/docs'] : d.docs ? [`${d.toRoot}/${d.docs.dir}`] : ['src/content/docs']) },

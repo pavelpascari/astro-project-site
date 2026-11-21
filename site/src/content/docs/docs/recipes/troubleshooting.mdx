@@ -91,5 +91,5 @@ Pagefind's index is built by `astro build`. Use `npm run build && npm run previe
 | "Deploy skipped" notice, build green | No `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` for this run: fork PR, Dependabot, or secrets not set |
 | `wrangler missing` error | `wrangler` is not a devDependency of the site; `npm i -D wrangler` and commit the lockfile |
 | "uploaded but has no preview URL" | `preview_urls` is not `true` in `wrangler.jsonc`, or the account has no workers.dev subdomain |
-| Authentication or permission error on deploy | Token scope: see [one-time setup](/docs/guides/deploying/#one-time-setup) (Editor on the Worker; Workers Routes Write for a custom domain) |
+| Authentication or permission error on deploy | Token scope: see [setup for CI](/docs/guides/deploying/#setup-for-ci) (Editor on the Worker; Workers Routes Write for a custom domain) |
 | `docs-gen: … stale block(s)` | Run `npm run docs:gen` and commit |

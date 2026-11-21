@@ -13,7 +13,7 @@ folder next to them and reads those files where they are; nothing moves.
 <FileTree>
 - my-lib/
   - .github/workflows/
-    - site.yml  calls the reusable workflow
+    - site.yml  optional CI (init --ci), calls the reusable workflow
   - docs/  your markdown, unchanged
     - README.md
     - api.md
@@ -74,7 +74,9 @@ folder next to them and reads those files where they are; nothing moves.
    `src/content/gallery/hello.yaml`, which link to `/apps/…` (the links validator reports the links; the live
    examples on that page would load nothing).
 
-3. **Move CI to the repo root.** GitHub only reads workflows from the root `.github/`:
+3. **Optional: CI.** Without it, deploy from your machine with `npm run deploy` ([Deploying](/docs/guides/deploying/)).
+   If you created the site with `--ci`, move the workflow to the repo root; GitHub only reads workflows from the
+   root `.github/`:
 
    ```sh
    mkdir -p .github/workflows && git mv website/.github/workflows/site.yml .github/workflows/site.yml

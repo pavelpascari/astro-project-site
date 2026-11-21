@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed
+
+- `init` no longer writes the GitHub workflow unless asked: `--ci` adds `.github/workflows/site.yml` (checks, a
+  preview per pull request, production on tags). Without it a site deploys from your machine with
+  `npm run deploy`, and `init`'s next steps say how to add CI later. The deploying guide covers both.
+
 ## 0.1.0-beta.4 - 2026-11-21
 
 ### Fixes
