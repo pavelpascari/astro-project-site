@@ -46,7 +46,7 @@ export { default as MarginNote } from './blog/MarginNote.astro';
 export { galleryItems, distinct } from '../lib/gallery';
 export { blogPosts, postInfo } from '../blog/data';
 export { readingTime, tagSlug, formatDate } from '../blog/posts.mjs';
-export { isActive, isExternal } from '../lib/nav';
+export { activeHref, isActive, isExternal } from '../lib/nav';
 
 export type * from './live/types';
 export type {

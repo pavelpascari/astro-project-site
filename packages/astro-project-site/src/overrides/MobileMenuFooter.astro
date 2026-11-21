@@ -4,12 +4,12 @@
 // pages with a sidebar, small screens get a single menu button holding both the docs sidebar and the site nav.
 import Default from '@astrojs/starlight/components/MobileMenuFooter.astro';
 import site from 'virtual:astro-project-site/config';
-import { isActive } from '../lib/nav';
+import { activeHref } from '../lib/nav';
 import { translator } from '../lib/labels';
 
 const t = translator(Astro.locals.starlightRoute.lang);
 
-const pathname = Astro.url.pathname;
+const current = activeHref(site.nav.map((item) => item.href), Astro.url.pathname);
 ---
 
 <nav class="site-nav" aria-label={t('siteMenu')}>
@@ -17,7 +17,7 @@ const pathname = Astro.url.pathname;
     {
       site.nav.map((item) => (
         <li>
-          <a href={item.href} aria-current={isActive(item.href, pathname) ? 'page' : undefined}>
+          <a href={item.href} aria-current={item.href === current ? 'page' : undefined}>
             {item.label}
           </a>
         </li>

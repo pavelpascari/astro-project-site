@@ -356,10 +356,13 @@ Slots: `default`.
 - `readingTime`
 - `tagSlug`
 - `formatDate`
+- `activeHref`
 - `isActive`
 - `isExternal`
 <!-- /gen -->
 
 `galleryItems()` returns the published gallery entries sorted by `order`, then title. `distinct(items, pick)`
-returns the distinct values `pick` returns across items, in first-seen order. `isActive(href, pathname)` is the
-nav's "current section" test; `isExternal(href)` is true for `scheme://` URLs.
+returns the distinct values `pick` returns across items, in first-seen order. `isActive(href, pathname)` is true
+when the page is in a nav link's section; `activeHref(hrefs, pathname)` picks the one link to mark as current (the
+most specific of those, so `/docs/guide/` wins over `/docs/` on a guide page); `isExternal(href)` is true for
+`scheme://` URLs.

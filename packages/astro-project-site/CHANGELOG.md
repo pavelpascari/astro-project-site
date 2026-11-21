@@ -4,6 +4,8 @@
 
 ### Fixes
 
+- The header and the phone menu mark one nav link as current, the most specific: with Docs (`/docs/`) and Guide
+  (`/docs/guide/`) in the nav, a guide page highlighted both. New helper `activeHref(hrefs, pathname)`.
 - Text taken from a README (`project-site init`'s tagline and step titles) decodes HTML entities once: `&amp;lt;`
   is now the text `&lt;`, not `<`.
 - Mirror paths and globs trim slashes in linear time, and the blog's reading-time count strips tags in linear time

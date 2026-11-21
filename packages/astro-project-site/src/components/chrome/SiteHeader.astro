@@ -11,7 +11,7 @@
 //   theme       — the theme switch in the bar (desktop).
 //   theme-menu  — the theme switch inside the small-screen menu.
 import site from 'virtual:astro-project-site/config';
-import { isActive, repoInfo } from '../../lib/nav';
+import { activeHref, repoInfo } from '../../lib/nav';
 import { t } from '../../lib/labels';
 
 interface Props {
@@ -31,7 +31,8 @@ const repo = repoInfo(site.repo, t('sourceCode'));
 const repoHost = repo.host;
 const repoLabel = repo.label;
 const releasesHref = repo.releases;
-const links = site.nav.map((item) => ({ ...item, active: isActive(item.href, pathname) }));
+const current = activeHref(site.nav.map((item) => item.href), pathname);
+const links = site.nav.map((item) => ({ ...item, active: item.href === current }));
 const hasSearch = Astro.slots.has('search');
 ---
 
