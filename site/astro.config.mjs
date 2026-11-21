@@ -11,7 +11,7 @@ export default defineConfig({
       ...docs,
       name: 'astro-project-site',
       tagline: 'A whole site for your open-source project, from one Astro integration.',
-      url: 'https://astro-project-site.workers.dev',
+      url: 'https://astro-project-site.pascaripavel.workers.dev',
       repo: 'https://github.com/pavelpascari/astro-project-site',
       versionFrom: '../packages/astro-project-site/package.json',
       install: 'npx astro-project-site@beta init my-site',

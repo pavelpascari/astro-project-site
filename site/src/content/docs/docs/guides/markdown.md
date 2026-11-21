@@ -373,7 +373,7 @@ A long line of plain text that wraps instead of scrolling, because the block ask
 
 ```js
 // A long line without `wrap`: on a narrow screen the block scrolls, and a "Wrap lines" button appears next to the copy button.
-const url = new URL('/docs/guides/markdown/#code-blocks', 'https://astro-project-site.workers.dev').toString();
+const url = new URL('/docs/guides/markdown/#code-blocks', 'https://astro-project-site.pascaripavel.workers.dev').toString();
 ```
 
 ### Meta syntax

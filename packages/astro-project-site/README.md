@@ -350,7 +350,7 @@ dependency: `npm i mermaid` to draw them, otherwise they show their source with 
 line numbers, collapsible sections, terminal prompts that are not copied and a wrap toggle; set more through
 `starlight.expressiveCode`. Each extra can be switched off with `markdown: { math: false, … }`. Raw HTML is not
 sanitised (the markdown is the project's own). The full list, with source and result side by side, is the site's
-[Markdown guide](https://astro-project-site.workers.dev/docs/guides/markdown/).
+[Markdown guide](https://astro-project-site.pascaripavel.workers.dev/docs/guides/markdown/).
 
 ## Theme
 

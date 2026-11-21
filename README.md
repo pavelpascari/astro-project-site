@@ -27,7 +27,7 @@ folder you get the plain starter. Requires Node.js 22.23.4 or newer (or Node 24)
 
 ## Documentation
 
-- **Site and docs:** [astro-project-site.workers.dev](https://astro-project-site.workers.dev/docs/), built with
+- **Site and docs:** [astro-project-site.pascaripavel.workers.dev](https://astro-project-site.pascaripavel.workers.dev/docs/), built with
   astro-project-site itself from [`site/`](site/).
 - **Package reference** (options, exports, CLI, deploys and CI):
   [packages/astro-project-site/README.md](packages/astro-project-site/README.md).
