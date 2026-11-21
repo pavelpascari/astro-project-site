@@ -61,7 +61,9 @@ function inline(text, o, links) {
     const href = rawHref.replace(/&amp;/g, '&');
     const r = resolve(o, href);
     links.push({ from: href, ...r });
-    const note = r.kind === 'kept' ? '' : `<span class="dm-to" data-kind="${r.kind}">${esc(r.kind === 'repo' ? 'GitHub' : r.href)}</span>`;
+    // The badge names where the link goes: GitHub, or the page's path (the link itself may be on another site).
+    const to = r.kind === 'repo' ? 'GitHub' : r.href.replace(/^https?:\/\/[^/]+/, '');
+    const note = r.kind === 'kept' ? '' : `<span class="dm-to" data-kind="${r.kind}">${esc(to)}</span>`;
     return `<a href="${esc(r.href)}" data-kind="${r.kind}"${r.kind === 'repo' ? ' rel="noopener"' : ''}>${label}</a>${note}`;
   });
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/(^|[^\w*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>');
