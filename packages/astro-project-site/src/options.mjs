@@ -88,7 +88,9 @@ export const COMPONENT_NAMES = /** @type {const} */ ([
 const gitSource = z.strictObject({
   repo: z
     .string()
-    .regex(/^(https?:\/\/|ssh:\/\/|file:\/\/|git@)[^\s]+$/, 'must be a git URL: https://…, ssh://…, git@host:owner/repo or file://…'),
+    .regex(/^(https?:\/\/|ssh:\/\/|file:\/\/|git@)[^\s]+$/, 'must be a git URL: https://…, ssh://…, git@host:owner/repo or file://…')
+    // It is printed in build logs and errors: credentials belong in GITHUB_TOKEN or a git credential helper.
+    .refine((r) => !/^https?:\/\/[^/]*@/.test(r), 'must not contain credentials (`user:token@`); for a private repository on github.com set GITHUB_TOKEN, elsewhere use ssh or a git credential helper'),
   ref: z
     .string()
     .regex(/^(?!-)(?!.*\.\.)[\w./-]+$/, 'must be a tag, branch or full commit SHA (letters, digits, `.`, `_`, `-`, `/`)'),

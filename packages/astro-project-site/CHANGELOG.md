@@ -9,7 +9,8 @@
   folder, then mounts it like a local one. A tag or commit is downloaded once and reused offline; a branch is
   fetched on every start, with a warning, falling back to the last copy. Links to files of that repository that
   are not mounted go to it at `ref`, and "Edit page" to its default branch. `GITHUB_TOKEN` (when set) reaches
-  private github.com repositories; the CI workflow passes its `SOURCE_REPO_TOKEN` secret as that.
+  private github.com repositories; a repo URL with credentials in it is refused, and symlinks in the downloaded
+  repository are checked out as plain files.
 
 ## 0.1.0-beta.5 - 2026-11-21
 

@@ -68,7 +68,7 @@ on:
       CLOUDFLARE_ACCOUNT_ID:
         required: false
       SOURCE_REPO_TOKEN:
-        description: Read-only token for a private source-repo, also given to the build as GITHUB_TOKEN for private externalDocs git sources
+        description: Read-only token for a private source-repo
         required: false
     outputs:
       url:
@@ -178,16 +178,10 @@ jobs:
         working-directory: ${{ steps.paths.outputs.install }}
         run: npm ci
 
-      # Both steps load the config, which downloads externalDocs `git` sources; the token is only needed for
-      # private ones on github.com (empty otherwise).
       - name: Type-check
-        env:
-          GITHUB_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
         run: npx --no-install astro check
 
       - name: Build
-        env:
-          GITHUB_TOKEN: ${{ secrets.SOURCE_REPO_TOKEN }}
         run: npx --no-install astro build
 
       - name: Check generated docs

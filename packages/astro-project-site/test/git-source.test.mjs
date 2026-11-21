@@ -1,7 +1,7 @@
 // externalDocs `git` sources, against local repositories (file://), so no network is needed.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, renameSync, symlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
@@ -55,6 +55,9 @@ test('git options: give dir or git, and the git values are limited to what git s
   assert.throws(bad({ repo: 'https://h/r', ref: 'a..b' }), /git\.ref/);
   assert.throws(bad({ repo: 'https://h/r', ref: 'v1', path: '../up' }), /git\.path: must be a folder inside/);
   assert.throws(bad({ repo: 'https://h/r', ref: 'v1', path: '/abs' }), /git\.path/);
+  // Printed in logs and errors: no credentials in the URL.
+  assert.throws(bad({ repo: 'https://x-access-token:ghp_secret@github.com/o/r', ref: 'v1' }), /git\.repo: must not contain credentials/);
+  assert.throws(bad({ repo: 'http://user@host/r', ref: 'v1' }), /must not contain credentials/);
   const ok = parseOptions({ ...base, externalDocs: [{ git: { repo: 'git@github.com:o/r.git', ref: 'release/1.0', path: './docs/' }, route: 'x', label: 'X' }] });
   assert.equal(ok.externalDocs[0].git?.path, 'docs');
   assert.equal(parseOptions({ ...base, externalDocs: [{ git: { repo: 'https://h/r', ref: 'v1' }, route: 'x', label: 'X' }] }).externalDocs[0].git?.path, '');
@@ -182,4 +185,21 @@ test('GITHUB_TOKEN goes to github.com through the environment, never on the comm
   fetchGitDocs(options, root, { cacheDir, logger: quiet().logger, env: { ...GIT_ENV, GITHUB_TOKEN: 'ghp_secret' } });
   const checkout = path.join(cacheDir, 'project-site-git', cacheName({ repo: src.url, ref: 'v1', path: 'docs' }));
   assert.doesNotMatch(readFileSync(path.join(checkout, '.git/config'), 'utf8'), /ghp_secret|extraheader/i);
+});
+
+test('a symlink in the other repository is checked out as a plain file, never followed', () => {
+  const secret = fixture({ 'id_key': 'PRIVATE KEY\n' });
+  const src = remote();
+  symlinkSync(path.join(secret, 'id_key'), path.join(src.dir, 'docs/leak.md'));
+  symlinkSync('/', path.join(src.dir, 'docs/root'));
+  git(src.dir, ['add', '.']);
+  git(src.dir, ['commit', '-qm', 'links']);
+  git(src.dir, ['tag', '-a', 'v2', '-m', 'v2']);
+  const { root, options, cacheDir } = setup({ repo: src.url, ref: 'v2', path: 'docs' });
+  fetchGitDocs(options, root, { cacheDir, logger: quiet().logger });
+  const dir = path.join(root, /** @type {any} */ (options.externalDocs[0]).dir);
+  assert.ok(!lstatSync(path.join(dir, 'leak.md')).isSymbolicLink());
+  assert.equal(readFileSync(path.join(dir, 'leak.md'), 'utf8'), path.join(secret, 'id_key'));
+  assert.ok(lstatSync(path.join(dir, 'root')).isFile());
+  assert.ok(!listMountFiles(resolveProject(options, root).mounts[0]).some((f) => f.startsWith('root/')));
 });

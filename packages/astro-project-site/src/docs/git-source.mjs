@@ -148,7 +148,9 @@ function download(/** @type {GitSpec} */ spec, /** @type {string} */ dir, /** @t
   if (spec.path) run(['sparse-checkout', 'set', '--cone', '--', spec.path]);
   const want = kind === 'commit' ? spec.ref : kind === 'tag' ? `refs/tags/${spec.ref}` : `refs/heads/${spec.ref}`;
   run(['fetch', '-q', '--depth', '1', '--filter=blob:none', '--no-tags', 'origin', want]);
-  run(['-c', 'advice.detachedHead=false', 'checkout', '-q', 'FETCH_HEAD']);
+  // core.symlinks=false: a symlink in that repository becomes a plain file holding its target's path, so a link to
+  // a file of the build machine (`docs/x.md -> ~/.ssh/id_ed25519`) can never put that file's content on the site.
+  run(['-c', 'advice.detachedHead=false', '-c', 'core.symlinks=false', 'checkout', '-q', 'FETCH_HEAD']);
   const commit = run(['rev-parse', 'HEAD']).trim();
   const folder = path.join(dir, spec.path);
   if (!fs.existsSync(folder) || !fs.statSync(folder).isDirectory()) throw new Error(`the repository has no folder "${spec.path}" at that ref`);

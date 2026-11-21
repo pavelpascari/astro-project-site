@@ -184,9 +184,13 @@ Everything above applies to the downloaded files: titles, URLs, the sidebar, lin
   docs are pinned, but edits go where the docs are written. A `file://` source has no web page, so it gets
   neither GitHub links nor edit links.
 - **Private repositories:** over `https://github.com/…`, the build sends `GITHUB_TOKEN` from the environment when
-  it is set (as a header; it is not written to disk). The [CI workflow](/docs/guides/deploying/#ci-optional) sets
-  it from its `SOURCE_REPO_TOKEN` secret: a read-only token for that repository. Elsewhere, use an `ssh://` or
-  `git@…` URL and your SSH key, or a URL your git credential helper knows.
+  it is set (as a header; it is not written to disk or to the logs). Elsewhere, use an `ssh://` or `git@…` URL and
+  your SSH key, or a URL your git credential helper knows. A token inside the URL (`https://user:token@…`) is
+  refused: it would be printed in build logs. The [CI workflow](/docs/guides/deploying/#ci-optional) does not
+  hand its secrets to the build, where every dependency could read them: for a private repository in CI, check
+  it out with `source-repo` and mount it with `dir` (see [Separate site repo](/docs/recipes/separate-repo/)).
+- **Symlinks** in the downloaded repository are checked out as plain files holding the link's path, so they
+  cannot pull files of the build machine into the site.
 - **Errors** name the entry: an unknown tag or branch, a short SHA, a folder that is not there, or no `git`
   command fail the build with that message.
 
