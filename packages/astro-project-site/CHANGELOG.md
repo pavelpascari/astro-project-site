@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.6 - 2026-11-21
+
 ### Added
 
 - `externalDocs` entries can mount a folder of another repository: `git: { repo, ref, path }` instead of `dir`.
