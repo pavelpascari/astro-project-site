@@ -1,6 +1,6 @@
 ---
 title: Docs
-description: Local MDX pages, mounting your repo's markdown folder (titles, link rewriting, order, exclude, edit links), and the generated sidebar.
+description: Local MDX pages, mounting markdown from your repo or another one (titles, link rewriting, order, exclude, edit links), and the generated sidebar.
 sidebar:
   order: 3
 ---
@@ -10,8 +10,9 @@ import { FileTree, Aside } from '@astrojs/starlight/components';
 The docs are Starlight, fed from two places:
 
 - **Local pages** in `src/content/docs/docs/`, `.md` or `.mdx` with frontmatter, served under `/docs/`.
-- **Mounted folders** (`externalDocs`): plain markdown that lives elsewhere, usually your repo's `docs/`, served
-  under `/docs/<route>/`. These files need no frontmatter and stay readable on GitHub.
+- **Mounted folders** (`externalDocs`): plain markdown that lives elsewhere, usually your repo's `docs/` (or a
+  folder of [another repository](#mount-another-repository)), served under `/docs/<route>/`. These files need no
+  frontmatter and stay readable on GitHub.
 
 Both are one Starlight collection: search, the links validator, edit links, `llms.txt` and the sidebar treat them
 alike.
@@ -142,16 +143,62 @@ plain GitHub-flavoured markdown with relative links. Compare [its source](https:
 
 <Aside type="caution" title="Folders outside the git repo">
 Edit links and GitHub links are computed from the git repository the site is in (the nearest folder with a
-`.git`; before `git init`, the project root). A mounted folder **outside** that repo (a second clone next to
+`.git`; before `git init`, the project root). A mounted `dir` **outside** that repo (a second clone next to
 yours) gets no edit link, and its relative links to non-markdown files are left as written, which the links
-validator then reports. See [Separate site repo](/docs/recipes/separate-repo/).
+validator then reports. To mount another repository's docs, use a [`git` source](#mount-another-repository)
+instead: it knows where the files came from.
 </Aside>
+
+## Mount another repository
+
+Give `git` instead of `dir`, and the build downloads that folder of another repository and mounts it:
+
+```js title="astro.config.mjs"
+externalDocs: [
+  {
+    git: {
+      repo: 'https://github.com/org/other-lib', // https://, ssh://, git@host:owner/repo or file://
+      ref: 'v1.4.0',                            // a tag, a branch or a full commit SHA
+      path: 'docs',                             // the folder in that repository; default: its root
+    },
+    route: 'other-lib',
+    label: 'Other lib',
+    // description, order, exclude and include work as with `dir`
+  },
+],
+```
+
+Everything above applies to the downloaded files: titles, URLs, the sidebar, link rewriting, search and
+`llms.txt`. What differs:
+
+- **Download.** At startup (`astro dev`, `astro build`, `astro check`), with the `git` command: a shallow fetch of
+  `path` only, at `ref`, without history. It is cached in Astro's cache folder (`node_modules/.astro/` unless
+  you set `cacheDir`).
+- **`ref`.** A tag or commit is downloaded once and reused, so later builds work offline and give the same
+  pages. A branch is downloaded again on every start, with a warning, because the docs change when it moves; if
+  that fails, the build uses the last copy and says so.
+- **Links** from those pages to files that are not mounted (source files, folders, the repository's README) go to
+  **that** repository, at `ref`: `https://github.com/org/other-lib/blob/v1.4.0/src/parse.js`. Links that leave
+  the repository are left as written.
+- **Edit link:** that repository's default branch, `https://github.com/org/other-lib/edit/main/docs/…`: the
+  docs are pinned, but edits go where the docs are written. A `file://` source has no web page, so it gets
+  neither GitHub links nor edit links.
+- **Private repositories:** over `https://github.com/…`, the build sends `GITHUB_TOKEN` from the environment when
+  it is set (as a header; it is not written to disk). The [CI workflow](/docs/guides/deploying/#ci-optional) sets
+  it from its `SOURCE_REPO_TOKEN` secret: a read-only token for that repository. Elsewhere, use an `ssh://` or
+  `git@…` URL and your SSH key, or a URL your git credential helper knows.
+- **Errors** name the entry: an unknown tag or branch, a short SHA, a folder that is not there, or no `git`
+  command fail the build with that message.
+
+To show newer docs, change `ref` (Dependabot does not see it: bump it when you release the other project). In dev
+the downloaded folder is not watched; restart to pick up a new `ref`.
 
 ## Edit links
 
 - Local pages: Starlight's `editLink.baseUrl` is set to `<repo>/edit/<repoBranch>/<site folder in the repo>/`,
   so a site in `website/` links to `website/src/content/docs/…`.
-- Mounted pages: each page's `editUrl` points at its own file.
+- Mounted pages: each page's `editUrl` points at its own file (for a `git` source, in that repository's default
+  branch).
 - Turn one off with frontmatter `editUrl: false`; replace the local base with `starlight: { editLink: { baseUrl } }`.
 
 ## Search, llms.txt, 404

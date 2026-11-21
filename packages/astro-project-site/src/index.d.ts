@@ -69,9 +69,30 @@ export interface LandingContent {
   cta?: { title: string; body?: string; primary?: LinkAction; secondary?: LinkAction };
 }
 
+/** Where `externalDocs[].git` downloads from. */
+export interface GitSource {
+  /** Clone URL: `https://…`, `ssh://…`, `git@host:owner/repo.git` or `file://…`. For a private repository on
+   * github.com over https, the build sends `GITHUB_TOKEN` from the environment when it is set. */
+  repo: string;
+  /**
+   * A tag, a branch or a full 40-character commit SHA. A tag or commit is fetched once and cached; a branch is
+   * fetched on every build (with a warning: the docs change when it moves).
+   */
+  ref: string;
+  /** The markdown folder inside the repository, e.g. `docs`. Default: the repository root. */
+  path?: string;
+}
+
 export interface ExternalDocs {
-  /** Markdown folder, relative to the project root. May be outside it (`../docs`). */
-  dir: string;
+  /** Markdown folder, relative to the project root. May be outside it (`../docs`). Give this or `git`. */
+  dir?: string;
+  /**
+   * A folder of another repository instead of a local one: downloaded at build time (a shallow, sparse fetch with
+   * the `git` command), cached in Astro's cache folder, then mounted like `dir`. Links to its files that are not
+   * mounted go to that repository at `ref`; "Edit page" goes to its default branch.
+   * @example git: { repo: 'https://github.com/org/lib', ref: 'v1.4.0', path: 'docs' }
+   */
+  git?: GitSource;
   /** URL segment under /docs/: `reference` → /docs/reference/... */
   route: string;
   /** Sidebar group label. */
@@ -373,8 +394,27 @@ export interface ResolvedLanding extends Omit<LandingContent, 'features' | 'step
 }
 
 /** What components get from `virtual:astro-project-site/config` (or `astro-project-site/config`). */
+/** An `externalDocs` entry as the site sees it: a `git` entry has been downloaded, so every entry has a `dir`. */
+export interface MountedDocs extends ExternalDocs {
+  /** The markdown folder, relative to the project root: as configured, or where a `git` source was downloaded. */
+  dir: string;
+  /** For a `git` entry: where its files came from (links and edit links use it). */
+  source?: {
+    /** The downloaded repository's folder, relative to the project root. */
+    root: string;
+    /** Its browser URL (`https://host/owner/repo`); none for `file://` sources. */
+    web?: string;
+    ref: string;
+    /** The commit `ref` pointed at when it was downloaded. */
+    commit: string;
+    /** Its default branch, where "Edit page" goes. */
+    editBranch?: string;
+  };
+}
+
 export interface SiteConfig
-  extends Omit<ResolvedOptions, 'components' | 'starlight' | 'customCss' | 'ogImageFor' | 'mirrors'> {
+  extends Omit<ResolvedOptions, 'components' | 'starlight' | 'customCss' | 'ogImageFor' | 'mirrors' | 'externalDocs'> {
+  externalDocs: MountedDocs[];
   /** `version` read from `versionFrom` at startup. */
   version?: string;
   /** Language of the non-docs pages: Starlight's root (or default) locale, else `en`. */

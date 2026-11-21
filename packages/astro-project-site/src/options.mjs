@@ -81,6 +81,24 @@ export const COMPONENT_NAMES = /** @type {const} */ ([
   'BlogCard',
 ]);
 
+/**
+ * `externalDocs[].git`: a folder of another repository, fetched at build time (see docs/git-source.mjs). The values
+ * end up as git arguments, so each is limited to what it can legitimately be (never starting with `-`).
+ */
+const gitSource = z.strictObject({
+  repo: z
+    .string()
+    .regex(/^(https?:\/\/|ssh:\/\/|file:\/\/|git@)[^\s]+$/, 'must be a git URL: https://…, ssh://…, git@host:owner/repo or file://…'),
+  ref: z
+    .string()
+    .regex(/^(?!-)(?!.*\.\.)[\w./-]+$/, 'must be a tag, branch or full commit SHA (letters, digits, `.`, `_`, `-`, `/`)'),
+  path: z
+    .string()
+    .refine((p) => !p.startsWith('/') && p.split('/').every((s) => s !== '..' && !s.startsWith('-')), 'must be a folder inside the repository, like `docs`')
+    .transform((p) => p.split('/').filter((s) => s && s !== '.').join('/'))
+    .default(''),
+});
+
 export const optionsSchema = z.strictObject({
   name: z.string().min(1),
   tagline: z.string(),
@@ -92,13 +110,16 @@ export const optionsSchema = z.strictObject({
   externalDocs: z
     .array(
       z.strictObject({
-        dir: z.string().min(1),
+        dir: z.string().min(1).optional(),
+        git: gitSource.optional(),
         route: z.string().refine((r) => r.split('/').some(Boolean), 'must not be empty'),
         label: z.string().min(1),
         description: z.string().min(1).optional(),
         order: z.array(z.string()).optional(),
         exclude: z.array(z.string()).optional(),
         include: z.array(z.string().min(1)).min(1).optional(),
+      }).refine((d) => (d.dir === undefined) !== (d.git === undefined), {
+        message: 'give either `dir` (a local folder) or `git` (a folder of another repository), not both',
       }),
     )
     .default([]),
@@ -275,7 +296,8 @@ export function resolveOptionPaths(options, root) {
     ogImageFor: options.ogImageFor ? local('ogImageFor', options.ogImageFor) : undefined,
     versionFrom: options.versionFrom ? local('versionFrom', options.versionFrom) : undefined,
   };
-  options.externalDocs.forEach((d, i) => local(`externalDocs[${i}].dir`, d.dir));
+  // `git` entries have a `dir` once fetchGitDocs has downloaded them.
+  options.externalDocs.forEach((d, i) => d.dir !== undefined && !d.git && local(`externalDocs[${i}].dir`, d.dir));
   if (problems.length) throw new ProjectSiteOptionsError(problems);
   return resolved;
 }

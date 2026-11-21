@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added
+
+- `externalDocs` entries can mount a folder of another repository: `git: { repo, ref, path }` instead of `dir`.
+  The build downloads only that folder at `ref` (a shallow, sparse fetch with the `git` command) into Astro's cache
+  folder, then mounts it like a local one. A tag or commit is downloaded once and reused offline; a branch is
+  fetched on every start, with a warning, falling back to the last copy. Links to files of that repository that
+  are not mounted go to it at `ref`, and "Edit page" to its default branch. `GITHUB_TOKEN` (when set) reaches
+  private github.com repositories; the CI workflow passes its `SOURCE_REPO_TOKEN` secret as that.
+
 ## 0.1.0-beta.5 - 2026-11-21
 
 ### Changed

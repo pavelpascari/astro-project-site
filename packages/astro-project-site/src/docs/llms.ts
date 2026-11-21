@@ -24,6 +24,7 @@ export async function docsSections(): Promise<Section[]> {
   const all = (await getDocs('docs', (e) => !e.data.draft && e.id !== '404')).filter(
     (e) => e.id === 'docs' || e.id.startsWith('docs/'),
   );
+  // Every `dir` is set by now: a `git` entry's is its downloaded folder (docs/git-source.mjs).
   const mounts = (site.externalDocs ?? []).map((m) => ({ ...m, relDir: norm(m.dir) }));
   // Deepest folder first, so `../docs/x.md` belongs to a `../docs` mount rather than a `..` one.
   const byDepth = [...mounts].sort((a, b) => b.relDir.length - a.relDir.length);

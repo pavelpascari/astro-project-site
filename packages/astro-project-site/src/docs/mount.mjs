@@ -2,7 +2,8 @@
 // (docs/loader.ts) and the llms.txt endpoints. No Astro imports here, only node: modules.
 //
 // Vocabulary: a "mount" is one `externalDocs` entry resolved against the project root: a markdown folder outside
-// src/content that is served under /docs/<route>/.
+// src/content that is served under /docs/<route>/. A mount with a `source` was downloaded from another repository
+// (docs/git-source.mjs): its links to unmounted files and its edit links point there.
 import fs from 'node:fs';
 import path from 'node:path';
 import { globToRegExp } from '../glob.mjs';
@@ -14,12 +15,15 @@ const MD_EXT = /\.md$/i;
 const LOCAL_EXT = /\.(md|mdx|markdown|mdoc)$/i;
 
 /**
- * @typedef {{ dir: string, route: string, label: string, description?: string, order?: string[], exclude?: string[], include?: string[] }} ExternalDocsEntry
+ * @typedef {{ root: string, web?: string, ref: string, commit?: string, editBranch?: string }} SourceEntry
+ * @typedef {{ dir?: string, git?: unknown, source?: SourceEntry, route: string, label: string, description?: string,
+ *   order?: string[], exclude?: string[], include?: string[] }} ExternalDocsEntry
+ * @typedef {{ root: string, web?: string, ref: string, editBranch?: string }} Source
  * @typedef {{ name: string, tagline: string, url: string, repo: string, repoBranch?: string,
  *   externalDocs?: ExternalDocsEntry[] }} SiteLike
  * @typedef {{ dir: string, relDir: string, route: string, routeId: string, label: string, description?: string,
  *   order: string[],
- *   exclude: string[], include: string[], skip: string[] }} Mount
+ *   exclude: string[], include: string[], skip: string[], source?: Source }} Mount
  * @typedef {{ root: string, gitRoot: string | undefined, repo: string, branch: string, url: string,
  *   localDir: string, mounts: Mount[] }} Project
  */
@@ -28,6 +32,7 @@ const LOCAL_EXT = /\.(md|mdx|markdown|mdoc)$/i;
 export function resolveProject(/** @type {SiteLike} */ site, /** @type {string} */ root) {
   root = path.resolve(root);
   const mounts = (site.externalDocs ?? []).map((entry) => {
+    if (entry.dir === undefined) throw new Error(`externalDocs: the git source for "${entry.route}" has not been fetched.`);
     const dir = path.resolve(root, entry.dir);
     const route = entry.route.split('/').filter(Boolean).map(slugify).join('/');
     if (!route) throw new Error(`externalDocs: route for "${entry.dir}" is empty.`);
@@ -43,6 +48,7 @@ export function resolveProject(/** @type {SiteLike} */ site, /** @type {string} 
       include: entry.include ?? [],
       // The site's own folder (and with it dist/ and node_modules/) when the mount contains it, e.g. `dir: '..'`.
       skip: isInside(root, dir) ? [root] : [],
+      source: entry.source && { ...entry.source, root: path.resolve(root, entry.source.root) },
     };
   });
   return /** @type {Project} */ ({
@@ -119,6 +125,11 @@ function couldInclude(/** @type {Mount} */ mount, /** @type {string} */ relDir) 
   });
 }
 
+/** The source of the downloaded repository holding `abs`, if any. */
+export function sourceFor(/** @type {Project} */ project, /** @type {string} */ abs) {
+  return project.mounts.find((m) => m.source && relInside(m.source.root, abs) !== undefined)?.source;
+}
+
 /** Path of a file relative to the git root, posix, or undefined when it is outside the repo. */
 export function repoPath(/** @type {Project} */ project, /** @type {string} */ abs) {
   if (!project.gitRoot) return undefined;
@@ -135,6 +146,12 @@ export function editBaseUrl(/** @type {Project} */ project) {
 }
 
 export function editUrlFor(/** @type {Project} */ project, /** @type {string} */ abs) {
+  const source = sourceFor(project, abs);
+  if (source) {
+    // Pinned docs are edited where they are written: the other repository's default branch.
+    const rel = relInside(source.root, abs);
+    return source.web && source.editBranch && rel !== undefined ? `${source.web}/edit/${source.editBranch}/${encodePath(rel)}` : undefined;
+  }
   const rel = repoPath(project, abs);
   return rel === undefined ? undefined : `${project.repo}/edit/${project.branch}/${encodePath(rel)}`;
 }
@@ -420,9 +437,19 @@ export function resolveHref(/** @type {Project} */ project, /** @type {string} *
     if (fs.existsSync(file)) return hrefForId(idForFile(mount, rel)) + (hash && hash.slice(1) === titleSlug(file) ? '' : hash);
     return hrefForId(idForFile(mount, rel)) + hash; // missing file: let the link validator flag it
   }
+  // A folder link ends in `/`, or is a folder on disk. (A downloaded repository holds only the mounted folder, so
+  // other files and folders of it are not on disk: without the slash they link as files.)
+  const isDir = rawPath.endsWith('/') || (fs.existsSync(target) && fs.statSync(target).isDirectory());
+  const kind = isDir ? 'tree' : 'blob';
+  const source = sourceFor(project, abs);
+  if (source) {
+    // From downloaded docs: files of that repository, at the fetched ref. Anything else stays as written.
+    const rel = relInside(source.root, target);
+    if (rel === undefined || !source.web) return undefined;
+    return `${source.web}/${rel ? kind : 'tree'}/${encodePath(source.ref)}/${encodePath(rel)}${hash}`.replace(/\/(#|$)/, '$1');
+  }
   const inRepo = repoPath(project, target);
   if (inRepo === undefined) return undefined;
-  const kind = fs.existsSync(target) && fs.statSync(target).isDirectory() ? 'tree' : 'blob';
   return `${project.repo}/${kind}/${project.branch}/${encodePath(inRepo)}${hash}`;
 }
 
@@ -446,6 +473,11 @@ export function absolutizeLinks(/** @type {string} */ md, /** @type {string} */ 
 // ---------- small utils ----------
 
 const toPosix = (/** @type {string} */ p) => p.split(path.sep).join('/');
+/** `abs` relative to folder `dir` (posix, '' for the folder itself), or undefined when it is outside. */
+function relInside(/** @type {string} */ dir, /** @type {string} */ abs) {
+  const rel = path.relative(dir, abs);
+  return rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel) ? undefined : toPosix(rel);
+}
 function isInside(/** @type {string} */ child, /** @type {string} */ parent) {
   const rel = path.relative(parent, child);
   return rel !== '' && rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);

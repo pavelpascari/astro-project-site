@@ -21,3 +21,12 @@ test("config preview accepts the site's own astro.config.mjs", () => {
   assert.doesNotThrow(() => validate(value));
 });
 
+
+test('config preview takes an externalDocs entry with `dir` or `git`, not both or neither', () => {
+  const base = { name: 'N', tagline: 't', url: 'https://n.dev', repo: 'https://github.com/o/n' };
+  const docs = (/** @type {object} */ entry) => ({ ...base, externalDocs: [{ route: 'r', label: 'R', ...entry }] });
+  assert.doesNotThrow(() => validate(docs({ dir: '../docs' })));
+  assert.doesNotThrow(() => validate(docs({ git: { repo: 'https://github.com/o/lib', ref: 'v1', path: 'docs' } })));
+  assert.throws(() => validate(docs({})), /externalDocs\[0\]: give either `dir`/);
+  assert.throws(() => validate(docs({ dir: 'd', git: { repo: 'https://h/r', ref: 'v1' } })), /not both/);
+});

@@ -61,7 +61,8 @@ An entry of `externalDocs`. See [Docs: mounting external markdown](/docs/guides/
 <!-- gen:interface name=ExternalDocs -->
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `dir` | `string` | yes | Markdown folder, relative to the project root. May be outside it (`../docs`). |
+| `dir` | `string` |  | Markdown folder, relative to the project root. May be outside it (`../docs`). Give this or `git`. |
+| `git` | `GitSource` |  | A folder of another repository instead of a local one: downloaded at build time (a shallow, sparse fetch with the `git` command), cached in Astro's cache folder, then mounted like `dir`. Links to its files that are not mounted go to that repository at `ref`; "Edit page" goes to its default branch. |
 | `route` | `string` | yes | URL segment under /docs/: `reference` → /docs/reference/... |
 | `label` | `string` | yes | Sidebar group label. |
 | `description` | `string` |  | One sentence on what the section holds: its card on /docs/ and the landing page, and the meta description of its README page. Defaults to the README's frontmatter `description`, then its first paragraph. |

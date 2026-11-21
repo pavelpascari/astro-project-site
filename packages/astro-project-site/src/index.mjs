@@ -12,6 +12,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AstroError } from 'astro/errors';
 import { blogHeadTags } from './blog/options.mjs';
+import { fetchGitDocs, GitDocsError } from './docs/git-source.mjs';
 import { editBaseUrl, resolveProject } from './docs/mount.mjs';
 import { mirror } from './mirror.mjs';
 import { own } from './own.mjs';
@@ -36,6 +37,8 @@ export default function projectSite(userOptions) {
     hooks: {
       'astro:config:setup': ({ config, updateConfig, injectRoute, addWatchFile, logger }) => {
         const root = path.resolve(fileURLToPath(config.root));
+        // `externalDocs` from other repositories: downloaded (or taken from the cache) before anything reads them.
+        withReadableErrors(() => fetchGitDocs(options, root, { cacheDir: fileURLToPath(config.cacheDir), logger }));
         const paths = withReadableErrors(() => resolveOptionPaths(options, root));
         const pagesDir = path.join(fileURLToPath(config.srcDir), 'pages');
         const ownsRoute = (/** @type {string[]} */ candidates) => candidates.find((c) => existsSync(path.join(pagesDir, c)));
@@ -116,6 +119,9 @@ function withReadableErrors(/** @type {() => any} */ fn) {
   } catch (error) {
     if (error instanceof ProjectSiteOptionsError) {
       throw new AstroError(error.message, 'Check the options passed to projectSite() in astro.config.mjs.');
+    }
+    if (error instanceof GitDocsError) {
+      throw new AstroError(error.message, 'Check the `git` source in externalDocs (repo, ref, path), the network, and for a private repository GITHUB_TOKEN.');
     }
     throw error;
   }

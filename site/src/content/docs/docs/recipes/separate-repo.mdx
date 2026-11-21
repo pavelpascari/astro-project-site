@@ -1,12 +1,38 @@
 ---
 title: Separate site repo
-description: Keep the website in its own repository and read the library's docs and demos from a second checkout, locally and in CI with source-repo.
+description: Keep the website in its own repository and read the library's docs from it with a git source, or its docs and demos from a second checkout, locally and in CI with source-repo.
 sidebar:
   order: 2
 ---
 
-Sometimes the site cannot live in the library's repo (different maintainers, a repo you do not control). Keep two
-clones side by side and point the site at the other one:
+
+Sometimes the site cannot live in the library's repo (different maintainers, a repo you do not control). There
+are two ways to read the library from the site's repo.
+
+## Docs only: a git source
+
+When the site needs only the library's markdown, let the build download it:
+
+```js title="my-lib-site/astro.config.mjs"
+projectSite({
+  name: 'My Lib',
+  tagline: 'Parses things, quickly.',
+  url: 'https://my-lib.dev',
+  repo: 'https://github.com/me/my-lib-site',
+  externalDocs: [
+    { git: { repo: 'https://github.com/me/my-lib', ref: 'v2.1.0', path: 'docs' }, route: 'reference', label: 'Reference' },
+  ],
+}),
+```
+
+No second clone, locally or in CI. Links from those docs to the library's source files go to the library's repo at
+`v2.1.0`, and "Edit page" to its default branch. Bump `ref` when the library releases. See
+[Mount another repository](/docs/guides/docs/#mount-another-repository) for branches, caching and private repos.
+
+## Docs and demos: a second checkout
+
+`mirrors` (static demos, apps) need the files on disk. Keep two clones side by side and point the site at the
+other one:
 
 ```text
 ~/code/
@@ -25,7 +51,7 @@ projectSite({
 }),
 ```
 
-## In CI: source-repo
+### In CI: source-repo
 
 The reusable workflow checks this repo out into a folder named after it and, with `source-repo`, the other one
 beside it under **its** name, which is the same layout as on your machine:
@@ -47,21 +73,15 @@ jobs:
 To rebuild the site when the library changes, trigger this workflow from the library's repo (for example
 `workflow_dispatch` via the GitHub API) or on a schedule.
 
-## Limits of a second repo
+## Limits of a second checkout
 
-Edit links and GitHub links are computed from the git repository **the site** is in. For a mounted folder
-outside it:
+Edit links and GitHub links are computed from the git repository **the site** is in. For a `dir` mount outside
+it:
 
 - its pages get **no** "edit this page" link;
 - relative links to non-markdown files (`../src/parse.js`) are **left as written**. The links validator reports
   them as relative links and fails the build.
 
-Until the package can map a mount to another repository, either write those links as absolute GitHub URLs in the
-library's docs, or relax the validator for them:
-
-```js
-linksValidator: { errorOnRelativeLinks: false },
-```
-
-(they then stay relative and 404 on the site, so absolute URLs are the better fix). Links between the mounted
-`.md` files are rewritten as usual.
+Mount the docs with a [git source](#docs-only-a-git-source) instead (and keep the checkout for `mirrors`): its
+links and edit links point at the library's repo. Links between the mounted `.md` files are rewritten either
+way.

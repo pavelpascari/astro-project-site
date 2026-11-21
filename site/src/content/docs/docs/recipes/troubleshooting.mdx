@@ -28,7 +28,7 @@ page, local and mounted, and stops on a broken internal link or `#anchor`:
 | invalid link to a docs page | The page does not exist, or was renamed | Fix the path. Mounted files: link the `.md` file, not the URL |
 | invalid hash | No heading with that slug on the target | Slugs are the lowercased heading text, spaces → `-`, punctuation dropped (`## The CLI!` → `#the-cli`) |
 | relative link (local page) | `./usage/` or `../guides/` in a page under `src/content/docs/` | Use root-relative links: `/docs/usage/` |
-| relative link (mounted page) | A link to a file outside the git repo the site is in (see [Separate site repo](/docs/recipes/separate-repo/#limits-of-a-second-repo)) | Absolute URL, or `linksValidator: { errorOnRelativeLinks: false }` |
+| relative link (mounted page) | A link to a file outside the git repo the site is in (see [Separate site repo](/docs/recipes/separate-repo/#limits-of-a-second-checkout)) | Mount it with a [`git` source](/docs/guides/docs/#mount-another-repository); else an absolute URL, or `linksValidator: { errorOnRelativeLinks: false }` |
 | link to a page of your own (`/about/`) | The validator only knows docs pages; the landing page, `/gallery/`, `/llms*.txt` and mirror prefixes are pre-registered | `linksValidator: { exclude: ['/about/', '/blog/**'] }` |
 
 Links to other sites are not checked. `linksValidator: false` turns the check off (not recommended).

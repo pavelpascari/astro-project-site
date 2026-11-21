@@ -117,7 +117,8 @@ cancelled.
 | `deploy` | `true` | `false` only checks and builds |
 
 Secrets (all optional): `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `SOURCE_REPO_TOKEN` (read-only token for a
-private `source-repo`). Output: `url`, the preview or production URL.
+private `source-repo`; the build also gets it as `GITHUB_TOKEN`, for private `externalDocs` [git
+sources](/docs/guides/docs/#mount-another-repository)). Output: `url`, the preview or production URL.
 
 
 ### Setup for CI

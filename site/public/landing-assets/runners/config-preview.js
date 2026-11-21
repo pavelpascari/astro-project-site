@@ -173,7 +173,12 @@ export function validate(o) {
     });
   };
   list('nav', ['label', 'href']);
-  list('externalDocs', ['dir', 'route', 'label']);
+  list('externalDocs', ['route', 'label']);
+  (Array.isArray(o.externalDocs) ? o.externalDocs : []).forEach((d, n) => {
+    const local = typeof d?.dir === 'string';
+    const git = d?.git && typeof d.git === 'object' && typeof d.git.repo === 'string' && typeof d.git.ref === 'string';
+    if (local === !!git) problems.push(`externalDocs[${n}]: give either \`dir\` (a local folder) or \`git\` ({ repo, ref, path? }), not both`);
+  });
   list('mirrors', ['from', 'to']);
   if (o.components && typeof o.components === 'object') {
     const bad = Object.keys(o.components).filter((k) => !COMPONENTS.includes(k));
@@ -228,7 +233,8 @@ export function run(source, mount, ctx) {
   ]);
   routes.push(['/docs/', 'Starlight docs: search, sitemap, link checks, edit links']);
   for (const d of o.externalDocs ?? []) {
-    routes.push([`/docs/${trim(String(d.route))}/`, `${d.label}: the markdown in ${d.dir}, mounted`]);
+    const from = d.git ? `${d.git.path || 'the root'} of ${d.git.repo} at ${d.git.ref}, downloaded and` : `the markdown in ${d.dir},`;
+    routes.push([`/docs/${trim(String(d.route))}/`, `${d.label}: ${from} mounted`]);
   }
   if (o.gallery !== false) {
     routes.push(['/gallery/', own.includes('/gallery/') ? 'gallery: your own page' : 'gallery, from src/content/gallery/']);
