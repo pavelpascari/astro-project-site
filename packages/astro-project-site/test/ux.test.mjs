@@ -121,3 +121,27 @@ test('styles use logical directions, so right-to-left pages mirror', () => {
   walk(path.resolve(import.meta.dirname, '../src'));
   assert.deepEqual(offenders, []);
 });
+
+test('header search: compact on site pages, the full field on docs, phones unchanged', () => {
+  const header = src('components/chrome/SiteHeader.astro');
+  // Site pages pass the option; docs pages always ask for the full field.
+  assert.match(src('components/layouts/BaseLayout.astro'), /<Header search=\{site\.header\.search\}>/);
+  assert.match(src('overrides/Header.astro'), /<Header [^>]*search="full"/);
+  // The SiteHeader component on its own (a project's wrapper) keeps the full field unless asked.
+  assert.match(header, /Astro\.props\.search === 'compact' \? 'compact' : 'full'/);
+  assert.match(header, /data-search=\{hasSearch \? searchStyle : undefined\}/);
+  const css = header.slice(header.indexOf('<style>')).replace(/\/\*[\s\S]*?\*\//g, '');
+  // Compact styling is restyling of Starlight's own button (same dialog, shortcut and focus handling), on wide
+  // screens only: below 50rem Starlight's button is an icon already, and keeps the room the mobile fix gave it.
+  const compact = [...css.matchAll(/\[data-search='compact'\][^{]*\{/g)].map((m) => m.index);
+  assert.ok(compact.length > 0);
+  for (const at of compact) {
+    const before = css.slice(0, at);
+    const media = before.slice(before.lastIndexOf('@media'));
+    assert.match(media, /^@media \((min-width: (50|64)rem|pointer: coarse\) and \(min-width: 50rem)\)/, css.slice(at, at + 80));
+  }
+  assert.match(css, /button\[data-open-modal\] > span\)[^{]*\{\s*display: none/);
+  assert.match(css, /@media \(max-width: 49\.99rem\)[\s\S]*?\.search \{\s*flex: 1 0 auto;/);
+  // The overflow check still counts the search, so a full field still moves the nav into the menu when needed.
+  assert.match(header, /squeezed\(search\)/);
+});

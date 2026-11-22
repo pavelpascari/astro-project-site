@@ -51,7 +51,7 @@ A live example: the code is written once, shown with Expressive Code and execute
 ### Page frame and chrome
 #### BaseLayout
 
-Page frame for everything outside the docs: head metadata, the shared header and footer, theme and base styles. The header bar matches Starlight's so moving between the landing page and the docs feels like one site. The docs search (Starlight's Search, whatever it resolved to) is in the header here too, so search is one keystroke away on every page. Use it for a project's own pages too: import { BaseLayout } from 'astro-project-site/components';
+Page frame for everything outside the docs: head metadata, the shared header and footer, theme and base styles. The header bar matches Starlight's so moving between the landing page and the docs feels like one site. The docs search (Starlight's Search, whatever it resolved to) is in the header here too, so search is one keystroke away on every page. Here it is a compact button by default (`header.search`), so it does not compete with the nav; the docs pages have the full field. Use it for a project's own pages too: import { BaseLayout } from 'astro-project-site/components';
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
@@ -87,6 +87,7 @@ The one site header: landing page, gallery, and (through overrides/Header.astro)
 |---|---|---|---|
 | `pathname` | `string` | `Astro.url.pathname` | Current path, for the active nav state. Defaults to the request URL. |
 | `menu` | `boolean` | `true` | Render the small-screen menu. Default true. The docs header turns it off on pages with a sidebar, where the nav is in Starlight's mobile menu instead, so a page never has two menus holding the same links. |
+| `search` | `'compact' \| 'full'` |  | How the search shows on wide screens: `full`, the search field (default; docs pages), or `compact`, a small button (magnifier, plus the shortcut hint on wide screens) that opens the same dialog. Phones always get a button. |
 
 Slots: `search`, `theme`, `theme-menu`.
 

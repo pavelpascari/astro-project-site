@@ -158,6 +158,8 @@ export const optionsSchema = z.strictObject({
     .default({}),
   // Posts in src/content/blog/, at /<route>/ (see blog/options.mjs). Off unless set; `true` uses the defaults.
   blog: blogOptionSchema.default(false),
+  // The header bar. `search`: how the search shows outside the docs (docs pages always have the full field).
+  header: z.strictObject({ search: z.enum(['compact', 'full']).default('compact') }).default({ search: 'compact' }),
   footer: z
     .strictObject({ note: z.string().optional(), copyright: z.union([z.literal(false), z.string()]).optional() })
     .default({}),
