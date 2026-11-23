@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-beta.8 - 2026-11-23
+
 ### Changed
 
 - The header search is compact outside the docs. On the landing page, gallery, blog and your `BaseLayout` pages it
