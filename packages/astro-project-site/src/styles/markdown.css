@@ -275,15 +275,18 @@
   }
 
   /* ── Heading anchors outside the docs (Starlight styles its own) ──────────────────────────────── */
-  :where(.md-heading) {
+  /* Starlight also adds its heading links to every file under a mounted folder, so a mount of the repository root
+     (to show its README) gives blog posts Starlight's markup (.sl-heading-wrapper, .sl-anchor-link) outside the
+     docs layout, where Starlight's CSS does not reach: it gets the same look as ours. */
+  :where(.md-heading, .sl-heading-wrapper:not(.sl-markdown-content *)) {
     display: flex;
     align-items: baseline;
     gap: 0.35em;
   }
-  :where(.md-heading) > :is(h2, h3, h4, h5, h6) {
+  :where(.md-heading, .sl-heading-wrapper:not(.sl-markdown-content *)) > :is(h2, h3, h4, h5, h6) {
     margin-bottom: 0;
   }
-  :where(.md-heading__anchor) {
+  :where(.md-heading__anchor, .sl-heading-wrapper:not(.sl-markdown-content *) > .sl-anchor-link) {
     flex: none;
     display: inline-grid;
     place-items: center;
@@ -293,18 +296,19 @@
     color: var(--site-muted);
     opacity: 0;
   }
-  :where(.md-heading:hover, .md-heading:focus-within) .md-heading__anchor {
+  :where(.md-heading:hover, .md-heading:focus-within) .md-heading__anchor,
+  :where(.sl-heading-wrapper:not(.sl-markdown-content *):is(:hover, :focus-within)) > .sl-anchor-link {
     opacity: 1;
   }
   @media (hover: none) {
-    :where(.md-heading__anchor) {
+    :where(.md-heading__anchor, .sl-heading-wrapper:not(.sl-markdown-content *) > .sl-anchor-link) {
       opacity: 1;
     }
   }
-  :where(.md-heading__anchor):hover {
+  :where(.md-heading__anchor, .sl-heading-wrapper:not(.sl-markdown-content *) > .sl-anchor-link):hover {
     color: var(--site-link);
   }
-  :where(.md-sr-only) {
+  :where(.md-sr-only, .sl-heading-wrapper:not(.sl-markdown-content *) .sr-only) {
     position: absolute;
     width: 1px;
     height: 1px;

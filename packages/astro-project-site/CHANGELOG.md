@@ -16,6 +16,13 @@
 - `header.search` option: `'compact'` (default) or `'full'`, how the search shows on pages outside the docs. A
   `components.Header` override receives it as the `search` prop (`'full'` on docs pages).
 
+### Fixed
+
+- Blog posts no longer show "Section titled …" as a visible link under each heading when `externalDocs` mounts a
+  folder that contains them (for example the repository root, to show its README). Starlight adds its own heading
+  links to every file under a mounted folder, and its styles for them aren't loaded outside the docs: that markup
+  now gets the same look as the template's heading links (hidden label, link icon beside the heading).
+
 ## 0.1.0-beta.7 - 2026-11-21
 
 ### Fixed
