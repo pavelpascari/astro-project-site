@@ -45,6 +45,14 @@ nav: [
 Without `nav` you get Docs, plus Gallery unless `gallery: false`. The footer repeats `nav` and adds a "Source"
 link.
 
+The search is in the header on every page. On the docs pages it is the full search field; on the landing page,
+gallery, blog and your own `BaseLayout` pages it is a small button (with the ⌘K / Ctrl K hint on wide screens) that
+opens the same search, so the nav gets the room. For the full field there too:
+
+```js
+header: { search: 'full' },  // default 'compact'
+```
+
 ## Social images and favicon
 
 ```js

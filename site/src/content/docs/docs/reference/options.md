@@ -39,6 +39,8 @@ Types and descriptions come from `src/index.d.ts`, defaults and required fields 
 | `landing` | `false \| LandingContent` | `{}` | Content of the built-in landing page at `/`, or `false` for none (or add your own src/pages/index.astro). |
 | `gallery` | `false \| { route?: string; title?: string; description?: string }` | `{}` | The built-in gallery page, or `false` for none. `route` is its URL path (default `gallery`: /gallery/); `title` and `description` default to the `gallery` and `galleryDescription` labels. |
 | `blog` | `boolean \| BlogOptions` | `false` | Posts from src/content/blog/ at /blog/ (list, posts, tags, RSS), or `true` for the defaults. Off unless set. |
+| `header` | `object` | `{"search":"compact"}` | The header bar. `search`: how the search shows on the landing page, gallery, blog and your BaseLayout pages: `compact` (default), a small button (magnifier, with the ⌘K / Ctrl K hint on wide screens) that opens the same search dialog, so the nav has the room; `full`, the wide search field the docs pages have. Docs pages always show the full field. On phones the search is a button either way. |
+| `header.search` | `'compact' \| 'full'` |  |  |
 | `footer` | `object` | `{}` | Footer text. `note`: extra text, e.g. a licence line. `copyright`: the copyright line, with `{year}` (the build year) and `{name}` filled in; default the `copyright` label ("© {year} {name}"); `false` leaves it out. |
 | `footer.note` | `string` |  |  |
 | `footer.copyright` | `string \| false` |  |  |
@@ -177,7 +179,7 @@ See [Overriding components](/docs/guides/overriding-components/).
 <!-- gen:interface name=ComponentOverrides -->
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `Header` | `string` |  | The header bar contents on every page, docs included. Receives the `search`, `theme` and `theme-menu` slots. |
+| `Header` | `string` |  | The header bar contents on every page, docs included. Receives the `search`, `theme` and `theme-menu` slots, and `search: 'compact' \| 'full'`: how to show the search (`full` on docs pages, the `header.search` option elsewhere). |
 | `Footer` | `string` |  | The footer on every page, docs included. Receives `variant: 'page' \| 'docs'`. |
 | `Hero` | `string` |  | The landing page's hero. Receives the Hero props (title, lead, primary, secondary, install) and a `live` slot. |
 | `Landing` | `string` |  | The whole landing page body (inside BaseLayout). |

@@ -30,6 +30,14 @@ test('minimal options get defaults', () => {
   assert.deepEqual(o.gallery, { route: 'gallery', title: 'Gallery', description: 'Demos, examples and tools, running live.' });
 });
 
+test('header.search: compact outside the docs unless set to full', () => {
+  assert.deepEqual(parseOptions(base).header, { search: 'compact' });
+  assert.deepEqual(parseOptions({ ...base, header: {} }).header, { search: 'compact' });
+  assert.deepEqual(parseOptions({ ...base, header: { search: 'full' } }).header, { search: 'full' });
+  assert.match(problems({ ...base, header: { search: 'hidden' } }).join('\n'), /^header\.search: /);
+  assert.match(problems({ ...base, header: { searchStyle: 'full' } }).join('\n'), /header: unknown option "searchStyle"/);
+});
+
 test('gallery: false drops the Gallery nav default', () => {
   assert.deepEqual(parseOptions({ ...base, gallery: false }).nav, [{ label: 'Docs', href: '/docs/' }]);
 });

@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Changed
+
+- The header search is compact outside the docs. On the landing page, gallery, blog and your `BaseLayout` pages it
+  is now a small button (a magnifier, with the ⌘K / Ctrl K hint on wide screens) next to the source link, instead of
+  the wide search field, so the nav and the project name have the room and the nav moves into the menu less often.
+  It is the same search: the button opens the same dialog, Ctrl/⌘ K works as before, and its accessible name is
+  still "Search". Docs pages keep the full field, and phones are unchanged (the search was a button there already).
+  For the full field everywhere, set `header: { search: 'full' }`.
+
+### Added
+
+- `header.search` option: `'compact'` (default) or `'full'`, how the search shows on pages outside the docs. A
+  `components.Header` override receives it as the `search` prop (`'full'` on docs pages).
+
+### Fixed
+
+- Blog posts no longer show "Section titled …" as a visible link under each heading when `externalDocs` mounts a
+  folder that contains them (for example the repository root, to show its README). Starlight adds its own heading
+  links to every file under a mounted folder, and its styles for them aren't loaded outside the docs: that markup
+  now gets the same look as the template's heading links (hidden label, link icon beside the heading).
+
 ## 0.1.0-beta.7 - 2026-11-21
 
 ### Fixed

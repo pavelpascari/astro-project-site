@@ -9,8 +9,8 @@
 // scripts/landing-runners.test.mjs fails when they differ.
 export const KNOWN = [
   'name', 'tagline', 'url', 'repo', 'repoBranch', 'versionFrom', 'nav', 'externalDocs', 'docsOrder', 'mirrors',
-  'install', 'favicon', 'ogImage', 'ogImageFor', 'theme', 'landing', 'gallery', 'blog', 'footer', 'labels', 'llms',
-  'linksValidator', 'customCss', 'head', 'components', 'starlight', 'markdown',
+  'install', 'favicon', 'ogImage', 'ogImageFor', 'theme', 'landing', 'gallery', 'blog', 'header', 'footer', 'labels',
+  'llms', 'linksValidator', 'customCss', 'head', 'components', 'starlight', 'markdown',
 ];
 export const COMPONENTS = ['Header', 'Footer', 'Hero', 'Landing', 'GalleryCard', 'Gallery', 'BlogIndex', 'BlogPost', 'BlogCard'];
 

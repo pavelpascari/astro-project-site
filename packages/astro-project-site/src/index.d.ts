@@ -128,7 +128,10 @@ export interface Mirror {
 
 /** Components a project can replace. Values are paths relative to the project root (or package specifiers). */
 export interface ComponentOverrides {
-  /** The header bar contents on every page, docs included. Receives the `search`, `theme` and `theme-menu` slots. */
+  /**
+   * The header bar contents on every page, docs included. Receives the `search`, `theme` and `theme-menu` slots, and
+   * `search: 'compact' | 'full'`: how to show the search (`full` on docs pages, the `header.search` option elsewhere).
+   */
   Header?: string;
   /** The footer on every page, docs included. Receives `variant: 'page' | 'docs'`. */
   Footer?: string;
@@ -302,6 +305,13 @@ export interface ProjectSiteOptions {
    */
   blog?: boolean | BlogOptions;
   /**
+   * The header bar. `search`: how the search shows on the landing page, gallery, blog and your BaseLayout pages:
+   * `compact` (default), a small button (magnifier, with the ⌘K / Ctrl K hint on wide screens) that opens the same
+   * search dialog, so the nav has the room; `full`, the wide search field the docs pages have. Docs pages always
+   * show the full field. On phones the search is a button either way.
+   */
+  header?: { search?: 'compact' | 'full' };
+  /**
    * Footer text. `note`: extra text, e.g. a licence line. `copyright`: the copyright line, with `{year}` (the build
    * year) and `{name}` filled in; default the `copyright` label ("© {year} {name}"); `false` leaves it out.
    */
@@ -364,6 +374,7 @@ export interface ResolvedOptions extends Omit<ProjectSiteOptions, 'landing' | 'e
   landing: false | ResolvedLanding;
   gallery: false | { route: string; title: string; description: string };
   blog: false | ResolvedBlog;
+  header: { search: 'compact' | 'full' };
   footer: { note?: string; copyright?: string | false };
   labels: Labels;
   llms: boolean;

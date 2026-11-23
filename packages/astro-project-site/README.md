@@ -131,6 +131,7 @@ All paths are relative to the project root (the folder of `astro.config.mjs`) an
 | `landing` | `LandingContent \| false` | `{}` | Content of the built-in landing page (below), or no landing page. |
 | `gallery` | `{ title?, description? } \| false` | `{}` | The `/gallery/` page, or none. |
 | `blog` | `boolean \| BlogOptions` | `false` | Posts from `src/content/blog/` at `/blog/` (below). `true` = defaults. |
+| `header` | `{ search? }` | `{ search: 'compact' }` | `search`: `'compact'`, a small search button (with the ⌘K / Ctrl K hint on wide screens) on the landing page, gallery, blog and your `BaseLayout` pages, or `'full'`, the wide field there too. Docs pages always have the full field. |
 | `footer` | `{ note? }` | | Extra footer line, e.g. a licence. |
 | `llms` | `boolean` | `true` | `/llms.txt` and `/llms-full.txt`. |
 | `customCss` | `string[]` | `[]` | Stylesheets loaded on every page after `theme.css`. |
@@ -160,7 +161,7 @@ Paths to `.astro` components that replace the built-ins wherever the integration
 
 | slot | replaces | props |
 |---|---|---|
-| `Header` | the header bar contents, on every page including docs | slots `search`, `theme`, `theme-menu` |
+| `Header` | the header bar contents, on every page including docs | slots `search`, `theme`, `theme-menu`; `search: 'compact' \| 'full'` |
 | `Footer` | the footer, on every page including docs | `variant: 'page' \| 'docs'` |
 | `Hero` | the landing page hero | `title, lead, primary, secondary, install`; slot `live` |
 | `Landing` | the whole landing page body (inside `BaseLayout`) | none; read options from `astro-project-site/config` |
